@@ -15,6 +15,7 @@ lxb_html_document_t* popDocumentList(DocumentNode_t** head) {
     *head = tmp->next;
     lxb_html_document_t* res = tmp->document;
     free(tmp);
+    tmp = NULL;
     return res;
 }
 
