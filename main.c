@@ -5,7 +5,10 @@
 #include <curl/curl.h>
 #include <lexbor/html/html.h>
 
-#define CHECK_LXB(X) if((X) != LXB_STATUS_OK) {fprintf(stderr,"An error occured line: %i", __LINE__);}
+#include "linked_list_documents.h"
+#include "linked_list_urls.h"
+
+#define CHECK_LXB(X) if((X) != LXB_STATUS_OK) {fprintf(stderr,"An error occured line %i: %i\n", __LINE__, (lxb_status_t)(X));}
 
 static size_t processContent(const char* content, size_t size, size_t nmemb, void* userp) {
 	// called when getting data
@@ -19,6 +22,13 @@ static size_t processContent(const char* content, size_t size, size_t nmemb, voi
 }
 
 int main(int argc, char* argv[]) {
+	URLNode_t* urls = NULL;
+	pushURLList(&urls, "https://www.google.com/");
+	pushURLList(&urls, "https://www.amazon.com/");
+	pushURLList(&urls, "https://www.wikipedia.org/");
+
+	DocumentNode_t* documents = NULL;
+
 	curl_global_init(CURL_GLOBAL_ALL);
 	CURL* curl;
 	CURLcode res;
@@ -26,39 +36,49 @@ int main(int argc, char* argv[]) {
 	lxb_status_t status;
 	lxb_html_document_t* document;
 
-	document = lxb_html_document_create(); // create document
-	if(document == NULL) {
-		fprintf(stderr, "lxb_html_document_create failed.");
-		exit(EXIT_FAILURE);
-	}
-
 	curl = curl_easy_init();
 	if(!curl) {
 		fprintf(stderr, "curl_easy_init() failed: %s\n", curl_easy_strerror(res));
 		exit(EXIT_FAILURE);
 	}
-
 	curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS | CURLPROTO_HTTP);
-	curl_easy_setopt(curl, CURLOPT_URL, argv[1]);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, processContent);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)document);
 
-	// fetch
+	for(int i = getURLListLength(urls); i > 0; i--) {
+		char* url = popURLList(&urls);
+		printf("Doing: %s\n", url);
 
-	status = lxb_html_document_parse_chunk_begin(document);
-	CHECK_LXB(status);
+		document = lxb_html_document_create();
+		if(document == NULL) {
+			fprintf(stderr, "lxb_html_document_create failed.");
+		}
 
-	res = curl_easy_perform(curl);
-	if(res != CURLE_OK) {
-		fprintf(stderr, "curl_easy_perform failed: %s\n", curl_easy_strerror(res));
-		exit(EXIT_FAILURE);
+		curl_easy_setopt(curl, CURLOPT_URL, url);
+		free(url);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)document);
+
+		// fetch
+		status = lxb_html_document_parse_chunk_begin(document);
+		CHECK_LXB(status);
+
+		res = curl_easy_perform(curl);
+		if(res != CURLE_OK) {
+			fprintf(stderr, "curl_easy_perform failed: %s\n", curl_easy_strerror(res));
+			exit(EXIT_FAILURE);
+		}
+
+		status = lxb_html_document_parse_chunk_end(document);
+		CHECK_LXB(status);
+		pushDocumentList(&documents, document);
 	}
 
-	status = lxb_html_document_parse_chunk_end(document);
-	CHECK_LXB(LXB_STATUS_STOP);
-
+	printf("Got %i documents\n", getDocumentListLength(documents));
+	for(int i = getDocumentListLength(documents); i > 0; i--) {
+		document = popDocumentList(&documents);
+		printf("Title: %s\n", lxb_html_document_title(document, NULL));
+		lxb_html_document_destroy(document);
+	}
 	// destroy
-	lxb_html_document_destroy(document);
 	curl_easy_cleanup(curl);
 	return EXIT_SUCCESS;
 }

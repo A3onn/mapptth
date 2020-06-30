@@ -27,7 +27,7 @@ DocumentNode_t* createDocumentNode(lxb_html_document_t* document) {
 
 int getDocumentListLength(DocumentNode_t* head) {
     DocumentNode_t* tmp = head;
-    if(tmp->next == NULL) {
+    if(tmp == NULL) {
         return 0;
     }
 

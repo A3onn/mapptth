@@ -13,8 +13,8 @@ char* popURLList(URLNode_t** head) {
         return NULL;
     }
     *head = tmp->next;
-    char* res = (char*) malloc(sizeof (char) * strlen(tmp->url));
-    strncpy(res, tmp->url, strlen(tmp->url));
+    char* res = (char*) malloc(sizeof (char) * strlen(tmp->url)+1);
+    strncpy(res, tmp->url, strlen(tmp->url)+1);
     free(tmp);
     return res;
 }
@@ -28,7 +28,7 @@ URLNode_t* createURLNode(char* url) {
 
 int getURLListLength(URLNode_t* head) {
     URLNode_t* tmp = head;
-    if(tmp->next == NULL) {
+    if(tmp == NULL) {
         return 0;
     }
 
