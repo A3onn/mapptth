@@ -33,37 +33,27 @@ void getLinks(lxb_html_document_t* document) {
 		return ;
     }
 
-	// HREF
 	status = lxb_dom_elements_by_attr_contain(body, collection, (const lxb_char_t *) "href", 4, NULL, 0, true);
     if (status != LXB_STATUS_OK) {
         fprintf(stderr, "lxb_dom_elements_by_attr_contain failed.");
 		return ;
     }
-
-    lxb_dom_element_t *element;
-    for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
-        element = lxb_dom_collection_element(collection, i);
-
-        lxb_dom_node_t* node = lxb_dom_interface_node(element);
-		const lxb_char_t* val = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "href", 4, NULL);
-		if(val[0] != '#') {
-			printf("Found:%s\n", val);
-		}
-    }
-	lxb_dom_collection_clean(collection); // empty collection
-
-	// SRC
 	status = lxb_dom_elements_by_attr_contain(body, collection, (const lxb_char_t *) "src", 3, NULL, 0, true);
     if (status != LXB_STATUS_OK) {
         fprintf(stderr, "lxb_dom_elements_by_attr_contain failed.");
 		return ;
     }
 
+    lxb_dom_element_t *element;
+	const lxb_char_t* val;
     for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
         element = lxb_dom_collection_element(collection, i);
 
         lxb_dom_node_t* node = lxb_dom_interface_node(element);
-		const lxb_char_t* val = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "src", 3, NULL);
+		val = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "href", 4, NULL); // try getting href
+		if(val == NULL) {
+			val = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "src", 3, NULL); // getting src otherwise
+		}
 		if(val[0] != '#') {
 			printf("Found:%s\n", val);
 		}
