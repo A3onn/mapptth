@@ -39,6 +39,21 @@ int getURLListLength(URLNode_t* head) {
     return res;
 }
 
+int findURLList(URLNode_t* head, char* url) {
+    URLNode_t* tmp = head;
+    if(tmp == NULL) {
+        return 0;
+    }
+
+    for(; tmp != NULL; tmp = tmp->next){
+        if(strcmp(tmp->url, url) == 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 void printURLList(URLNode_t* head) {
     URLNode_t* tmp = head;
     if(tmp->next == NULL) {

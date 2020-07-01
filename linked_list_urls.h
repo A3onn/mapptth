@@ -21,4 +21,5 @@ void printURLList(URLNode_t* head);
 
 int getURLListLength(URLNode_t* head);
 
+int findURLList(URLNode_t* head, char* url);
 #endif
