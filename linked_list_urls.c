@@ -55,6 +55,10 @@ int findURLList(URLNode_t* head, char* url) {
 }
 
 void printURLList(URLNode_t* head) {
+    if(head == NULL) {
+        puts("<empty>");
+        return;
+    }
     URLNode_t* tmp = head;
     if(tmp->next == NULL) {
         puts("<empty>");

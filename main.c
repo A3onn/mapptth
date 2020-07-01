@@ -19,7 +19,7 @@ static size_t processContent(const char* content, size_t size, size_t nmemb, voi
 	return size*nmemb;
 }
 
-void getLinks(lxb_html_document_t* document) {
+void getLinks(lxb_html_document_t* document, URLNode_t** urls) {
 	lxb_status_t status;
 	lxb_dom_element_t *body = lxb_dom_interface_element(document->body);
 	if(body == NULL) {
@@ -54,8 +54,8 @@ void getLinks(lxb_html_document_t* document) {
 		if(val == NULL) {
 			val = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "src", 3, NULL); // getting src otherwise
 		}
-		if(val[0] != '#') {
-			printf("Found:%s\n", val);
+		if(val[0] != '#' && findURLList(*urls, (char*)val) == 0) {
+			pushURLList(urls, (char*)val);
 		}
     }
 
@@ -64,9 +64,9 @@ void getLinks(lxb_html_document_t* document) {
 
 int main(int argc, char* argv[]) {
 	URLNode_t* urls = NULL;
-	pushURLList(&urls, "https://www.google.com/");
-	pushURLList(&urls, "https://www.amazon.com/");
 	pushURLList(&urls, "https://www.wikipedia.org/");
+	pushURLList(&urls, "https://www.amazon.com/");
+	pushURLList(&urls, "https://www.google.com/");
 
 	DocumentNode_t* documents = NULL;
 
@@ -106,21 +106,18 @@ int main(int argc, char* argv[]) {
 		res = curl_easy_perform(curl);
 		if(res != CURLE_OK) {
 			fprintf(stderr, "curl_easy_perform failed: %s\n", curl_easy_strerror(res));
-			exit(EXIT_FAILURE);
+			continue;
 		}
 
 		status = lxb_html_document_parse_chunk_end(document);
 		CHECK_LXB(status)
 		pushDocumentList(&documents, document);
-	}
 
-	printf("Got %i documents\n", getDocumentListLength(documents));
-	for(int i = getDocumentListLength(documents); i > 0; i--) {
 		document = popDocumentList(&documents);
-		printf("Title: %s\n", lxb_html_document_title_raw(document, NULL));
-		getLinks(document);
+		getLinks(document, &urls);
 		lxb_html_document_destroy(document);
 	}
+	printURLList(urls);
 
 	// destroy
 	curl_easy_cleanup(curl);
