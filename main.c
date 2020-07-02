@@ -19,7 +19,7 @@ static size_t processContent(const char* content, size_t size, size_t nmemb, voi
 	return size*nmemb;
 }
 
-void getLinks(lxb_html_document_t* document, URLNode_t** urls) {
+void getLinks(lxb_html_document_t* document, CURLU* url, URLNode_t** urls) {
 	lxb_status_t status;
 	lxb_dom_element_t *body = lxb_dom_interface_element(document->body);
 	if(body == NULL) {
@@ -54,8 +54,13 @@ void getLinks(lxb_html_document_t* document, URLNode_t** urls) {
 		if(val == NULL) {
 			val = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "src", 3, NULL); // getting src otherwise
 		}
+
 		if(val[0] != '#' && findURLList(*urls, (char*)val) == 0) {
-			pushURLList(urls, (char*)val);
+			curl_url_set(url, CURLUPART_URL, (const char*)val, 0);
+			curl_url_get(url, CURLUPART_URL, (char**)(&val), 0);
+			printf("%s %i\n", (char*) val, findURLList(*urls, (char*)val));
+			pushURLList(urls, val);
+			curl_url_set(url, CURLUPART_URL, "../", 0);
 		}
     }
 
@@ -64,9 +69,10 @@ void getLinks(lxb_html_document_t* document, URLNode_t** urls) {
 
 int main(int argc, char* argv[]) {
 	URLNode_t* urls = NULL;
-	pushURLList(&urls, "https://www.wikipedia.org/");
+	/*pushURLList(&urls, "https://www.wikipedia.org/");
 	pushURLList(&urls, "https://www.amazon.com/");
-	pushURLList(&urls, "https://www.google.com/");
+	pushURLList(&urls, "https://www.google.com/");*/
+	pushURLList(&urls, "http://127.0.0.1:8000");
 
 	DocumentNode_t* documents = NULL;
 
@@ -86,7 +92,10 @@ int main(int argc, char* argv[]) {
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, processContent);
 
 	while(getURLListLength(urls) != 0) {
-		char* url = popURLList(&urls);
+		CURLU* url_u = popURLList(&urls);
+		char* url;
+		curl_url_get(url_u, CURLUPART_URL, &url, 0);
+
 		printf("Doing: %s\n", url);
 
 		document = lxb_html_document_create();
@@ -97,7 +106,6 @@ int main(int argc, char* argv[]) {
 		CHECK_LXB(status)
 
 		curl_easy_setopt(curl, CURLOPT_URL, url);
-		free(url);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)document);
 
 		// fetch
@@ -111,13 +119,12 @@ int main(int argc, char* argv[]) {
 
 		status = lxb_html_document_parse_chunk_end(document);
 		CHECK_LXB(status)
-		pushDocumentList(&documents, document);
+		pushDocumentList(&documents, document, url);
 
-		document = popDocumentList(&documents);
-		getLinks(document, &urls);
+		struct Document* doc = popDocumentList(&documents);
+		getLinks(doc->document, doc->url, &urls);
 		lxb_html_document_destroy(document);
 	}
-	printURLList(urls);
 
 	// destroy
 	curl_easy_cleanup(curl);

@@ -1,30 +1,30 @@
 #include "linked_list_urls.h"
 
-void pushURLList(URLNode_t** head, char* url) {
+int pushURLList(URLNode_t** head, const char* url) {
     URLNode_t* newNode = (URLNode_t*) malloc(sizeof (URLNode_t));
     newNode->next = *head;
-    newNode->url = url;
+    newNode->url = curl_url();
+    if(!newNode->url) {
+        return 0;
+    }
+    CURLUcode i = curl_url_set(newNode->url, CURLUPART_URL, url, 0);
+    if(i != CURLUE_OK) {
+        return 0;
+    }
     *head = newNode;
+    return 1;
 }
 
-char* popURLList(URLNode_t** head) {
+CURLU* popURLList(URLNode_t** head) {
     URLNode_t* tmp = *head;
     if(tmp == NULL) {
         return NULL;
     }
     *head = tmp->next;
-    char* res = (char*) malloc(sizeof (char) * strlen(tmp->url)+1);
-    strncpy(res, tmp->url, strlen(tmp->url)+1);
+    CURLU * res = tmp->url;
     free(tmp);
     tmp = NULL;
     return res;
-}
-
-URLNode_t* createURLNode(char* url) {
-    URLNode_t* newNode = (URLNode_t*) malloc(sizeof (URLNode_t));
-    newNode->url = url;
-    newNode->next = NULL;
-    return newNode;
 }
 
 int getURLListLength(URLNode_t* head) {
@@ -45,10 +45,14 @@ int findURLList(URLNode_t* head, char* url) {
         return 0;
     }
 
+    char* host;
     for(; tmp != NULL; tmp = tmp->next){
-        if(strcmp(tmp->url, url) == 0) {
+        curl_url_get(tmp->url, CURLUPART_URL, &host, 0);
+        if(strcmp(host, url) == 0) {
+            free(host);
             return 1;
         }
+        free(host);
     }
 
     return 0;
@@ -60,13 +64,11 @@ void printURLList(URLNode_t* head) {
         return;
     }
     URLNode_t* tmp = head;
-    if(tmp->next == NULL) {
-        puts("<empty>");
-        return;
-    }
 
+    char* url;
     while(tmp != NULL) {
-        printf("%s - ", tmp->url);
+        curl_url_get(tmp->url, CURLUPART_URL, &url, 0);
+        printf("%s - ", url);
         tmp = tmp->next;
     }
     printf("\n");

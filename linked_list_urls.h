@@ -4,18 +4,21 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <curl/curl.h>
+
+#if !CURL_AT_LEAST_VERSION(7, 62, 0)
+#error "this example requires curl 7.62.0 or later"
+#endif
 
 struct URLNode {
     struct URLNode* next;
-    char* url;
+    CURLU* url;
 };
 typedef struct URLNode URLNode_t;
 
-URLNode_t* createURLNode(char* url);
+int pushURLList(URLNode_t** head, const char* url);
 
-void pushURLList(URLNode_t** head, char* url);
-
-char* popURLList(URLNode_t** head);
+CURLU* popURLList(URLNode_t** head);
 
 void printURLList(URLNode_t* head);
 
