@@ -9,8 +9,6 @@
 #include "linked_list_urls.h"
 #include "fetcher_thread.h"
 
-pthread_mutex_t mutexFetcher = PTHREAD_MUTEX_INITIALIZER;
-
 void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNode_t** urls_done) {
 	lxb_status_t status;
 	lxb_dom_element_t *body = lxb_dom_interface_element(document->body);
@@ -52,17 +50,27 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNod
 			foundURL = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "src", 3, NULL); // getting src otherwise
 		}
 
-		if(foundURL[0] != '#' && findURLList(*urls_done, (char*)foundURL) == 0 && findURLList(*urls, (char*)foundURL) == 0) {
+		if(foundURL[0] != '#') { // if this is not a fragment of the same page
+			// set url
 			curl_url_set(url_c, CURLUPART_URL, foundURL, 0);
 			curl_url_get(url_c, CURLUPART_URL, &urlFinal, 0);
+		}
+		if(findURLList(*urls_done, urlFinal) == 0 && findURLList(*urls, urlFinal) == 0) {
+			// add url to the list
 			pushURLList(urls, urlFinal);
 		}
+		// reset CURLU instance by re-setting the url
+		curl_url_set(url_c, CURLUPART_URL, url, 0);
     }
 
 	lxb_dom_collection_destroy(collection, true);
 }
 
 int main(int argc, char* argv[]) {
+	pthread_t fetcher_thread;
+	pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+
 	URLNode_t* urls = NULL;
 	URLNode_t* urls_done = NULL;
 	pushURLList(&urls, "http://127.0.0.1:8000");
@@ -71,30 +79,27 @@ int main(int argc, char* argv[]) {
 
 	curl_global_init(CURL_GLOBAL_ALL);
 
-	struct ListsThreads lists;
-	lists.documents = &documents;
-	lists.urls = &urls;
+	struct BundleVarsThread bundle;
+	bundle.documents = &documents;
+	bundle.urls = &urls;
+	bundle.mutex = &mutex;
+	bundle.cond = &cond;
 
-
-	pthread_t fetcher_thread;
-	pthread_create(&fetcher_thread, NULL, fetcher_thread_func, (void*)&lists);
-	pthread_join(fetcher_thread, NULL);
+	pthread_create(&fetcher_thread, NULL, fetcher_thread_func, (void*)&bundle);
 
 	struct Document* document;
 	while(1) {
-        pthread_mutex_lock(&mutexFetcher);
-		if(getDocumentListLength(documents) == 0) {
-			pthread_mutex_unlock(&mutexFetcher);
-			break;
+        pthread_mutex_lock(&mutex);
+		int docLength = getDocumentListLength(documents);
+		if(docLength == 0) {
+			pthread_cond_wait(&cond, &mutex);
 		}
 		document = popDocumentList(&documents);
-		if(document == NULL) {
-			break;
-		}
+
 		getLinks(document->document, document->url, &urls, &urls_done);
-        pthread_mutex_unlock(&mutexFetcher);
 
 		pushURLList(&urls_done, document->url);
+        pthread_mutex_unlock(&mutex);
 		lxb_html_document_destroy(document->document);
 		free(document);
 	}

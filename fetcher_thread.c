@@ -10,10 +10,13 @@ static size_t processContent(const char* content, size_t size, size_t nmemb, voi
 }
 
 
-void* fetcher_thread_func(void* lists_arg) {
-    struct ListsThreads* lists = (struct ListsThreads*) lists_arg;
-    DocumentNode_t** documents = lists->documents;
-    URLNode_t** urls = lists->urls;
+void* fetcher_thread_func(void* bundle_arg) {
+    struct BundleVarsThread* bundle = (struct BundleVarsThread*) bundle_arg;
+    DocumentNode_t** documents = bundle->documents;
+    URLNode_t** urls = bundle->urls;
+	pthread_mutex_t* mutex = bundle->mutex;
+	pthread_cond_t* cond = bundle->cond;
+
 
 	CURLcode status_c;
 	CURL* curl = curl_easy_init();
@@ -24,13 +27,14 @@ void* fetcher_thread_func(void* lists_arg) {
 	lxb_html_document_t* document;
     
 	while(1) {
-        pthread_mutex_lock(&mutexFetcher);
-        if(getURLListLength(*urls) == 0) {
-            pthread_mutex_unlock(&mutexFetcher);
-            break;
-        }
+        pthread_mutex_lock(mutex);
+		int urlLength = getURLListLength(*urls);
+		if(urlLength == 0) {
+			pthread_mutex_unlock(mutex);
+			continue;
+		}
 		char* url = popURLList(urls);
-        pthread_mutex_unlock(&mutexFetcher);
+        pthread_mutex_unlock(mutex);
 
 		printf("Doing: %s\n", url);
 
@@ -60,9 +64,11 @@ void* fetcher_thread_func(void* lists_arg) {
 		status_l = lxb_html_document_parse_chunk_end(document);
 		CHECK_LXB(status_l)
 
-        pthread_mutex_lock(&mutexFetcher);
+        pthread_mutex_lock(mutex);
 		pushDocumentList(documents, document, url);
-        pthread_mutex_unlock(&mutexFetcher);
+        pthread_mutex_unlock(mutex);
+
+		pthread_cond_signal(cond); // send signal that a document has been parsed
 	}
 	curl_easy_cleanup(curl);
 

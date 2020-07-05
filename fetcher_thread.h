@@ -13,13 +13,15 @@
 #define CHECK_LXB(X) if((X) != LXB_STATUS_OK) {fprintf(stderr,"An error occured line %i: %i\n", __LINE__, (lxb_status_t)(X));}
 
 
-extern pthread_mutex_t mutexFetcher;
-struct ListsThreads { // used to pass linked lists needed by the thread
-    DocumentNode_t** documents; // list of documents
-    URLNode_t** urls; // list of URLS
+struct BundleVarsThread { // used to needed variables to the thread
+    DocumentNode_t** documents; // list of documents to populate
+    URLNode_t** urls; // list of URLS to fetch
+    // pthread related
+    pthread_mutex_t* mutex;
+    pthread_cond_t* cond;
 };
 
-void* fetcher_thread_func(void* lists_arg);
+void* fetcher_thread_func(void* bundle_arg);
 
 static size_t processContent(const char* content, size_t size, size_t nmemb, void* userp);
 
