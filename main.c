@@ -7,19 +7,11 @@
 
 #include "linked_list_documents.h"
 #include "linked_list_urls.h"
+#include "fetcher_thread.h"
 
-#define CHECK_LXB(X) if((X) != LXB_STATUS_OK) {fprintf(stderr,"An error occured line %i: %i\n", __LINE__, (lxb_status_t)(X));}
+pthread_mutex_t mutexFetcher = PTHREAD_MUTEX_INITIALIZER;
 
-static size_t processContent(const char* content, size_t size, size_t nmemb, void* userp) {
-	// called when getting data
-	// passing the data received to the document using chunk parsing
-	lxb_status_t status = lxb_html_document_parse_chunk((lxb_html_document_t*)userp, (lxb_char_t *)content, size*nmemb);
-	CHECK_LXB(status)
-	
-	return size*nmemb;
-}
-
-void getLinks(lxb_html_document_t* document, CURLU* url, URLNode_t** urls) {
+void getLinks(lxb_html_document_t* document, CURLU* url, URLNode_t** urls, URLNode_t** urls_done) {
 	lxb_status_t status;
 	lxb_dom_element_t *body = lxb_dom_interface_element(document->body);
 	if(body == NULL) {
@@ -45,22 +37,25 @@ void getLinks(lxb_html_document_t* document, CURLU* url, URLNode_t** urls) {
     }
 
     lxb_dom_element_t *element;
-	const lxb_char_t* val;
+	const lxb_char_t* foundURL;
+
+	char* path;
+	curl_url_get(url, CURLUPART_PATH, &path, 0); // keep path
     for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
         element = lxb_dom_collection_element(collection, i);
 
         lxb_dom_node_t* node = lxb_dom_interface_node(element);
-		val = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "href", 4, NULL); // try getting href
-		if(val == NULL) {
-			val = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "src", 3, NULL); // getting src otherwise
+		foundURL = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "href", 4, NULL); // try getting href
+		if(foundURL == NULL) {
+			foundURL = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "src", 3, NULL); // getting src otherwise
 		}
 
-		if(val[0] != '#' && findURLList(*urls, (char*)val) == 0) {
-			curl_url_set(url, CURLUPART_URL, (const char*)val, 0);
-			curl_url_get(url, CURLUPART_URL, (char**)(&val), 0);
-			printf("%s %i\n", (char*) val, findURLList(*urls, (char*)val));
-			pushURLList(urls, val);
-			curl_url_set(url, CURLUPART_URL, "../", 0);
+		if(foundURL[0] != '#' && findURLList(*urls_done, (char*)foundURL) == 0 && findURLList(*urls, (char*)foundURL) == 0) {
+			CURLU* newURL = curl_url();
+			curl_url_set(url, CURLUPART_URL, (const char*)foundURL, 0);
+			curl_url_get(url, CURLUPART_URL, (char**)(&foundURL), 0);
+			pushURLList(urls, (const char*)foundURL);
+			curl_url_set(url, CURLUPART_PATH, path, 0);
 		}
     }
 
@@ -69,64 +64,43 @@ void getLinks(lxb_html_document_t* document, CURLU* url, URLNode_t** urls) {
 
 int main(int argc, char* argv[]) {
 	URLNode_t* urls = NULL;
-	/*pushURLList(&urls, "https://www.wikipedia.org/");
-	pushURLList(&urls, "https://www.amazon.com/");
-	pushURLList(&urls, "https://www.google.com/");*/
+	URLNode_t* urls_done = NULL;
 	pushURLList(&urls, "http://127.0.0.1:8000");
 
 	DocumentNode_t* documents = NULL;
 
 	curl_global_init(CURL_GLOBAL_ALL);
-	CURL* curl;
-	CURLcode res;
 
-	lxb_status_t status;
-	lxb_html_document_t* document;
+	struct ListsThreads lists;
+	lists.documents = &documents;
+	lists.urls = &urls;
 
-	curl = curl_easy_init();
-	if(!curl) {
-		fprintf(stderr, "curl_easy_init() failed: %s\n", curl_easy_strerror(res));
-		exit(EXIT_FAILURE);
-	}
-	curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS | CURLPROTO_HTTP);
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, processContent);
 
-	while(getURLListLength(urls) != 0) {
-		CURLU* url_u = popURLList(&urls);
-		char* url;
-		curl_url_get(url_u, CURLUPART_URL, &url, 0);
+	pthread_t fetcher_thread;
+	pthread_create(&fetcher_thread, NULL, fetcher_thread_func, (void*)&lists);
+	pthread_join(fetcher_thread, NULL);
 
-		printf("Doing: %s\n", url);
-
-		document = lxb_html_document_create();
+	struct Document* document;
+	while(1) {
+        pthread_mutex_lock(&mutexFetcher);
+		if(getDocumentListLength(documents) == 0) {
+			pthread_mutex_unlock(&mutexFetcher);
+			break;
+		}
+		document = popDocumentList(&documents);
 		if(document == NULL) {
-			fprintf(stderr, "lxb_html_document_create failed.");
+			break;
 		}
-		status = lxb_html_document_parse_chunk_begin(document);
-		CHECK_LXB(status)
+		getLinks(document->document, document->url, &urls, &urls_done);
+        pthread_mutex_unlock(&mutexFetcher);
 
-		curl_easy_setopt(curl, CURLOPT_URL, url);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)document);
-
-		// fetch
-		CHECK_LXB(status)
-
-		res = curl_easy_perform(curl);
-		if(res != CURLE_OK) {
-			fprintf(stderr, "curl_easy_perform failed: %s\n", curl_easy_strerror(res));
-			continue;
-		}
-
-		status = lxb_html_document_parse_chunk_end(document);
-		CHECK_LXB(status)
-		pushDocumentList(&documents, document, url);
-
-		struct Document* doc = popDocumentList(&documents);
-		getLinks(doc->document, doc->url, &urls);
-		lxb_html_document_destroy(document);
+		//pushURLList(&urls_done, document->url);
+		lxb_html_document_destroy(document->document);
+		free(document);
 	}
 
-	// destroy
-	curl_easy_cleanup(curl);
+	printURLList(urls);
+
+	curl_global_cleanup();
 	return EXIT_SUCCESS;
 }
