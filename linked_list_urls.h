@@ -12,13 +12,13 @@
 
 struct URLNode {
     struct URLNode* next;
-    CURLU* url;
+    char* url;
 };
 typedef struct URLNode URLNode_t;
 
-int pushURLList(URLNode_t** head, const char* url);
+int pushURLList(URLNode_t** head, char* url);
 
-CURLU* popURLList(URLNode_t** head);
+char* popURLList(URLNode_t** head);
 
 void printURLList(URLNode_t* head);
 

@@ -23,17 +23,14 @@ void* fetcher_thread_func(void* lists_arg) {
 	lxb_status_t status_l;
 	lxb_html_document_t* document;
     
-    char* url; // will hold the url to fetch
-
 	while(1) {
         pthread_mutex_lock(&mutexFetcher);
         if(getURLListLength(*urls) == 0) {
             pthread_mutex_unlock(&mutexFetcher);
             break;
         }
-		CURLU* url_u = popURLList(urls);
+		char* url = popURLList(urls);
         pthread_mutex_unlock(&mutexFetcher);
-		curl_url_get(url_u, CURLUPART_URL, &url, 0);
 
 		printf("Doing: %s\n", url);
 

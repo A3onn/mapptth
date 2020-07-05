@@ -13,7 +13,7 @@
 
 struct Document {
     lxb_html_document_t* document;
-    CURLU* url;
+    char* url;
 };
 
 struct DocumentNode {

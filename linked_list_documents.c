@@ -4,12 +4,7 @@ int pushDocumentList(DocumentNode_t** head, lxb_html_document_t* document, char*
     DocumentNode_t* newNode = (DocumentNode_t*) malloc(sizeof (DocumentNode_t));
     newNode->next = *head;
     newNode->document.document = document;
-    newNode->document.url = curl_url();
-    if(!newNode->document.url)
-        return 0;
-    if(curl_url_set(newNode->document.url, CURLUPART_URL, url, 0) == 1) {
-        return 0;
-    }
+    newNode->document.url = url;
     *head = newNode;
     return 1;
 }

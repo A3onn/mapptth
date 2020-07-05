@@ -11,7 +11,7 @@
 
 pthread_mutex_t mutexFetcher = PTHREAD_MUTEX_INITIALIZER;
 
-void getLinks(lxb_html_document_t* document, CURLU* url, URLNode_t** urls, URLNode_t** urls_done) {
+void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNode_t** urls_done) {
 	lxb_status_t status;
 	lxb_dom_element_t *body = lxb_dom_interface_element(document->body);
 	if(body == NULL) {
@@ -39,8 +39,10 @@ void getLinks(lxb_html_document_t* document, CURLU* url, URLNode_t** urls, URLNo
     lxb_dom_element_t *element;
 	const lxb_char_t* foundURL;
 
-	char* path;
-	curl_url_get(url, CURLUPART_PATH, &path, 0); // keep path
+	CURLU* url_c = curl_url(); // will hold the final url, coupled with urlFinal
+	curl_url_set(url_c, CURLUPART_URL, url, 0);
+
+	char* urlFinal; // will hold the url to push into the list
     for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
         element = lxb_dom_collection_element(collection, i);
 
@@ -51,11 +53,9 @@ void getLinks(lxb_html_document_t* document, CURLU* url, URLNode_t** urls, URLNo
 		}
 
 		if(foundURL[0] != '#' && findURLList(*urls_done, (char*)foundURL) == 0 && findURLList(*urls, (char*)foundURL) == 0) {
-			CURLU* newURL = curl_url();
-			curl_url_set(url, CURLUPART_URL, (const char*)foundURL, 0);
-			curl_url_get(url, CURLUPART_URL, (char**)(&foundURL), 0);
-			pushURLList(urls, (const char*)foundURL);
-			curl_url_set(url, CURLUPART_PATH, path, 0);
+			curl_url_set(url_c, CURLUPART_URL, foundURL, 0);
+			curl_url_get(url_c, CURLUPART_URL, &urlFinal, 0);
+			pushURLList(urls, urlFinal);
 		}
     }
 
@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
 		getLinks(document->document, document->url, &urls, &urls_done);
         pthread_mutex_unlock(&mutexFetcher);
 
-		//pushURLList(&urls_done, document->url);
+		pushURLList(&urls_done, document->url);
 		lxb_html_document_destroy(document->document);
 		free(document);
 	}
