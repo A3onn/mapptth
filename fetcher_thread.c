@@ -15,7 +15,8 @@ void* fetcher_thread_func(void* bundle_arg) {
     DocumentNode_t** documents = bundle->documents;
     URLNode_t** urls = bundle->urls;
 	pthread_mutex_t* mutex = bundle->mutex;
-	pthread_cond_t* cond = bundle->cond;
+
+	int* isRunning = bundle->isRunning;
 
 
 	CURLcode status_c;
@@ -28,11 +29,12 @@ void* fetcher_thread_func(void* bundle_arg) {
     
 	while(1) {
         pthread_mutex_lock(mutex);
-		int urlLength = getURLListLength(*urls);
-		if(urlLength == 0) {
+		if(getURLListLength(*urls) == 0) { // no url to fetch
+			*isRunning = 0; // change state
 			pthread_mutex_unlock(mutex);
 			continue;
 		}
+		*isRunning = 1;
 		char* url = popURLList(urls);
         pthread_mutex_unlock(mutex);
 
@@ -66,9 +68,8 @@ void* fetcher_thread_func(void* bundle_arg) {
 
         pthread_mutex_lock(mutex);
 		pushDocumentList(documents, document, url);
-        pthread_mutex_unlock(mutex);
 
-		pthread_cond_signal(cond); // send signal that a document has been parsed
+        pthread_mutex_unlock(mutex);
 	}
 	curl_easy_cleanup(curl);
 

@@ -9,6 +9,8 @@
 #include "linked_list_urls.h"
 #include "fetcher_thread.h"
 
+#define NBR_THREAD 2
+
 void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNode_t** urls_done) {
 	lxb_status_t status;
 	lxb_dom_element_t *body = lxb_dom_interface_element(document->body);
@@ -67,7 +69,7 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNod
 }
 
 int main(int argc, char* argv[]) {
-	pthread_t fetcher_thread;
+	pthread_t fetcher_threads[NBR_THREAD];
 	pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
@@ -79,32 +81,56 @@ int main(int argc, char* argv[]) {
 
 	curl_global_init(CURL_GLOBAL_ALL);
 
-	struct BundleVarsThread bundle;
-	bundle.documents = &documents;
-	bundle.urls = &urls;
-	bundle.mutex = &mutex;
-	bundle.cond = &cond;
 
-	pthread_create(&fetcher_thread, NULL, fetcher_thread_func, (void*)&bundle);
+	int* listRunningThreads = (int*) malloc(sizeof (int) * NBR_THREAD);
+	struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof (struct BundleVarsThread) * NBR_THREAD);
+	for(int i = 0; i < NBR_THREAD; i++) {
+		listRunningThreads[i] = 1;
+
+		bundles[i].documents = &documents;
+		bundles[i].urls = &urls;
+		bundles[i].mutex = &mutex;
+		bundles[i].isRunning = &(listRunningThreads[i]);
+		pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*)&(bundles[i]));
+	}
 
 	struct Document* document;
 	while(1) {
         pthread_mutex_lock(&mutex);
-		int docLength = getDocumentListLength(documents);
-		if(docLength == 0) {
-			pthread_cond_wait(&cond, &mutex);
+		if(getDocumentListLength(documents) == 0) { // no documents to parse
+			// if this thread has no document to parse and all threads are waiting for urls,
+			// then it means that everything was discovered and they should quit,
+			// otherwise just continue to check for something to do
+			int shouldQuit = 1;
+			for(int i = 0; i < NBR_THREAD; i++) { // check if all threads are running
+				if(listRunningThreads[i] == 1) { // if one is running
+					shouldQuit = 0; // should not quit
+					break; // don't need to check other threads
+				}
+			}
+			if(shouldQuit == 1 && getURLListLength(urls) == 0) { // if no threads are running and no urls to fetch left
+				// quit
+				for(int i = 0; i < NBR_THREAD; i++) { // stop all threads
+					pthread_cancel(fetcher_threads[i]);
+				}
+				break; // quit parsing
+			}
+			// if some thread(s) are running, just continue to check for a document to come
+			pthread_mutex_unlock(&mutex);
+			continue;
 		}
+
 		document = popDocumentList(&documents);
 
 		getLinks(document->document, document->url, &urls, &urls_done);
 
 		pushURLList(&urls_done, document->url);
-        pthread_mutex_unlock(&mutex);
+		pthread_mutex_unlock(&mutex);
 		lxb_html_document_destroy(document->document);
 		free(document);
 	}
 
-	printURLList(urls);
+	printURLList(urls_done);
 
 	curl_global_cleanup();
 	return EXIT_SUCCESS;

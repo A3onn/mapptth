@@ -16,9 +16,10 @@
 struct BundleVarsThread { // used to needed variables to the thread
     DocumentNode_t** documents; // list of documents to populate
     URLNode_t** urls; // list of URLS to fetch
-    // pthread related
+
     pthread_mutex_t* mutex;
-    pthread_cond_t* cond;
+
+    int* isRunning; // let know the main thread if the thread is fetching something
 };
 
 void* fetcher_thread_func(void* bundle_arg);
