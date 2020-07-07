@@ -41,6 +41,8 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNod
 
 	CURLU* url_c = curl_url(); // will hold the final url, coupled with urlFinal
 	curl_url_set(url_c, CURLUPART_URL, url, 0);
+	char* documentDomain;
+	curl_url_get(url_c, CURLUPART_HOST, &documentDomain, 0);
 
 	char* urlFinal; // will hold the url to push into the list
     for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
@@ -54,16 +56,19 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNod
 
 		if(foundURL[0] != '#') { // if this is not a fragment of the same page
 			// set url
-			curl_url_set(url_c, CURLUPART_URL, foundURL, 0);
+			curl_url_set(url_c, CURLUPART_URL, (char*)foundURL, 0);
 			curl_url_get(url_c, CURLUPART_URL, &urlFinal, 0);
-		}
 
-		pthread_mutex_lock(mutex);
-		if(findURLList(*urls_done, urlFinal) == 0 && findURLList(*urls, urlFinal) == 0) {
-			// add url to the list
-			pushURLList(urls, urlFinal);
+			char* foundURLDomain;
+			curl_url_get(url_c, CURLUPART_HOST, &foundURLDomain, 0);
+
+			pthread_mutex_lock(mutex);
+			if(findURLList(*urls_done, urlFinal) == 0 && findURLList(*urls, urlFinal) == 0 && strcmp(foundURLDomain, documentDomain) == 0) {
+				// add url to the list
+				pushURLList(urls, urlFinal);
+			}
+			pthread_mutex_unlock(mutex);
 		}
-		pthread_mutex_unlock(mutex);
 
 		// reset CURLU instance by re-setting the url
 		curl_url_set(url_c, CURLUPART_URL, url, 0);

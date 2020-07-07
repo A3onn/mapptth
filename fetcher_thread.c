@@ -38,6 +38,8 @@ void* fetcher_thread_func(void* bundle_arg) {
 		char* url = popURLList(urls);
         pthread_mutex_unlock(mutex);
 
+		printf("Doing: %s\n", url);
+
 		document = lxb_html_document_create();
 		if(document == NULL) {
 			fprintf(stderr, "lxb_html_document_create failed.");
