@@ -11,7 +11,7 @@
 
 #define NBR_THREAD 2
 
-void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNode_t** urls_done) {
+void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNode_t** urls_done, pthread_mutex_t* mutex) {
 	lxb_status_t status;
 	lxb_dom_element_t *body = lxb_dom_interface_element(document->body);
 	if(body == NULL) {
@@ -57,10 +57,14 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNod
 			curl_url_set(url_c, CURLUPART_URL, foundURL, 0);
 			curl_url_get(url_c, CURLUPART_URL, &urlFinal, 0);
 		}
+
+		pthread_mutex_lock(mutex);
 		if(findURLList(*urls_done, urlFinal) == 0 && findURLList(*urls, urlFinal) == 0) {
 			// add url to the list
 			pushURLList(urls, urlFinal);
 		}
+		pthread_mutex_unlock(mutex);
+
 		// reset CURLU instance by re-setting the url
 		curl_url_set(url_c, CURLUPART_URL, url, 0);
     }
@@ -121,16 +125,30 @@ int main(int argc, char* argv[]) {
 		}
 
 		document = popDocumentList(&documents);
+		pthread_mutex_unlock(&mutex);
 
-		getLinks(document->document, document->url, &urls, &urls_done);
+		getLinks(document->document, document->url, &urls, &urls_done, &mutex);
 
+		pthread_mutex_lock(&mutex);
 		pushURLList(&urls_done, document->url);
 		pthread_mutex_unlock(&mutex);
 		lxb_html_document_destroy(document->document);
 		free(document);
 	}
 
-	printURLList(urls_done);
+	printf("Got: %i\n", getURLListLength(urls_done));
+
+	free(bundles);
+	free(listRunningThreads);
+
+	while(getURLListLength(urls_done) != 1) { // all urls are allocated by curl when parsing url, except the initial url
+		char* url_done = popURLList(&urls_done);
+		printf("%s\n", url_done);
+		free(url_done);
+	}
+
+	char* url_done = popURLList(&urls_done);
+	printf("Initial url: %s\n", url_done);
 
 	curl_global_cleanup();
 	return EXIT_SUCCESS;
