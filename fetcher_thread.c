@@ -13,9 +13,8 @@ static size_t processContent(const char* content, size_t size, size_t nmemb, voi
 void* fetcher_thread_func(void* bundle_arg) {
     struct BundleVarsThread* bundle = (struct BundleVarsThread*) bundle_arg;
     DocumentNode_t** documents = bundle->documents;
-    URLNode_t** urls = bundle->urls;
+    URLNode_t** urls_todo = bundle->urls_todo;
 	pthread_mutex_t* mutex = bundle->mutex;
-
 	int* isRunning = bundle->isRunning;
 
 
@@ -25,37 +24,38 @@ void* fetcher_thread_func(void* bundle_arg) {
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, processContent);
 
 	lxb_status_t status_l;
-	lxb_html_document_t* document;
+	lxb_html_document_t* currentDocument;
+	char* currentURL;
     
 	while(1) {
         pthread_mutex_lock(mutex);
-		if(getURLListLength(*urls) == 0) { // no url to fetch
+		if(getURLListLength(*urls_todo) == 0) { // no url to fetch
 			*isRunning = 0; // change state
 			pthread_mutex_unlock(mutex);
 			continue;
 		}
 		*isRunning = 1;
-		char* url = popURLList(urls);
+		currentURL = popURLList(urls_todo);
         pthread_mutex_unlock(mutex);
 
-		printf("Doing: %s\n", url);
+		printf("Doing: %s\n", currentURL);
 
-		document = lxb_html_document_create();
-		if(document == NULL) {
+		currentDocument = lxb_html_document_create();
+		if(currentDocument == NULL) {
 			fprintf(stderr, "lxb_html_document_create failed.");
 		}
 
-		status_c = curl_easy_setopt(curl, CURLOPT_URL, url);
+		status_c = curl_easy_setopt(curl, CURLOPT_URL, currentURL);
 		if(status_c != CURLE_OK) {
 			fprintf(stderr, "curl_easy_setopt failed: %s\n", curl_easy_strerror(status_c));
 		}
-		status_c = curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)document);
+		status_c = curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)currentDocument);
 		if(status_c != CURLE_OK) {
 			fprintf(stderr, "curl_easy_setopt failed: %s\n", curl_easy_strerror(status_c));
 		}
 
 		// fetch
-		status_l = lxb_html_document_parse_chunk_begin(document);
+		status_l = lxb_html_document_parse_chunk_begin(currentDocument);
 		CHECK_LXB(status_l)
 
 		status_c = curl_easy_perform(curl);
@@ -63,12 +63,11 @@ void* fetcher_thread_func(void* bundle_arg) {
 			fprintf(stderr, "curl_easy_perform failed: %s\n", curl_easy_strerror(status_c));
 		}
 
-		status_l = lxb_html_document_parse_chunk_end(document);
+		status_l = lxb_html_document_parse_chunk_end(currentDocument);
 		CHECK_LXB(status_l)
 
         pthread_mutex_lock(mutex);
-		pushDocumentList(documents, document, url);
-
+		pushDocumentList(documents, currentDocument, currentURL);
         pthread_mutex_unlock(mutex);
 	}
 	curl_easy_cleanup(curl);

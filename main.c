@@ -11,7 +11,7 @@
 
 #define NBR_THREAD 2
 
-void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNode_t** urls_done, pthread_mutex_t* mutex) {
+void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, URLNode_t** urls_done, pthread_mutex_t* mutex) {
 	lxb_status_t status;
 	lxb_dom_element_t *body = lxb_dom_interface_element(document->body);
 	if(body == NULL) {
@@ -36,15 +36,16 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNod
 		return ;
     }
 
+	CURLU* baseURL = curl_url(); // will hold the final url, coupled with urlFinal
+	curl_url_set(baseURL, CURLUPART_URL, url, 0);
+
+	char* documentDomain; // domain of this document, used when checking domains
+	curl_url_get(baseURL, CURLUPART_HOST, &documentDomain, 0);
+
     lxb_dom_element_t *element;
 	const lxb_char_t* foundURL;
-
-	CURLU* url_c = curl_url(); // will hold the final url, coupled with urlFinal
-	curl_url_set(url_c, CURLUPART_URL, url, 0);
-	char* documentDomain;
-	curl_url_get(url_c, CURLUPART_HOST, &documentDomain, 0);
-
 	char* urlFinal; // will hold the url to push into the list
+	char* foundURLDomain; // domain of the url found
     for (size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
         element = lxb_dom_collection_element(collection, i);
 
@@ -56,22 +57,21 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNod
 
 		if(foundURL[0] != '#') { // if this is not a fragment of the same page
 			// set url
-			curl_url_set(url_c, CURLUPART_URL, (char*)foundURL, 0);
-			curl_url_get(url_c, CURLUPART_URL, &urlFinal, 0);
+			curl_url_set(baseURL, CURLUPART_URL, (char*)foundURL, 0); // curl will change the url accordingly
+			curl_url_get(baseURL, CURLUPART_URL, &urlFinal, 0); // get final url
 
-			char* foundURLDomain;
-			curl_url_get(url_c, CURLUPART_HOST, &foundURLDomain, 0);
+			curl_url_get(baseURL, CURLUPART_HOST, &foundURLDomain, 0); // get the domain of the URL
 
 			pthread_mutex_lock(mutex);
-			if(findURLList(*urls_done, urlFinal) == 0 && findURLList(*urls, urlFinal) == 0 && strcmp(foundURLDomain, documentDomain) == 0) {
+			if(!findURLList(*urls_done, urlFinal) && !findURLList(*urls_todo, urlFinal) && !strcmp(foundURLDomain, documentDomain)) {
 				// add url to the list
-				pushURLList(urls, urlFinal);
+				pushURLList(urls_todo, urlFinal);
 			}
 			pthread_mutex_unlock(mutex);
 		}
 
-		// reset CURLU instance by re-setting the url
-		curl_url_set(url_c, CURLUPART_URL, url, 0);
+		// re-set base URL because it was modified
+		curl_url_set(baseURL, CURLUPART_URL, url, 0);
     }
 
 	lxb_dom_collection_destroy(collection, true);
@@ -80,13 +80,12 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls, URLNod
 int main(int argc, char* argv[]) {
 	pthread_t fetcher_threads[NBR_THREAD];
 	pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-	pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-
-	URLNode_t* urls = NULL;
-	URLNode_t* urls_done = NULL;
-	pushURLList(&urls, "http://127.0.0.1:8000");
 
 	DocumentNode_t* documents = NULL;
+
+	URLNode_t* urls_todo = NULL;
+	URLNode_t* urls_done = NULL;
+	pushURLList(&urls_todo, argv[1]);
 
 	curl_global_init(CURL_GLOBAL_ALL);
 
@@ -97,13 +96,13 @@ int main(int argc, char* argv[]) {
 		listRunningThreads[i] = 1;
 
 		bundles[i].documents = &documents;
-		bundles[i].urls = &urls;
+		bundles[i].urls_todo = &urls_todo;
 		bundles[i].mutex = &mutex;
 		bundles[i].isRunning = &(listRunningThreads[i]);
 		pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*)&(bundles[i]));
 	}
 
-	struct Document* document;
+	struct Document* currentDocument;
 	while(1) {
         pthread_mutex_lock(&mutex);
 		if(getDocumentListLength(documents) == 0) { // no documents to parse
@@ -117,7 +116,7 @@ int main(int argc, char* argv[]) {
 					break; // don't need to check other threads
 				}
 			}
-			if(shouldQuit == 1 && getURLListLength(urls) == 0) { // if no threads are running and no urls to fetch left
+			if(shouldQuit == 1 && getURLListLength(urls_todo) == 0) { // if no threads are running and no urls to fetch left
 				// quit
 				for(int i = 0; i < NBR_THREAD; i++) { // stop all threads
 					pthread_cancel(fetcher_threads[i]);
@@ -129,16 +128,16 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 
-		document = popDocumentList(&documents);
+		currentDocument = popDocumentList(&documents);
 		pthread_mutex_unlock(&mutex);
 
-		getLinks(document->document, document->url, &urls, &urls_done, &mutex);
+		getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex);
 
 		pthread_mutex_lock(&mutex);
-		pushURLList(&urls_done, document->url);
+		pushURLList(&urls_done, currentDocument->url);
 		pthread_mutex_unlock(&mutex);
-		lxb_html_document_destroy(document->document);
-		free(document);
+		lxb_html_document_destroy(currentDocument->document);
+		free(currentDocument);
 	}
 
 	printf("Got: %i\n", getURLListLength(urls_done));
@@ -152,6 +151,7 @@ int main(int argc, char* argv[]) {
 		free(url_done);
 	}
 
+	// last URL in urls_done is the initial URL
 	char* url_done = popURLList(&urls_done);
 	printf("Initial url: %s\n", url_done);
 
