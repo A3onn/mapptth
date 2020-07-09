@@ -27,6 +27,7 @@ void* fetcher_thread_func(void* bundle_arg) {
 	lxb_status_t status_l;
 	lxb_html_document_t* currentDocument;
 	char* currentURL;
+	long status_code_http;
     
 	while(1) {
         pthread_mutex_lock(mutex);
@@ -39,8 +40,6 @@ void* fetcher_thread_func(void* bundle_arg) {
 		currentURL = popURLList(urls_todo);
 		pushURLList(urls_done, currentURL);
         pthread_mutex_unlock(mutex);
-
-		printf("Doing: %s\n", currentURL);
 
 		currentDocument = lxb_html_document_create();
 		if(currentDocument == NULL) {
@@ -68,8 +67,13 @@ void* fetcher_thread_func(void* bundle_arg) {
 		status_l = lxb_html_document_parse_chunk_end(currentDocument);
 		CHECK_LXB(status_l)
 
+		status_c = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code_http);
+		if(status_c != CURLE_OK) {
+			fprintf(stderr, "curl_easy_getinfo failed: %s\n", curl_easy_strerror(status_c));
+		}
+
         pthread_mutex_lock(mutex);
-		pushDocumentList(documents, currentDocument, currentURL);
+		pushDocumentList(documents, currentDocument, currentURL, status_code_http);
         pthread_mutex_unlock(mutex);
 	}
 	curl_easy_cleanup(curl);

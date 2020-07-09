@@ -14,6 +14,7 @@
 struct Document {
     lxb_html_document_t* document;
     char* url;
+    long status_code_http;
 };
 
 struct DocumentNode {
@@ -22,7 +23,7 @@ struct DocumentNode {
 };
 typedef struct DocumentNode DocumentNode_t;
 
-int pushDocumentList(DocumentNode_t** head, lxb_html_document_t* document, char* url);
+int pushDocumentList(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code);
 
 struct Document* popDocumentList(DocumentNode_t** head);
 

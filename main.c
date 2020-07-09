@@ -134,24 +134,20 @@ int main(int argc, char* argv[]) {
 
 		getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex);
 
+		printf("%s (%lu)\n", currentDocument->url, currentDocument->status_code_http);
+
 		lxb_html_document_destroy(currentDocument->document);
 		free(currentDocument);
 	}
 
-	printf("Got: %i\n", getURLListLength(urls_done));
-
+	// CLEANUP
 	free(bundles);
 	free(listRunningThreads);
 
 	while(getURLListLength(urls_done) != 1) { // all urls are allocated by curl when parsing url, except the initial url
 		char* url_done = popURLList(&urls_done);
-		printf("%s\n", url_done);
 		free(url_done);
 	}
-
-	// last URL in urls_done is the initial URL
-	char* url_done = popURLList(&urls_done);
-	printf("Initial url: %s\n", url_done);
 
 	curl_global_cleanup();
 	return EXIT_SUCCESS;
