@@ -55,9 +55,11 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, U
 			foundURL = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "src", 3, NULL); // getting src otherwise
 		}
 
-		if(foundURL[0] != '#') { // if this is not a fragment of the same page
+		if(foundURL[0] != '#' && strstr(foundURL, "mailto:") != (char*)foundURL && strstr(foundURL, "tel:") != (char*)foundURL) { // if this is not a fragment of the same page, a mailto: or a tel: url
 			// set url
 			curl_url_set(baseURL, CURLUPART_URL, (char*)foundURL, 0); // curl will change the url accordingly
+			curl_url_set(baseURL, CURLUPART_FRAGMENT, NULL, 0); // remove fragment
+
 			curl_url_get(baseURL, CURLUPART_URL, &urlFinal, 0); // get final url
 
 			curl_url_get(baseURL, CURLUPART_HOST, &foundURLDomain, 0); // get the domain of the URL
