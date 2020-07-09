@@ -16,6 +16,7 @@
 struct BundleVarsThread { // used to needed variables to the thread
     DocumentNode_t** documents; // list of documents to populate
     URLNode_t** urls_todo; // list of URLS to fetch
+    URLNode_t** urls_done; // list of URLS fetched
 
     pthread_mutex_t* mutex;
 

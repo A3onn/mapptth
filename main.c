@@ -97,6 +97,7 @@ int main(int argc, char* argv[]) {
 
 		bundles[i].documents = &documents;
 		bundles[i].urls_todo = &urls_todo;
+		bundles[i].urls_done = &urls_done;
 		bundles[i].mutex = &mutex;
 		bundles[i].isRunning = &(listRunningThreads[i]);
 		pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*)&(bundles[i]));
@@ -133,9 +134,6 @@ int main(int argc, char* argv[]) {
 
 		getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex);
 
-		pthread_mutex_lock(&mutex);
-		pushURLList(&urls_done, currentDocument->url);
-		pthread_mutex_unlock(&mutex);
 		lxb_html_document_destroy(currentDocument->document);
 		free(currentDocument);
 	}

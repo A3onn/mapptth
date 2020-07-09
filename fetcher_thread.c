@@ -14,6 +14,7 @@ void* fetcher_thread_func(void* bundle_arg) {
     struct BundleVarsThread* bundle = (struct BundleVarsThread*) bundle_arg;
     DocumentNode_t** documents = bundle->documents;
     URLNode_t** urls_todo = bundle->urls_todo;
+    URLNode_t** urls_done = bundle->urls_done;
 	pthread_mutex_t* mutex = bundle->mutex;
 	int* isRunning = bundle->isRunning;
 
@@ -36,6 +37,7 @@ void* fetcher_thread_func(void* bundle_arg) {
 		}
 		*isRunning = 1;
 		currentURL = popURLList(urls_todo);
+		pushURLList(urls_done, currentURL);
         pthread_mutex_unlock(mutex);
 
 		printf("Doing: %s\n", currentURL);
