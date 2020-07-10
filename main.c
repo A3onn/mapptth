@@ -10,6 +10,8 @@
 #include "fetcher_thread.h"
 
 #define NBR_THREAD 2
+#define MAX_RETRIES 3
+#define TIMEOUT 4
 
 void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, URLNode_t** urls_done, pthread_mutex_t* mutex) {
 	lxb_status_t status;
@@ -53,6 +55,9 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, U
 		foundURL = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "href", 4, NULL); // try getting href
 		if(foundURL == NULL) {
 			foundURL = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "src", 3, NULL); // getting src otherwise
+			if(foundURL == NULL) { // should not happend
+				continue;
+			}
 		}
 
 		if(foundURL[0] != '#' && strstr(foundURL, "mailto:") != (char*)foundURL && strstr(foundURL, "tel:") != (char*)foundURL) { // if this is not a fragment of the same page, a mailto: or a tel: url
@@ -102,6 +107,8 @@ int main(int argc, char* argv[]) {
 		bundles[i].urls_done = &urls_done;
 		bundles[i].mutex = &mutex;
 		bundles[i].isRunning = &(listRunningThreads[i]);
+		bundles[i].maxRetries = MAX_RETRIES;
+		bundles[i].timeout = TIMEOUT;
 		pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*)&(bundles[i]));
 	}
 

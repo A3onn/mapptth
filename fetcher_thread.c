@@ -17,12 +17,15 @@ void* fetcher_thread_func(void* bundle_arg) {
     URLNode_t** urls_done = bundle->urls_done;
 	pthread_mutex_t* mutex = bundle->mutex;
 	int* isRunning = bundle->isRunning;
+	int maxRetries = bundle->maxRetries;
+	int timeout = bundle->timeout;
 
 
 	CURLcode status_c;
 	CURL* curl = curl_easy_init();
 	curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS | CURLPROTO_HTTP);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, processContent);
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
 
 	lxb_status_t status_l;
 	lxb_html_document_t* currentDocument;
@@ -59,9 +62,14 @@ void* fetcher_thread_func(void* bundle_arg) {
 		status_l = lxb_html_document_parse_chunk_begin(currentDocument);
 		CHECK_LXB(status_l)
 
-		status_c = curl_easy_perform(curl);
+		int countRetries = 0;
+		do {
+			status_c = curl_easy_perform(curl);
+			countRetries += 1;
+		} while(countRetries < maxRetries && status_c != CURLE_OK);
 		if(status_c != CURLE_OK) {
-			fprintf(stderr, "curl_easy_perform failed: %s\n", curl_easy_strerror(status_c));
+			fprintf(stderr, "Max retries exceeded for %s. %s.\n", currentURL, curl_easy_strerror(status_c));
+			continue;
 		}
 
 		status_l = lxb_html_document_parse_chunk_end(currentDocument);

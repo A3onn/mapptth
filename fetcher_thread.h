@@ -21,6 +21,9 @@ struct BundleVarsThread { // used to needed variables to the thread
     pthread_mutex_t* mutex;
 
     int* isRunning; // let know the main thread if the thread is fetching something
+
+    int maxRetries;
+    int timeout;
 };
 
 void* fetcher_thread_func(void* bundle_arg);
