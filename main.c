@@ -15,15 +15,35 @@
 
 void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, URLNode_t** urls_done, pthread_mutex_t* mutex) {
     lxb_status_t status;
-    lxb_dom_element_t* body = lxb_dom_interface_element(document->body);
-    if(body == NULL) {
-        fprintf(stderr, "lxb_dom_interface_element failed.");
-        return;
-    }
 
     lxb_dom_collection_t* collection = lxb_dom_collection_make(&document->dom_document, 16);
     if(collection == NULL) {
         fprintf(stderr, "lxb_dom_collection_make(&document->dom_document, 16) failed.");
+        return;
+    }
+
+    // HEAD
+    lxb_dom_element_t* head = lxb_dom_interface_element(document->head);
+    if(head == NULL) {
+        fprintf(stderr, "lxb_dom_interface_element failed.");
+        return;
+    }
+
+    status = lxb_dom_elements_by_attr_contain(head, collection, (const lxb_char_t*) "href", 4, NULL, 0, true);
+    if(status != LXB_STATUS_OK) {
+        fprintf(stderr, "lxb_dom_elements_by_attr_contain failed.");
+        return;
+    }
+    status = lxb_dom_elements_by_attr_contain(head, collection, (const lxb_char_t*) "src", 3, NULL, 0, true);
+    if(status != LXB_STATUS_OK) {
+        fprintf(stderr, "lxb_dom_elements_by_attr_contain failed.");
+        return;
+    }
+
+    // BODY
+    lxb_dom_element_t* body = lxb_dom_interface_element(document->body);
+    if(body == NULL) {
+        fprintf(stderr, "lxb_dom_interface_element failed.");
         return;
     }
 
@@ -140,9 +160,9 @@ int main(int argc, char* argv[]) {
         currentDocument = popDocumentList(&documents);
         pthread_mutex_unlock(&mutex);
 
-        getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex);
-
         printf("%s (%lu)\n", currentDocument->url, currentDocument->status_code_http);
+
+        getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex);
 
         lxb_html_document_destroy(currentDocument->document);
         free(currentDocument);
