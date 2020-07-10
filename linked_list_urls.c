@@ -1,11 +1,10 @@
 #include "linked_list_urls.h"
 
-int pushURLList(URLNode_t** head, char* url) {
+void pushURLList(URLNode_t** head, char* url) {
     URLNode_t* newNode = (URLNode_t*) malloc(sizeof (URLNode_t));
     newNode->next = *head;
     newNode->url = url;
     *head = newNode;
-    return 1;
 }
 
 char* popURLList(URLNode_t** head) {

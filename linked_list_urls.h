@@ -16,7 +16,7 @@ struct URLNode {
 };
 typedef struct URLNode URLNode_t;
 
-int pushURLList(URLNode_t** head, char* url);
+void pushURLList(URLNode_t** head, char* url);
 
 char* popURLList(URLNode_t** head);
 
