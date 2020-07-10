@@ -12,6 +12,7 @@
 #define NBR_THREAD 2
 #define MAX_RETRIES 3
 #define TIMEOUT 4
+#define MAX_FILE_SIZE 1 << 24  // in bytes
 
 void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, URLNode_t** urls_done, pthread_mutex_t* mutex) {
     lxb_status_t status;
@@ -128,6 +129,7 @@ int main(int argc, char* argv[]) {
         bundles[i].isRunning = &(listRunningThreads[i]);
         bundles[i].maxRetries = MAX_RETRIES;
         bundles[i].timeout = TIMEOUT;
+        bundles[i].maxFileSize = MAX_FILE_SIZE;
         pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*) &(bundles[i]));
     }
 

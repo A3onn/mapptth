@@ -18,12 +18,14 @@ void* fetcher_thread_func(void* bundle_arg) {
     int* isRunning = bundle->isRunning;
     int maxRetries = bundle->maxRetries;
     int timeout = bundle->timeout;
+    int maxFileSize = bundle->maxFileSize;
 
     CURLcode status_c;
     CURL* curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS | CURLPROTO_HTTP);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, processContent);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
+    curl_easy_setopt(curl, CURLOPT_MAXFILESIZE, maxFileSize);
 
     lxb_status_t status_l;
     lxb_html_document_t* currentDocument;
