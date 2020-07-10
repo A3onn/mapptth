@@ -53,3 +53,5 @@ dkms.conf
 
 lexbor/
 main
+.vscode/settings.json
+.clang-format

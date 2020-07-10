@@ -1,7 +1,7 @@
 #include "linked_list_documents.h"
 
 void pushDocumentList(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code_http) {
-    DocumentNode_t* newNode = (DocumentNode_t*) malloc(sizeof (DocumentNode_t));
+    DocumentNode_t* newNode = (DocumentNode_t*) malloc(sizeof(DocumentNode_t));
     newNode->next = *head;
     newNode->document.document = document;
     newNode->document.url = url;
@@ -15,7 +15,7 @@ struct Document* popDocumentList(DocumentNode_t** head) {
         return NULL;
     }
     *head = tmp->next;
-    struct Document* res = (struct Document*) malloc(sizeof (struct Document));
+    struct Document* res = (struct Document*) malloc(sizeof(struct Document));
     res->document = tmp->document.document;
     res->url = tmp->document.url;
     res->status_code_http = tmp->document.status_code_http;
@@ -31,7 +31,9 @@ int getDocumentListLength(DocumentNode_t* head) {
     }
 
     int res = 0;
-    for(; tmp != NULL; tmp = tmp->next){res++;}
+    for(; tmp != NULL; tmp = tmp->next) {
+        res++;
+    }
 
     return res;
 }

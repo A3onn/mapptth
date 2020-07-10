@@ -1,10 +1,10 @@
 #ifndef LINKED_LIST_URLS_H
 #define LINKED_LIST_URLS_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <curl/curl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #if !CURL_AT_LEAST_VERSION(7, 62, 0)
 #error "this example requires curl 7.62.0 or later"

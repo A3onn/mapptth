@@ -1,7 +1,7 @@
 #include "linked_list_urls.h"
 
 void pushURLList(URLNode_t** head, char* url) {
-    URLNode_t* newNode = (URLNode_t*) malloc(sizeof (URLNode_t));
+    URLNode_t* newNode = (URLNode_t*) malloc(sizeof(URLNode_t));
     newNode->next = *head;
     newNode->url = url;
     *head = newNode;
@@ -26,7 +26,9 @@ int getURLListLength(URLNode_t* head) {
     }
 
     int res = 0;
-    for(; tmp != NULL; tmp = tmp->next){res++;}
+    for(; tmp != NULL; tmp = tmp->next) {
+        res++;
+    }
 
     return res;
 }
@@ -37,7 +39,7 @@ int findURLList(URLNode_t* head, char* url) {
         return 0;
     }
 
-    for(; tmp != NULL; tmp = tmp->next){
+    for(; tmp != NULL; tmp = tmp->next) {
         if(strcmp(tmp->url, url) == 0) {
             return 1;
         }
