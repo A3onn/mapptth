@@ -14,6 +14,21 @@
 #define TIMEOUT 4
 #define MAX_FILE_SIZE 1 << 24  // in bytes
 
+
+int canBeAdded(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
+    // Just check if a given url has already been seen.
+    // Could just be:
+    //  return !findURLList(*urls_done, urlFinal) && !findURLList(*urls_done, urlFinal)
+    // but it would be longer as both findURLList are called every time
+    if(findURLList(urls_done, url)) {
+        return 0;
+    }
+    if(findURLList(urls_todo, url)) {
+        return 0;
+    }
+    return 1;
+}
+
 void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, URLNode_t** urls_done, pthread_mutex_t* mutex) {
     lxb_status_t status;
 
@@ -91,7 +106,7 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, U
             curl_url_get(baseURL, CURLUPART_HOST, &foundURLDomain, 0);  // get the domain of the URL
 
             pthread_mutex_lock(mutex);
-            if(!findURLList(*urls_done, urlFinal) && !findURLList(*urls_todo, urlFinal) && !strcmp(foundURLDomain, documentDomain)) {
+            if(canBeAdded(urlFinal, *urls_done, *urls_todo) && !strcmp(foundURLDomain, documentDomain)) {
                 // add url to the list
                 pushURLList(urls_todo, urlFinal);
             }
@@ -164,12 +179,20 @@ int main(int argc, char* argv[]) {
 
         printf("%s (%lu) %s\n", currentDocument->url, currentDocument->status_code_http, currentDocument->content_type);
 
-        if(currentDocument->content_type != NULL) { // sometime, the server doesn't send a content-type header
+        if(currentDocument->content_type != NULL) { // sometimes, the server doesn't send a content-type header
             if(strstr(currentDocument->content_type, "text/html")) {
                 getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex);
             }
             free(currentDocument->content_type); // allocated by strdup
         } // maybe check using libmagick if this is a html file if the server didn't specified it
+
+        if(currentDocument->redirect_location != NULL) {
+            pthread_mutex_lock(&mutex);
+            if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo)) {
+                pushURLList(&urls_todo, currentDocument->redirect_location);
+            }
+            pthread_mutex_unlock(&mutex);
+        }
 
         lxb_html_document_destroy(currentDocument->document);
         free(currentDocument);

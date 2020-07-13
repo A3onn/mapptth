@@ -31,6 +31,7 @@ void* fetcher_thread_func(void* bundle_arg) {
     lxb_html_document_t* currentDocument;
     char* currentURL;
     char* content_type;
+    char* redirect_location;
     long status_code_http;
 
     while(1) {
@@ -88,8 +89,13 @@ void* fetcher_thread_func(void* bundle_arg) {
             content_type = strdup(content_type);
         }
 
+        curl_easy_getinfo(curl, CURLINFO_REDIRECT_URL, &redirect_location);
+        if(redirect_location != NULL) { // if there is a location header
+            redirect_location = strdup(redirect_location);
+        }
+
         pthread_mutex_lock(mutex);
-        pushDocumentList(documents, currentDocument, currentURL, status_code_http, content_type);
+        pushDocumentList(documents, currentDocument, currentURL, status_code_http, content_type, redirect_location);
         pthread_mutex_unlock(mutex);
         content_type = NULL;
     }
