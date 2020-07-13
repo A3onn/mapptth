@@ -1,11 +1,12 @@
 #include "linked_list_documents.h"
 
-void pushDocumentList(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code_http) {
+void pushDocumentList(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code_http, char* content_type) {
     DocumentNode_t* newNode = (DocumentNode_t*) malloc(sizeof(DocumentNode_t));
     newNode->next = *head;
     newNode->document.document = document;
     newNode->document.url = url;
     newNode->document.status_code_http = status_code_http;
+    newNode->document.content_type = content_type;
     *head = newNode;
 }
 
@@ -19,6 +20,7 @@ struct Document* popDocumentList(DocumentNode_t** head) {
     res->document = tmp->document.document;
     res->url = tmp->document.url;
     res->status_code_http = tmp->document.status_code_http;
+    res->content_type = tmp->document.content_type;
     free(tmp);
     tmp = NULL;
     return res;

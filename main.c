@@ -162,9 +162,14 @@ int main(int argc, char* argv[]) {
         currentDocument = popDocumentList(&documents);
         pthread_mutex_unlock(&mutex);
 
-        printf("%s (%lu)\n", currentDocument->url, currentDocument->status_code_http);
+        printf("%s (%lu) %s\n", currentDocument->url, currentDocument->status_code_http, currentDocument->content_type);
 
-        getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex);
+        if(currentDocument->content_type != NULL) { // sometime, the server doesn't send a content-type header
+            if(strstr(currentDocument->content_type, "text/html")) {
+                getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex);
+            }
+            free(currentDocument->content_type); // allocated by strdup
+        } // maybe check using libmagick if this is a html file if the server didn't specified it
 
         lxb_html_document_destroy(currentDocument->document);
         free(currentDocument);

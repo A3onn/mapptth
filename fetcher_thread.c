@@ -30,6 +30,7 @@ void* fetcher_thread_func(void* bundle_arg) {
     lxb_status_t status_l;
     lxb_html_document_t* currentDocument;
     char* currentURL;
+    char* content_type;
     long status_code_http;
 
     while(1) {
@@ -80,9 +81,17 @@ void* fetcher_thread_func(void* bundle_arg) {
             fprintf(stderr, "curl_easy_getinfo failed: %s\n", curl_easy_strerror(status_c));
         }
 
+        curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &content_type);
+        if(content_type != NULL) {
+            // content_type is pointing to curl's private memory
+            // and it's value will change when another curl_easy_perform will occur.
+            content_type = strdup(content_type);
+        }
+
         pthread_mutex_lock(mutex);
-        pushDocumentList(documents, currentDocument, currentURL, status_code_http);
+        pushDocumentList(documents, currentDocument, currentURL, status_code_http, content_type);
         pthread_mutex_unlock(mutex);
+        content_type = NULL;
     }
     curl_easy_cleanup(curl);
 
