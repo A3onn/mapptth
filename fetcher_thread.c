@@ -71,6 +71,8 @@ void* fetcher_thread_func(void* bundle_arg) {
         } while(countRetries < maxRetries && status_c != CURLE_OK);
         if(status_c != CURLE_OK) {
             fprintf(stderr, "Max retries exceeded for %s. %s.\n", currentURL, curl_easy_strerror(status_c));
+            lxb_html_document_parse_chunk_end(currentDocument);
+            lxb_html_document_destroy(currentDocument);
             continue;
         }
 
