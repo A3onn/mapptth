@@ -14,7 +14,6 @@
 #define TIMEOUT 4
 #define MAX_FILE_SIZE 1 << 24  // in bytes
 
-
 int canBeAdded(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
     // Just check if a given url has already been seen.
     // Could just be:
@@ -132,6 +131,16 @@ int main(int argc, char* argv[]) {
 
     curl_global_init(CURL_GLOBAL_ALL);
 
+    CURLSH* curl_share = curl_share_init();
+    if(curl_share == NULL) {
+        fprintf(stderr, "curl_share_init() failed. Quitting...");
+        curl_global_cleanup();
+        return 1;
+    }
+    curl_share_setopt(curl_share, CURLSHOPT_SHARE, CURL_LOCK_DATA_DNS);
+    curl_share_setopt(curl_share, CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
+    curl_share_setopt(curl_share, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
+
     int* listRunningThreads = (int*) malloc(sizeof(int) * NBR_THREAD);
     struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * NBR_THREAD);
     for(int i = 0; i < NBR_THREAD; i++) {
@@ -145,6 +154,7 @@ int main(int argc, char* argv[]) {
         bundles[i].maxRetries = MAX_RETRIES;
         bundles[i].timeout = TIMEOUT;
         bundles[i].maxFileSize = MAX_FILE_SIZE;
+        bundles[i].curl_share = curl_share;
         pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*) &(bundles[i]));
     }
 
@@ -179,12 +189,12 @@ int main(int argc, char* argv[]) {
 
         printf("%s (%lu) %s\n", currentDocument->url, currentDocument->status_code_http, currentDocument->content_type);
 
-        if(currentDocument->content_type != NULL) { // sometimes, the server doesn't send a content-type header
+        if(currentDocument->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
             if(strstr(currentDocument->content_type, "text/html")) {
                 getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex);
             }
-            free(currentDocument->content_type); // allocated by strdup
-        } // maybe check using libmagick if this is a html file if the server didn't specified it
+            free(currentDocument->content_type);  // allocated by strdup
+        }  // maybe check using libmagick if this is a html file if the server didn't specified it
 
         if(currentDocument->redirect_location != NULL) {
             pthread_mutex_lock(&mutex);
@@ -207,6 +217,7 @@ int main(int argc, char* argv[]) {
         free(url_done);
     }
 
+    curl_share_cleanup(curl_share);
     curl_global_cleanup();
     return EXIT_SUCCESS;
 }

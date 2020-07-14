@@ -26,6 +26,7 @@ void* fetcher_thread_func(void* bundle_arg) {
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, processContent);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
     curl_easy_setopt(curl, CURLOPT_MAXFILESIZE, maxFileSize);
+    curl_easy_setopt(curl, CURLOPT_SHARE, bundle->curl_share);
 
     lxb_status_t status_l;
     lxb_html_document_t* currentDocument;
@@ -92,7 +93,7 @@ void* fetcher_thread_func(void* bundle_arg) {
         }
 
         curl_easy_getinfo(curl, CURLINFO_REDIRECT_URL, &redirect_location);
-        if(redirect_location != NULL) { // if there is a location header
+        if(redirect_location != NULL) {  // if there is a location header
             redirect_location = strdup(redirect_location);
         }
 

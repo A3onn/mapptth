@@ -22,6 +22,7 @@ struct BundleVarsThread {  // used to needed variables to the thread
 
     int* isRunning;  // let know the main thread if the thread is fetching something
 
+    CURLSH* curl_share;
     int maxRetries;
     int timeout;
     int maxFileSize;
