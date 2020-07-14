@@ -9,6 +9,10 @@
 #include "linked_list_documents.h"
 #include "linked_list_urls.h"
 
+#if !CURL_AT_LEAST_VERSION(7, 62, 0)
+#error "libcurl 7.62.0 or later is required"
+#endif
+
 #define NBR_THREAD 2
 #define MAX_RETRIES 3
 #define TIMEOUT 4
@@ -95,7 +99,7 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, U
             }
         }
 
-        if(foundURL[0] != '#' && strstr(foundURL, "mailto:") != (char*) foundURL && strstr(foundURL, "tel:") != (char*) foundURL) {  // if this is not a fragment of the same page, a mailto: or a tel: url
+        if(foundURL[0] != '#' && strstr((const char*) foundURL, "mailto:") != (char*) foundURL && strstr((const char*) foundURL, "tel:") != (char*) foundURL) {  // if this is not a fragment of the same page, a mailto: or a tel: url
             // set url
             curl_url_set(baseURL, CURLUPART_URL, (char*) foundURL, 0);  // curl will change the url accordingly
             curl_url_set(baseURL, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment

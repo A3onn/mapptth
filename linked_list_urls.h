@@ -6,10 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if !CURL_AT_LEAST_VERSION(7, 62, 0)
-#error "this example requires curl 7.62.0 or later"
-#endif
-
 struct URLNode {
     struct URLNode* next;
     char* url;
