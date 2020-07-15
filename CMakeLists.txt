@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(mapptth VERSION 0.0.7 LANGUAGES C)
+project(mapptth VERSION 0.0.8 LANGUAGES C)
 
 include(CTest)
 enable_testing()
 
-set(SRCS main.c fetcher_thread.c linked_list_documents.c linked_list_urls.c)
-set(HEADERS fetcher_thread.h linked_list_documents.h linked_list_urls.h)
+set(SRCS main.c fetcher_thread.c linked_list_documents.c linked_list_urls.c cmdline.c)
+set(HEADERS fetcher_thread.h linked_list_documents.h linked_list_urls.h cmdline.h)
 
 add_executable(mapptth ${SRCS} ${HEADERS})
 

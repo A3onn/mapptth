@@ -9,14 +9,11 @@
 #include "linked_list_documents.h"
 #include "linked_list_urls.h"
 
+#include "cmdline.h"
+
 #if !CURL_AT_LEAST_VERSION(7, 62, 0)
 #error "libcurl 7.62.0 or later is required"
 #endif
-
-#define NBR_THREAD 2
-#define MAX_RETRIES 3
-#define TIMEOUT 4
-#define MAX_FILE_SIZE 1 << 24  // in bytes
 
 int canBeAdded(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
     // Just check if a given url has already been seen.
@@ -124,14 +121,18 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, U
 }
 
 int main(int argc, char* argv[]) {
-    pthread_t fetcher_threads[NBR_THREAD];
+    struct gengetopt_args_info args_info;
+    if(cmdline_parser(argc, argv, &args_info) != 0) {
+        exit(1);
+    }
+    pthread_t fetcher_threads[args_info.threads_arg];
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
     DocumentNode_t* documents = NULL;
 
     URLNode_t* urls_todo = NULL;
     URLNode_t* urls_done = NULL;
-    pushURLList(&urls_todo, argv[1]);
+    pushURLList(&urls_todo, args_info.url_arg);
 
     curl_global_init(CURL_GLOBAL_ALL);
 
@@ -145,9 +146,9 @@ int main(int argc, char* argv[]) {
     curl_share_setopt(curl_share, CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
     curl_share_setopt(curl_share, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
 
-    int* listRunningThreads = (int*) malloc(sizeof(int) * NBR_THREAD);
-    struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * NBR_THREAD);
-    for(int i = 0; i < NBR_THREAD; i++) {
+    int* listRunningThreads = (int*) malloc(sizeof(int) * args_info.threads_arg);
+    struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * args_info.threads_arg);
+    for(int i = 0; i < args_info.threads_arg; i++) {
         listRunningThreads[i] = 1;
 
         bundles[i].documents = &documents;
@@ -155,9 +156,9 @@ int main(int argc, char* argv[]) {
         bundles[i].urls_done = &urls_done;
         bundles[i].mutex = &mutex;
         bundles[i].isRunning = &(listRunningThreads[i]);
-        bundles[i].maxRetries = MAX_RETRIES;
-        bundles[i].timeout = TIMEOUT;
-        bundles[i].maxFileSize = MAX_FILE_SIZE;
+        bundles[i].maxRetries = args_info.retries_arg;
+        bundles[i].timeout = args_info.timeout_arg;
+        bundles[i].maxFileSize = args_info.max_document_size_arg;
         bundles[i].curl_share = curl_share;
         pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*) &(bundles[i]));
     }
@@ -170,7 +171,7 @@ int main(int argc, char* argv[]) {
             // then it means that everything was discovered and they should quit,
             // otherwise just continue to check for something to do
             int shouldQuit = 1;
-            for(int i = 0; i < NBR_THREAD; i++) {  // check if all threads are running
+            for(int i = 0; i < args_info.threads_arg; i++) {  // check if all threads are running
                 if(listRunningThreads[i] == 1) {  // if one is running
                     shouldQuit = 0;  // should not quit
                     break;  // don't need to check other threads
@@ -178,7 +179,7 @@ int main(int argc, char* argv[]) {
             }
             if(shouldQuit == 1 && getURLListLength(urls_todo) == 0) {  // if no threads are running and no urls to fetch left
                 // quit
-                for(int i = 0; i < NBR_THREAD; i++) {  // stop all threads
+                for(int i = 0; i < args_info.threads_arg; i++) {  // stop all threads
                     pthread_cancel(fetcher_threads[i]);
                 }
                 break;  // quit parsing
