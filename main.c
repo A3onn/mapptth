@@ -142,6 +142,26 @@ int main(int argc, char* argv[]) {
     if(cmdline_parser(argc, argv, &args_info) != 0) {
         exit(1);
     }
+    if((strncmp(args_info.url_arg, "http://", 7) != 0 && strncmp(args_info.url_arg, "https://", 8) != 0) || strchr(args_info.url_arg, ' ') != NULL) {
+        fprintf(stderr, "%s: invalid URL: %s\n", argv[0], args_info.url_arg);
+        exit(1);
+    }
+    if(args_info.threads_arg <= 0) {
+        fprintf(stderr, "%s: the number of threads should be positive\n", argv[0]);
+        exit(1);
+    }
+    if(args_info.max_document_size_arg <= 0L) {
+        fprintf(stderr, "%s: the max size of a document should be positive\n", argv[0]);
+        exit(1);
+    }
+    if(args_info.retries_arg <= 0) {
+        fprintf(stderr, "%s: the maximum number of retries should be positive\n", argv[0]);
+        exit(1);
+    }
+    if(args_info.timeout_arg <= 0) {
+        fprintf(stderr, "%s: the timeout should be positive\n", argv[0]);
+        exit(1);
+    }
     pthread_t fetcher_threads[args_info.threads_arg];
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 

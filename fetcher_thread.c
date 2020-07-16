@@ -18,7 +18,7 @@ void* fetcher_thread_func(void* bundle_arg) {
     int* isRunning = bundle->isRunning;
     int maxRetries = bundle->maxRetries;
     int timeout = bundle->timeout;
-    int maxFileSize = bundle->maxFileSize;
+    long maxFileSize = bundle->maxFileSize;
 
     CURLcode status_c;
     CURL* curl = curl_easy_init();

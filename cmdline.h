@@ -51,7 +51,7 @@ struct gengetopt_args_info
   int retries_arg;	/**< @brief Maximum retries. (default='2').  */
   char * retries_orig;	/**< @brief Maximum retries. original value given at command line.  */
   const char *retries_help; /**< @brief Maximum retries. help description.  */
-  int max_document_size_arg;	/**< @brief Maximum size of a document in bytes. If a document is larger, it won't be parsed. (default='64000').  */
+  long max_document_size_arg;	/**< @brief Maximum size of a document in bytes. If a document is larger, it won't be parsed. (default='64000').  */
   char * max_document_size_orig;	/**< @brief Maximum size of a document in bytes. If a document is larger, it won't be parsed. original value given at command line.  */
   const char *max_document_size_help; /**< @brief Maximum size of a document in bytes. If a document is larger, it won't be parsed. help description.  */
   int allow_subdomains_flag;	/**< @brief Allow the crawler to go to URLs found on a sub-domain. (default=off).  */

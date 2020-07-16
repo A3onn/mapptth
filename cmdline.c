@@ -34,14 +34,14 @@ const char *gengetopt_args_info_versiontext = "";
 const char *gengetopt_args_info_description = "";
 
 const char *gengetopt_args_info_help[] = {
-  "  -h, --help                   Print help and exit",
-  "  -V, --version                Print version and exit",
-  "  -t, --threads=INT            Number of threads.  (default=`10')",
-  "  -u, --url=STRING             URL of where to start.",
-  "  -m, --timeout=INT            Timeout in seconds.  (default=`3')",
-  "  -r, --retries=INT            Maximum retries.  (default=`2')",
-  "  -z, --max-document-size=INT  Maximum size of a document in bytes. If a\n                                 document is larger, it won't be parsed.\n                                 (default=`64000')",
-  "  -s, --allow-subdomains       Allow the crawler to go to URLs found on a\n                                 sub-domain.  (default=off)",
+  "  -h, --help                    Print help and exit",
+  "  -V, --version                 Print version and exit",
+  "  -t, --threads=INT             Number of threads.  (default=`10')",
+  "  -u, --url=STRING              URL of where to start.",
+  "  -m, --timeout=INT             Timeout in seconds.  (default=`3')",
+  "  -r, --retries=INT             Maximum retries.  (default=`2')",
+  "  -z, --max-document-size=LONG  Maximum size of a document in bytes. If a\n                                  document is larger, it won't be parsed.\n                                  (default=`64000')",
+  "  -s, --allow-subdomains        Allow the crawler to go to URLs found on a\n                                  sub-domain.  (default=off)",
     0
 };
 
@@ -49,6 +49,7 @@ typedef enum {ARG_NO
   , ARG_FLAG
   , ARG_STRING
   , ARG_INT
+  , ARG_LONG
 } cmdline_parser_arg_type;
 
 static
@@ -451,6 +452,9 @@ int update_arg(void *field, char **orig_field,
   case ARG_INT:
     if (val) *((int *)field) = strtol (val, &stop_char, 0);
     break;
+  case ARG_LONG:
+    if (val) *((long *)field) = (long)strtol (val, &stop_char, 0);
+    break;
   case ARG_STRING:
     if (val) {
       string_field = (char **)field;
@@ -466,6 +470,7 @@ int update_arg(void *field, char **orig_field,
   /* check numeric conversion */
   switch(arg_type) {
   case ARG_INT:
+  case ARG_LONG:
     if (val && !(stop_char && *stop_char == '\0')) {
       fprintf(stderr, "%s: invalid numeric value: %s\n", package_name, val);
       return 1; /* failure */
@@ -619,7 +624,7 @@ cmdline_parser_internal (
         
           if (update_arg( (void *)&(args_info->max_document_size_arg), 
                &(args_info->max_document_size_orig), &(args_info->max_document_size_given),
-              &(local_args_info.max_document_size_given), optarg, 0, "64000", ARG_INT,
+              &(local_args_info.max_document_size_given), optarg, 0, "64000", ARG_LONG,
               check_ambiguity, override, 0, 0,
               "max-document-size", 'z',
               additional_error))

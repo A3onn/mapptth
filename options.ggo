@@ -5,5 +5,5 @@ option "threads" t "Number of threads." int default="10" optional
 option "url" u "URL of where to start." string required
 option "timeout" m "Timeout in seconds." int default="3" optional
 option "retries" r "Maximum retries." int default="2" optional
-option "max-document-size" z "Maximum size of a document in bytes. If a document is larger, it won't be parsed." int default="64000" optional
+option "max-document-size" z "Maximum size of a document in bytes. If a document is larger, it won't be parsed." long default="64000" optional
 option "allow-subdomains" s "Allow the crawler to go to URLs found on a sub-domain." flag off
