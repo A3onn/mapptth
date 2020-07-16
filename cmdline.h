@@ -54,6 +54,8 @@ struct gengetopt_args_info
   int max_document_size_arg;	/**< @brief Maximum size of a document in bytes. If a document is larger, it won't be parsed. (default='64000').  */
   char * max_document_size_orig;	/**< @brief Maximum size of a document in bytes. If a document is larger, it won't be parsed. original value given at command line.  */
   const char *max_document_size_help; /**< @brief Maximum size of a document in bytes. If a document is larger, it won't be parsed. help description.  */
+  int allow_subdomains_flag;	/**< @brief Allow the crawler to go to URLs found on a sub-domain. (default=off).  */
+  const char *allow_subdomains_help; /**< @brief Allow the crawler to go to URLs found on a sub-domain. help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -62,6 +64,7 @@ struct gengetopt_args_info
   unsigned int timeout_given ;	/**< @brief Whether timeout was given.  */
   unsigned int retries_given ;	/**< @brief Whether retries was given.  */
   unsigned int max_document_size_given ;	/**< @brief Whether max-document-size was given.  */
+  unsigned int allow_subdomains_given ;	/**< @brief Whether allow-subdomains was given.  */
 
 } ;
 

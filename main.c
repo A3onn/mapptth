@@ -29,7 +29,24 @@ int canBeAdded(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
     return 1;
 }
 
-void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, URLNode_t** urls_done, pthread_mutex_t* mutex) {
+int isValidDomain(char* domainToCompare, char* domain, int canBeSubDomain) {
+    int strlen_domainToCompare = strlen(domainToCompare), strlen_domain = strlen(domain);
+
+    if(strlen_domain == strlen_domainToCompare) {
+        return strcmp(domainToCompare, domain) == 0;
+    } else if(strlen_domain < strlen_domainToCompare && canBeSubDomain == 1) {
+        char* foundPos = strstr(domainToCompare, domain);
+        if(foundPos != NULL) {
+            // need to check if the char before is a '.' (dot) because for exemple:
+            // domainToCompare = "xyzb.a" and domain = "b.a" would result in true because
+            // "b.a" is in both strings
+            return strcmp(foundPos, domain) == 0 && *(foundPos - 1) == '.';
+        }
+    }
+    return 0;
+}
+
+void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, URLNode_t** urls_done, pthread_mutex_t* mutex, int allowSubDomains) {
     lxb_status_t status;
 
     lxb_dom_collection_t* collection = lxb_dom_collection_make(&document->dom_document, 16);
@@ -106,7 +123,7 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, U
             curl_url_get(baseURL, CURLUPART_HOST, &foundURLDomain, 0);  // get the domain of the URL
 
             pthread_mutex_lock(mutex);
-            if(canBeAdded(urlFinal, *urls_done, *urls_todo) && !strcmp(foundURLDomain, documentDomain)) {
+            if(canBeAdded(urlFinal, *urls_done, *urls_todo) && isValidDomain(foundURLDomain, documentDomain, allowSubDomains)) {
                 // add url to the list
                 pushURLList(urls_todo, urlFinal);
             }
@@ -116,7 +133,7 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, U
         // re-set base URL because it was modified
         curl_url_set(baseURL, CURLUPART_URL, url, 0);
     }
-
+    curl_url_cleanup(baseURL);
     lxb_dom_collection_destroy(collection, true);
 }
 
@@ -164,6 +181,7 @@ int main(int argc, char* argv[]) {
     }
 
     struct Document* currentDocument;
+    CURLU* curl_u = curl_url();  // used when handling redirections
     while(1) {
         pthread_mutex_lock(&mutex);
         if(getDocumentListLength(documents) == 0) {  // no documents to parse
@@ -196,22 +214,38 @@ int main(int argc, char* argv[]) {
 
         if(currentDocument->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
             if(strstr(currentDocument->content_type, "text/html")) {
-                getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex);
+                getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex, args_info.allow_subdomains_flag);
             }
             free(currentDocument->content_type);  // allocated by strdup
         }  // maybe check using libmagick if this is a html file if the server didn't specified it
 
         if(currentDocument->redirect_location != NULL) {
+            // get the domain of the current document and the domain of the redirect URL
+
+            char* currentDocumentURLDomain;
+            char* redirectLocationDomain;
+
+            curl_url_set(curl_u, CURLUPART_URL, currentDocument->redirect_location, 0);
+            curl_url_get(curl_u, CURLUPART_HOST, &redirectLocationDomain, 0);
+
+            curl_url_set(curl_u, CURLUPART_URL, currentDocument->url, 0);
+            curl_url_get(curl_u, CURLUPART_HOST, &currentDocumentURLDomain, 0);
+
             pthread_mutex_lock(&mutex);
-            if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo)) {
+            if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo) && isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag) == 1) {
                 pushURLList(&urls_todo, currentDocument->redirect_location);
             }
             pthread_mutex_unlock(&mutex);
+
+            free(currentDocumentURLDomain);
+            free(redirectLocationDomain);
         }
 
         lxb_html_document_destroy(currentDocument->document);
         free(currentDocument);
     }
+
+    curl_url_cleanup(curl_u);
 
     // CLEANUP
     free(bundles);

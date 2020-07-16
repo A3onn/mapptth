@@ -41,10 +41,12 @@ const char *gengetopt_args_info_help[] = {
   "  -m, --timeout=INT            Timeout in seconds.  (default=`3')",
   "  -r, --retries=INT            Maximum retries.  (default=`2')",
   "  -z, --max-document-size=INT  Maximum size of a document in bytes. If a\n                                 document is larger, it won't be parsed.\n                                 (default=`64000')",
+  "  -s, --allow-subdomains       Allow the crawler to go to URLs found on a\n                                 sub-domain.  (default=off)",
     0
 };
 
 typedef enum {ARG_NO
+  , ARG_FLAG
   , ARG_STRING
   , ARG_INT
 } cmdline_parser_arg_type;
@@ -74,6 +76,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->timeout_given = 0 ;
   args_info->retries_given = 0 ;
   args_info->max_document_size_given = 0 ;
+  args_info->allow_subdomains_given = 0 ;
 }
 
 static
@@ -90,6 +93,7 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->retries_orig = NULL;
   args_info->max_document_size_arg = 64000;
   args_info->max_document_size_orig = NULL;
+  args_info->allow_subdomains_flag = 0;
   
 }
 
@@ -105,6 +109,7 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->timeout_help = gengetopt_args_info_help[4] ;
   args_info->retries_help = gengetopt_args_info_help[5] ;
   args_info->max_document_size_help = gengetopt_args_info_help[6] ;
+  args_info->allow_subdomains_help = gengetopt_args_info_help[7] ;
   
 }
 
@@ -244,6 +249,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "retries", args_info->retries_orig, 0);
   if (args_info->max_document_size_given)
     write_into_file(outfile, "max-document-size", args_info->max_document_size_orig, 0);
+  if (args_info->allow_subdomains_given)
+    write_into_file(outfile, "allow-subdomains", 0, 0 );
   
 
   i = EXIT_SUCCESS;
@@ -438,6 +445,9 @@ int update_arg(void *field, char **orig_field,
     val = possible_values[found];
 
   switch(arg_type) {
+  case ARG_FLAG:
+    *((int *)field) = !*((int *)field);
+    break;
   case ARG_INT:
     if (val) *((int *)field) = strtol (val, &stop_char, 0);
     break;
@@ -468,6 +478,7 @@ int update_arg(void *field, char **orig_field,
   /* store the original value */
   switch(arg_type) {
   case ARG_NO:
+  case ARG_FLAG:
     break;
   default:
     if (value && orig_field) {
@@ -535,10 +546,11 @@ cmdline_parser_internal (
         { "timeout",	1, NULL, 'm' },
         { "retries",	1, NULL, 'r' },
         { "max-document-size",	1, NULL, 'z' },
+        { "allow-subdomains",	0, NULL, 's' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:r:z:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:r:z:s", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -610,6 +622,16 @@ cmdline_parser_internal (
               &(local_args_info.max_document_size_given), optarg, 0, "64000", ARG_INT,
               check_ambiguity, override, 0, 0,
               "max-document-size", 'z',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 's':	/* Allow the crawler to go to URLs found on a sub-domain..  */
+        
+        
+          if (update_arg((void *)&(args_info->allow_subdomains_flag), 0, &(args_info->allow_subdomains_given),
+              &(local_args_info.allow_subdomains_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "allow-subdomains", 's',
               additional_error))
             goto failure;
         
