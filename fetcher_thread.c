@@ -104,7 +104,6 @@ void* fetcher_thread_func(void* bundle_arg) {
         pthread_mutex_lock(mutex);
         pushDocumentList(documents, currentDocument, currentURL, status_code_http, content_type, redirect_location);
         pthread_mutex_unlock(mutex);
-        content_type = NULL;
     }
     curl_easy_cleanup(curl);
 

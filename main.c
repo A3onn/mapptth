@@ -132,16 +132,19 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, U
                         if(isValidDomain(foundURLDomain, allowed_domains[i], allowSubDomains)) {
                             // add url to the list
                             pushURLList(urls_todo, urlFinal);
+                            break;
                         }
                     }
                 }
             }
+            free(foundURLDomain);
             pthread_mutex_unlock(mutex);
         }
 
         // re-set base URL because it was modified
         curl_url_set(baseURL, CURLUPART_URL, url, 0);
     }
+    free(documentDomain);
     curl_url_cleanup(baseURL);
     lxb_dom_collection_destroy(collection, true);
 }
@@ -285,6 +288,7 @@ int main(int argc, char* argv[]) {
         free(url_done);
     }
 
+    cmdline_parser_free(&args_info);
     curl_share_cleanup(curl_share);
     curl_global_cleanup();
     return EXIT_SUCCESS;
