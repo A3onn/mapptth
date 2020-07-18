@@ -46,7 +46,7 @@ int isValidDomain(char* domainToCompare, char* domain, int canBeSubDomain) {
     return 0;
 }
 
-void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, URLNode_t** urls_done, pthread_mutex_t* mutex, int allowSubDomains) {
+void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, URLNode_t** urls_done, pthread_mutex_t* mutex, char** allowed_domains, unsigned int nbr_allowed_domains, int allowSubDomains) {
     lxb_status_t status;
 
     lxb_dom_collection_t* collection = lxb_dom_collection_make(&document->dom_document, 16);
@@ -123,9 +123,18 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, U
             curl_url_get(baseURL, CURLUPART_HOST, &foundURLDomain, 0);  // get the domain of the URL
 
             pthread_mutex_lock(mutex);
-            if(canBeAdded(urlFinal, *urls_done, *urls_todo) && isValidDomain(foundURLDomain, documentDomain, allowSubDomains)) {
-                // add url to the list
-                pushURLList(urls_todo, urlFinal);
+            if(canBeAdded(urlFinal, *urls_done, *urls_todo)) {
+                if(isValidDomain(foundURLDomain, documentDomain, allowSubDomains)) {
+                    // add url to the list
+                    pushURLList(urls_todo, urlFinal);
+                } else {
+                    for(int i = 0; i < nbr_allowed_domains; i++) {
+                        if(isValidDomain(foundURLDomain, allowed_domains[i], allowSubDomains)) {
+                            // add url to the list
+                            pushURLList(urls_todo, urlFinal);
+                        }
+                    }
+                }
             }
             pthread_mutex_unlock(mutex);
         }
@@ -233,8 +242,8 @@ int main(int argc, char* argv[]) {
         printf("%s (%lu) %s\n", currentDocument->url, currentDocument->status_code_http, currentDocument->content_type);
 
         if(currentDocument->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
-            if(strstr(currentDocument->content_type, "text/html")) {
-                getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex, args_info.allow_subdomains_flag);
+            if(strstr(currentDocument->content_type, "text/html") != NULL || strstr(currentDocument->content_type, "text/html") != NULL) {
+                getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex, args_info.allowed_domains_arg, args_info.allowed_domains_given, args_info.allow_subdomains_flag);
             }
             free(currentDocument->content_type);  // allocated by strdup
         }  // maybe check using libmagick if this is a html file if the server didn't specified it

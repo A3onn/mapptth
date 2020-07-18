@@ -51,11 +51,16 @@ struct gengetopt_args_info
   int retries_arg;	/**< @brief Maximum retries. (default='2').  */
   char * retries_orig;	/**< @brief Maximum retries. original value given at command line.  */
   const char *retries_help; /**< @brief Maximum retries. help description.  */
-  long max_document_size_arg;	/**< @brief Maximum size of a document in bytes. If a document is larger, it won't be parsed. (default='64000').  */
+  long max_document_size_arg;	/**< @brief Maximum size of a document in bytes. If a document is larger, it won't be parsed. (default='128000').  */
   char * max_document_size_orig;	/**< @brief Maximum size of a document in bytes. If a document is larger, it won't be parsed. original value given at command line.  */
   const char *max_document_size_help; /**< @brief Maximum size of a document in bytes. If a document is larger, it won't be parsed. help description.  */
   int allow_subdomains_flag;	/**< @brief Allow the crawler to go to URLs found on a sub-domain. (default=off).  */
   const char *allow_subdomains_help; /**< @brief Allow the crawler to go to URLs found on a sub-domain. help description.  */
+  char ** allowed_domains_arg;	/**< @brief Allow the crawler to go to URLs found on other domains..  */
+  char ** allowed_domains_orig;	/**< @brief Allow the crawler to go to URLs found on other domains. original value given at command line.  */
+  unsigned int allowed_domains_min; /**< @brief Allow the crawler to go to URLs found on other domains.'s minimum occurreces */
+  unsigned int allowed_domains_max; /**< @brief Allow the crawler to go to URLs found on other domains.'s maximum occurreces */
+  const char *allowed_domains_help; /**< @brief Allow the crawler to go to URLs found on other domains. help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -65,6 +70,7 @@ struct gengetopt_args_info
   unsigned int retries_given ;	/**< @brief Whether retries was given.  */
   unsigned int max_document_size_given ;	/**< @brief Whether max-document-size was given.  */
   unsigned int allow_subdomains_given ;	/**< @brief Whether allow-subdomains was given.  */
+  unsigned int allowed_domains_given ;	/**< @brief Whether allowed-domains was given.  */
 
 } ;
 
