@@ -46,6 +46,13 @@ int isValidDomain(char* domainToCompare, char* domain, int canBeSubDomain) {
     return 0;
 }
 
+int isValidLink(const char* url) {
+    if(url == NULL) {
+        return 0;
+    }
+    return url[0] != '#' && strstr(url, "mailto:") != url && strstr(url, "tel:") != url && strstr(url, "data:") != url;
+}
+
 void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, URLNode_t** urls_done, pthread_mutex_t* mutex, char** allowed_domains, unsigned int nbr_allowed_domains, int allowSubDomains) {
     lxb_status_t status;
 
@@ -113,7 +120,7 @@ void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, U
             }
         }
 
-        if(foundURL[0] != '#' && strstr((const char*) foundURL, "mailto:") != (char*) foundURL && strstr((const char*) foundURL, "tel:") != (char*) foundURL) {  // if this is not a fragment of the same page, a mailto: or a tel: url
+        if(isValidLink((char*) foundURL)) {
             // set url
             curl_url_set(baseURL, CURLUPART_URL, (char*) foundURL, 0);  // curl will change the url accordingly
             curl_url_set(baseURL, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
@@ -245,7 +252,7 @@ int main(int argc, char* argv[]) {
         printf("%s (%lu) %s\n", currentDocument->url, currentDocument->status_code_http, currentDocument->content_type);
 
         if(currentDocument->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
-            if(strstr(currentDocument->content_type, "text/html") != NULL || strstr(currentDocument->content_type, "text/html") != NULL) {
+            if(strstr(currentDocument->content_type, "text/html") != NULL || strstr(currentDocument->content_type, "application/xhtml+xml") != NULL) {
                 getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex, args_info.allowed_domains_arg, args_info.allowed_domains_given, args_info.allow_subdomains_flag);
             }
             free(currentDocument->content_type);  // allocated by strdup
