@@ -15,6 +15,15 @@
 #error "libcurl 7.62.0 or later is required"
 #endif
 
+struct WalkBundle {  // Used in walk_cb.
+    struct Document* document;
+    URLNode_t** urls_todo;
+    URLNode_t** urls_done;
+    int allowSubdomains;
+    char** allowedDomains;
+    int countAllowedDomains;
+};
+
 int canBeAdded(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
     // Just check if a given url has already been seen.
     // Could just be:
@@ -53,107 +62,67 @@ int isValidLink(const char* url) {
     return url[0] != '#' && strstr(url, "mailto:") != url && strstr(url, "tel:") != url && strstr(url, "data:") != url;
 }
 
-void getLinks(lxb_html_document_t* document, char* url, URLNode_t** urls_todo, URLNode_t** urls_done, pthread_mutex_t* mutex, char** allowed_domains, unsigned int nbr_allowed_domains, int allowSubDomains) {
-    lxb_status_t status;
-
-    lxb_dom_collection_t* collection = lxb_dom_collection_make(&document->dom_document, 16);
-    if(collection == NULL) {
-        fprintf(stderr, "lxb_dom_collection_make(&document->dom_document, 16) failed.");
-        return;
+lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
+    if(node->type != LXB_DOM_NODE_TYPE_ELEMENT) {
+        return LEXBOR_ACTION_OK;
     }
 
-    // HEAD
-    lxb_dom_element_t* head = lxb_dom_interface_element(document->head);
-    if(head == NULL) {
-        fprintf(stderr, "lxb_dom_interface_element failed.");
-        return;
+    lxb_dom_element_t* element = lxb_dom_interface_element(node);
+    if(!lxb_dom_element_has_attribute(element, (lxb_char_t*) "href", 4) && !lxb_dom_element_has_attribute(element, (lxb_char_t*) "src", 3)) {
+        return LEXBOR_ACTION_OK;
     }
 
-    status = lxb_dom_elements_by_attr_contain(head, collection, (const lxb_char_t*) "href", 4, NULL, 0, true);
-    if(status != LXB_STATUS_OK) {
-        fprintf(stderr, "lxb_dom_elements_by_attr_contain failed.");
-        return;
-    }
-    status = lxb_dom_elements_by_attr_contain(head, collection, (const lxb_char_t*) "src", 3, NULL, 0, true);
-    if(status != LXB_STATUS_OK) {
-        fprintf(stderr, "lxb_dom_elements_by_attr_contain failed.");
-        return;
+    struct WalkBundle* bundle = (struct WalkBundle*) ctx;
+
+    char* foundURL;
+    foundURL = (char*) lxb_dom_element_get_attribute(element, (lxb_char_t*) "href", 4, NULL);
+    if(foundURL == NULL) {  // if this element has a src attribute instead
+        foundURL = (char*) lxb_dom_element_get_attribute(element, (lxb_char_t*) "src", 3, NULL);
     }
 
-    // BODY
-    lxb_dom_element_t* body = lxb_dom_interface_element(document->body);
-    if(body == NULL) {
-        fprintf(stderr, "lxb_dom_interface_element failed.");
-        return;
-    }
+    char hasBeenAdded = 0;  // used to check if the URL has been added, if not it will be freed
 
-    status = lxb_dom_elements_by_attr_contain(body, collection, (const lxb_char_t*) "href", 4, NULL, 0, true);
-    if(status != LXB_STATUS_OK) {
-        fprintf(stderr, "lxb_dom_elements_by_attr_contain failed.");
-        return;
-    }
-    status = lxb_dom_elements_by_attr_contain(body, collection, (const lxb_char_t*) "src", 3, NULL, 0, true);
-    if(status != LXB_STATUS_OK) {
-        fprintf(stderr, "lxb_dom_elements_by_attr_contain failed.");
-        return;
-    }
+    // used when checking for valid domain
+    char* documentDomain;
+    char* foundURLDomain;
 
-    CURLU* baseURL = curl_url();  // will hold the final url, coupled with urlFinal
-    curl_url_set(baseURL, CURLUPART_URL, url, 0);
+    // URL that will be added to the list of URLs to fetch
+    char* finalURL;
 
-    char* documentDomain;  // domain of this document, used when checking domains
-    curl_url_get(baseURL, CURLUPART_HOST, &documentDomain, 0);
+    CURLU* curl_u = curl_url();
+    curl_url_set(curl_u, CURLUPART_URL, bundle->document->url, 0);
+    curl_url_get(curl_u, CURLUPART_HOST, &documentDomain, 0);
+    if(isValidLink((char*) foundURL)) {
+        curl_url_set(curl_u, CURLUPART_URL, (char*) foundURL, 0);  // curl will change the url by himself based on the document's URL
+        curl_url_set(curl_u, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
 
-    lxb_dom_element_t* element;
-    const lxb_char_t* foundURL;
-    char* urlFinal;  // will hold the url to push into the list
-    char* foundURLDomain;  // domain of the url found
-    for(size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
-        element = lxb_dom_collection_element(collection, i);
+        curl_url_get(curl_u, CURLUPART_URL, &finalURL, 0);  // get final url
+        curl_url_get(curl_u, CURLUPART_HOST, &foundURLDomain, 0);  // get the domain of the URL
 
-        lxb_dom_node_t* node = lxb_dom_interface_node(element);
-        foundURL = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "href", 4, NULL);  // try getting href
-        if(foundURL == NULL) {
-            foundURL = lxb_dom_element_get_attribute(element, (const lxb_char_t*) "src", 3, NULL);  // getting src otherwise
-            if(foundURL == NULL) {  // should not happend
-                continue;
-            }
-        }
+        if(canBeAdded(finalURL, *(bundle->urls_done), *(bundle->urls_todo))) {
 
-        if(isValidLink((char*) foundURL)) {
-            // set url
-            curl_url_set(baseURL, CURLUPART_URL, (char*) foundURL, 0);  // curl will change the url accordingly
-            curl_url_set(baseURL, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
-
-            curl_url_get(baseURL, CURLUPART_URL, &urlFinal, 0);  // get final url
-
-            curl_url_get(baseURL, CURLUPART_HOST, &foundURLDomain, 0);  // get the domain of the URL
-
-            pthread_mutex_lock(mutex);
-            if(canBeAdded(urlFinal, *urls_done, *urls_todo)) {
-                if(isValidDomain(foundURLDomain, documentDomain, allowSubDomains)) {
-                    // add url to the list
-                    pushURLList(urls_todo, urlFinal);
-                } else {
-                    for(int i = 0; i < nbr_allowed_domains; i++) {
-                        if(isValidDomain(foundURLDomain, allowed_domains[i], allowSubDomains)) {
-                            // add url to the list
-                            pushURLList(urls_todo, urlFinal);
-                            break;
-                        }
+            if(isValidDomain(foundURLDomain, documentDomain, bundle->allowSubdomains)) {
+                pushURLList(bundle->urls_todo, finalURL);
+                hasBeenAdded = 1;
+            } else {
+                // check if it is an allowed domain
+                for(int i = 0; i < bundle->countAllowedDomains; i++) {
+                    if(isValidDomain(foundURLDomain, bundle->allowedDomains[i], bundle->allowSubdomains)) {
+                        pushURLList(bundle->urls_todo, finalURL);
+                        hasBeenAdded = 1;
+                        break;
                     }
                 }
             }
-            free(foundURLDomain);
-            pthread_mutex_unlock(mutex);
         }
-
-        // re-set base URL because it was modified
-        curl_url_set(baseURL, CURLUPART_URL, url, 0);
+        if(!hasBeenAdded) {
+            free(finalURL);
+        }
+        free(foundURLDomain);
     }
     free(documentDomain);
-    curl_url_cleanup(baseURL);
-    lxb_dom_collection_destroy(collection, true);
+    curl_url_cleanup(curl_u);
+    return LEXBOR_ACTION_OK;
 }
 
 int main(int argc, char* argv[]) {
@@ -253,7 +222,17 @@ int main(int argc, char* argv[]) {
 
         if(currentDocument->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
             if(strstr(currentDocument->content_type, "text/html") != NULL || strstr(currentDocument->content_type, "application/xhtml+xml") != NULL) {
-                getLinks(currentDocument->document, currentDocument->url, &urls_todo, &urls_done, &mutex, args_info.allowed_domains_arg, args_info.allowed_domains_given, args_info.allow_subdomains_flag);
+                struct WalkBundle bundle;
+                bundle.allowedDomains = args_info.allowed_domains_arg;
+                bundle.countAllowedDomains = args_info.allowed_domains_given;
+                bundle.document = currentDocument;
+                bundle.allowSubdomains = args_info.allow_subdomains_given;
+                pthread_mutex_lock(&mutex);
+                bundle.urls_done = &urls_done;
+                bundle.urls_todo = &urls_todo;
+                lxb_dom_node_simple_walk(lxb_dom_interface_node(currentDocument->document->head), walk_cb, &bundle);
+                lxb_dom_node_simple_walk(lxb_dom_interface_node(currentDocument->document->body), walk_cb, &bundle);
+                pthread_mutex_unlock(&mutex);
             }
             free(currentDocument->content_type);  // allocated by strdup
         }  // maybe check using libmagick if this is a html file if the server didn't specified it
