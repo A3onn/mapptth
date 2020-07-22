@@ -125,6 +125,14 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     return LEXBOR_ACTION_OK;
 }
 
+static void lock_cb(CURL* handle, curl_lock_data data, curl_lock_access access, void* userptr) {
+    pthread_mutex_lock((pthread_mutex_t*) userptr);
+}
+
+static void unlock_cb(CURL* handle, curl_lock_data data, void* userptr) {
+    pthread_mutex_unlock((pthread_mutex_t*) userptr);
+}
+
 int main(int argc, char* argv[]) {
     struct gengetopt_args_info args_info;
     if(cmdline_parser(argc, argv, &args_info) != 0) {
@@ -167,9 +175,13 @@ int main(int argc, char* argv[]) {
         curl_global_cleanup();
         return 1;
     }
-    curl_share_setopt(curl_share, CURLSHOPT_SHARE, CURL_LOCK_DATA_DNS);
+
+    pthread_mutex_t mutex_conn = PTHREAD_MUTEX_INITIALIZER;
     curl_share_setopt(curl_share, CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
     curl_share_setopt(curl_share, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
+    curl_share_setopt(curl_share, CURLSHOPT_LOCKFUNC, lock_cb);
+    curl_share_setopt(curl_share, CURLSHOPT_UNLOCKFUNC, unlock_cb);
+    curl_share_setopt(curl_share, CURLSHOPT_USERDATA, (void*) &mutex_conn);
 
     int* listRunningThreads = (int*) malloc(sizeof(int) * args_info.threads_arg);
     struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * args_info.threads_arg);
