@@ -183,6 +183,7 @@ int main(int argc, char* argv[]) {
     curl_share_setopt(curl_share, CURLSHOPT_UNLOCKFUNC, unlock_cb);
     curl_share_setopt(curl_share, CURLSHOPT_USERDATA, (void*) &mutex_conn);
 
+    int shouldExit = 0;  // if threads should exit, set to 1 when all threads have isRunning == 1
     int* listRunningThreads = (int*) malloc(sizeof(int) * args_info.threads_arg);
     struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * args_info.threads_arg);
     for(int i = 0; i < args_info.threads_arg; i++) {
@@ -192,6 +193,7 @@ int main(int argc, char* argv[]) {
         bundles[i].urls_todo = &urls_todo;
         bundles[i].urls_done = &urls_done;
         bundles[i].mutex = &mutex;
+        bundles[i].shouldExit = &shouldExit;
         bundles[i].isRunning = &(listRunningThreads[i]);
         bundles[i].maxRetries = args_info.retries_arg;
         bundles[i].timeout = args_info.timeout_arg;
@@ -217,9 +219,8 @@ int main(int argc, char* argv[]) {
             }
             if(shouldQuit == 1 && getURLListLength(urls_todo) == 0) {  // if no threads are running and no urls to fetch left
                 // quit
-                for(int i = 0; i < args_info.threads_arg; i++) {  // stop all threads
-                    pthread_cancel(fetcher_threads[i]);
-                }
+                shouldExit = 1;
+                pthread_mutex_unlock(&mutex);
                 break;  // quit parsing
             }
             // if some thread(s) are running, just continue to check for a document to come
@@ -273,6 +274,9 @@ int main(int argc, char* argv[]) {
 
         lxb_html_document_destroy(currentDocument->document);
         free(currentDocument);
+    }
+    for(int i = 0; i < args_info.threads_arg; i++) {
+        pthread_join(fetcher_threads[i], NULL);
     }
 
     curl_url_cleanup(curl_u);

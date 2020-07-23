@@ -16,6 +16,7 @@ void* fetcher_thread_func(void* bundle_arg) {
     URLNode_t** urls_done = bundle->urls_done;
     pthread_mutex_t* mutex = bundle->mutex;
     int* isRunning = bundle->isRunning;
+    int* shouldExit = bundle->shouldExit;
     int maxRetries = bundle->maxRetries;
     int timeout = bundle->timeout;
     long maxFileSize = bundle->maxFileSize;
@@ -37,6 +38,10 @@ void* fetcher_thread_func(void* bundle_arg) {
 
     while(1) {
         pthread_mutex_lock(mutex);
+        if(*shouldExit) {
+            pthread_mutex_unlock(mutex);
+            break;
+        }
         if(getURLListLength(*urls_todo) == 0) {  // no url to fetch
             *isRunning = 0;  // change state
             pthread_mutex_unlock(mutex);

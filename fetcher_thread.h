@@ -21,6 +21,7 @@ struct BundleVarsThread {  // used to needed variables to the thread
     pthread_mutex_t* mutex;
 
     int* isRunning;  // let know the main thread if the thread is fetching something
+    int* shouldExit;  // if thread should exit; set by the main thread
 
     CURLSH* curl_share;
     int maxRetries;
