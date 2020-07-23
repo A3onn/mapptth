@@ -42,7 +42,7 @@ void* fetcher_thread_func(void* bundle_arg) {
             pthread_mutex_unlock(mutex);
             break;
         }
-        if(getURLListLength(*urls_todo) == 0) {  // no url to fetch
+        if(isURLListEmpty(*urls_todo)) {  // no url to fetch
             *isRunning = 0;  // change state
             pthread_mutex_unlock(mutex);
             continue;

@@ -19,6 +19,10 @@ char* popURLList(URLNode_t** head) {
     return res;
 }
 
+int isURLListEmpty(URLNode_t* head) {
+    return head == 0;
+}
+
 int getURLListLength(URLNode_t* head) {
     URLNode_t* tmp = head;
     if(tmp == NULL) {

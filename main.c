@@ -41,6 +41,9 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     foundURL = (char*) lxb_dom_element_get_attribute(element, (lxb_char_t*) "href", 4, NULL);
     if(foundURL == NULL) {  // if this element has a src attribute instead
         foundURL = (char*) lxb_dom_element_get_attribute(element, (lxb_char_t*) "src", 3, NULL);
+        if(foundURL == NULL) {  // should not happen
+            return LEXBOR_ACTION_OK;
+        }
     }
 
     char hasBeenAdded = 0;  // used to check if the URL has been added, if not it will be freed
@@ -167,6 +170,11 @@ int main(int argc, char* argv[]) {
 
     struct Document* currentDocument;
     CURLU* curl_u = curl_url();  // used when handling redirections
+
+    struct WalkBundle bundleWalk;  // in this bundle these elements never change
+    bundleWalk.allowedDomains = args_info.allowed_domains_arg;
+    bundleWalk.countAllowedDomains = args_info.allowed_domains_given;
+    bundleWalk.allowSubdomains = args_info.allow_subdomains_given;
     while(1) {
         pthread_mutex_lock(&mutex);
         if(getDocumentListLength(documents) == 0) {  // no documents to parse
@@ -180,7 +188,7 @@ int main(int argc, char* argv[]) {
                     break;  // don't need to check other threads
                 }
             }
-            if(shouldQuit == 1 && getURLListLength(urls_todo) == 0) {  // if no threads are running and no urls to fetch left
+            if(shouldQuit == 1 && isURLListEmpty(urls_todo)) {  // if no threads are running and no urls to fetch left
                 // quit
                 shouldExit = 1;
                 pthread_mutex_unlock(&mutex);
@@ -198,16 +206,16 @@ int main(int argc, char* argv[]) {
 
         if(currentDocument->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
             if(strstr(currentDocument->content_type, "text/html") != NULL || strstr(currentDocument->content_type, "application/xhtml+xml") != NULL) {
-                struct WalkBundle bundle;
-                bundle.allowedDomains = args_info.allowed_domains_arg;
-                bundle.countAllowedDomains = args_info.allowed_domains_given;
-                bundle.document = currentDocument;
-                bundle.allowSubdomains = args_info.allow_subdomains_given;
+                bundleWalk.document = currentDocument;
                 pthread_mutex_lock(&mutex);
-                bundle.urls_done = &urls_done;
-                bundle.urls_todo = &urls_todo;
-                lxb_dom_node_simple_walk(lxb_dom_interface_node(currentDocument->document->head), walk_cb, &bundle);
-                lxb_dom_node_simple_walk(lxb_dom_interface_node(currentDocument->document->body), walk_cb, &bundle);
+                bundleWalk.urls_done = &urls_done;
+                bundleWalk.urls_todo = &urls_todo;
+                if(currentDocument->document->head) {
+                    lxb_dom_node_simple_walk(lxb_dom_interface_node(currentDocument->document->head), walk_cb, &bundleWalk);
+                }
+                if(currentDocument->document->body) {
+                    lxb_dom_node_simple_walk(lxb_dom_interface_node(currentDocument->document->body), walk_cb, &bundleWalk);
+                }
                 pthread_mutex_unlock(&mutex);
             }
             free(currentDocument->content_type);  // allocated by strdup
