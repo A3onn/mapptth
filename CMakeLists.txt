@@ -4,8 +4,8 @@ project(mapptth VERSION 0.0.8 LANGUAGES C)
 include(CTest)
 enable_testing()
 
-set(SRCS main.c fetcher_thread.c linked_list_documents.c linked_list_urls.c cmdline.c)
-set(HEADERS fetcher_thread.h linked_list_documents.h linked_list_urls.h cmdline.h)
+set(SRCS main.c fetcher_thread.c linked_list_documents.c linked_list_urls.c cmdline.c utils.c)
+set(HEADERS fetcher_thread.h linked_list_documents.h linked_list_urls.h cmdline.h utils.h)
 
 add_executable(mapptth ${SRCS} ${HEADERS})
 
