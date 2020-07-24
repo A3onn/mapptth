@@ -46,6 +46,9 @@ const char *gengetopt_args_info_help[] = {
   "\n Group: scheme",
   "  -p, --http-only               Only fetch URLs with HTTP as scheme.",
   "  -P, --https-only              Only fetch URLs with HTTPS as scheme.",
+  "\n Group: parsing-part",
+  "  -B, --only-body               Only parse the <body>.",
+  "  -H, --only-head               Only parse the <head>.",
     0
 };
 
@@ -85,6 +88,9 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->allowed_domains_given = 0 ;
   args_info->http_only_given = 0 ;
   args_info->https_only_given = 0 ;
+  args_info->only_body_given = 0 ;
+  args_info->only_head_given = 0 ;
+  args_info->parsing_part_group_counter = 0 ;
   args_info->scheme_group_counter = 0 ;
 }
 
@@ -126,6 +132,8 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->allowed_domains_max = 0;
   args_info->http_only_help = gengetopt_args_info_help[10] ;
   args_info->https_only_help = gengetopt_args_info_help[11] ;
+  args_info->only_body_help = gengetopt_args_info_help[13] ;
+  args_info->only_head_help = gengetopt_args_info_help[14] ;
   
 }
 
@@ -327,6 +335,10 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "http-only", 0, 0 );
   if (args_info->https_only_given)
     write_into_file(outfile, "https-only", 0, 0 );
+  if (args_info->only_body_given)
+    write_into_file(outfile, "only-body", 0, 0 );
+  if (args_info->only_head_given)
+    write_into_file(outfile, "only-head", 0, 0 );
   
 
   i = EXIT_SUCCESS;
@@ -509,6 +521,18 @@ check_multiple_option_occurrences(const char *prog_name, unsigned int option_giv
     
   return error_occurred;
 }
+static void
+reset_group_parsing_part(struct gengetopt_args_info *args_info)
+{
+  if (! args_info->parsing_part_group_counter)
+    return;
+  
+  args_info->only_body_given = 0 ;
+  args_info->only_head_given = 0 ;
+
+  args_info->parsing_part_group_counter = 0;
+}
+
 static void
 reset_group_scheme(struct gengetopt_args_info *args_info)
 {
@@ -922,10 +946,12 @@ cmdline_parser_internal (
         { "allowed-domains",	1, NULL, 'a' },
         { "http-only",	0, NULL, 'p' },
         { "https-only",	0, NULL, 'P' },
+        { "only-body",	0, NULL, 'B' },
+        { "only-head",	0, NULL, 'H' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:r:z:sa:pP", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:r:z:sa:pPBH", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1050,6 +1076,36 @@ cmdline_parser_internal (
             goto failure;
         
           break;
+        case 'B':	/* Only parse the <body>..  */
+        
+          if (args_info->parsing_part_group_counter && override)
+            reset_group_parsing_part (args_info);
+          args_info->parsing_part_group_counter += 1;
+        
+          if (update_arg( 0 , 
+               0 , &(args_info->only_body_given),
+              &(local_args_info.only_body_given), optarg, 0, 0, ARG_NO,
+              check_ambiguity, override, 0, 0,
+              "only-body", 'B',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'H':	/* Only parse the <head>..  */
+        
+          if (args_info->parsing_part_group_counter && override)
+            reset_group_parsing_part (args_info);
+          args_info->parsing_part_group_counter += 1;
+        
+          if (update_arg( 0 , 
+               0 , &(args_info->only_head_given),
+              &(local_args_info.only_head_given), optarg, 0, 0, ARG_NO,
+              check_ambiguity, override, 0, 0,
+              "only-head", 'H',
+              additional_error))
+            goto failure;
+        
+          break;
 
         case 0:	/* Long option with no short option */
         case '?':	/* Invalid option.  */
@@ -1062,6 +1118,12 @@ cmdline_parser_internal (
         } /* switch */
     } /* while */
 
+  if (args_info->parsing_part_group_counter > 1)
+    {
+      fprintf (stderr, "%s: %d options of group parsing-part were given. At most one is required%s.\n", argv[0], args_info->parsing_part_group_counter, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
+  
   if (args_info->scheme_group_counter > 1)
     {
       fprintf (stderr, "%s: %d options of group scheme were given. At most one is required%s.\n", argv[0], args_info->scheme_group_counter, (additional_error ? additional_error : ""));

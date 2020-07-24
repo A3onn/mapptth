@@ -227,10 +227,10 @@ int main(int argc, char* argv[]) {
                 pthread_mutex_lock(&mutex);
                 bundleWalk.urls_done = &urls_done;
                 bundleWalk.urls_todo = &urls_todo;
-                if(currentDocument->document->head) {
+                if(currentDocument->document->head && !args_info.only_body_given) {
                     lxb_dom_node_simple_walk(lxb_dom_interface_node(currentDocument->document->head), walk_cb, &bundleWalk);
                 }
-                if(currentDocument->document->body) {
+                if(currentDocument->document->body && !args_info.only_head_given) {
                     lxb_dom_node_simple_walk(lxb_dom_interface_node(currentDocument->document->body), walk_cb, &bundleWalk);
                 }
                 pthread_mutex_unlock(&mutex);

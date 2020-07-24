@@ -63,6 +63,8 @@ struct gengetopt_args_info
   const char *allowed_domains_help; /**< @brief Allow the crawler to go to URLs found on other domains. help description.  */
   const char *http_only_help; /**< @brief Only fetch URLs with HTTP as scheme. help description.  */
   const char *https_only_help; /**< @brief Only fetch URLs with HTTPS as scheme. help description.  */
+  const char *only_body_help; /**< @brief Only parse the <body>. help description.  */
+  const char *only_head_help; /**< @brief Only parse the <head>. help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -75,7 +77,10 @@ struct gengetopt_args_info
   unsigned int allowed_domains_given ;	/**< @brief Whether allowed-domains was given.  */
   unsigned int http_only_given ;	/**< @brief Whether http-only was given.  */
   unsigned int https_only_given ;	/**< @brief Whether https-only was given.  */
+  unsigned int only_body_given ;	/**< @brief Whether only-body was given.  */
+  unsigned int only_head_given ;	/**< @brief Whether only-head was given.  */
 
+  int parsing_part_group_counter; /**< @brief Counter for group parsing_part */
   int scheme_group_counter; /**< @brief Counter for group scheme */
 } ;
 

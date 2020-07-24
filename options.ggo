@@ -12,3 +12,7 @@ option "allowed-domains" a "Allow the crawler to go to URLs found on other domai
 defgroup "scheme"
 groupoption "http-only" p "Only fetch URLs with HTTP as scheme." group="scheme"
 groupoption "https-only" P "Only fetch URLs with HTTPS as scheme." group="scheme"
+
+defgroup "parsing-part"
+groupoption "only-body" B "Only parse the <body>." group="parsing-part"
+groupoption "only-head" H "Only parse the <head>." group="parsing-part"
