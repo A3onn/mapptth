@@ -38,3 +38,55 @@ int isValidLink(const char* url) {
     }
     return url[0] != '#' && strstr(url, "mailto:") != url && strstr(url, "tel:") != url && strstr(url, "data:") != url;
 }
+
+char* normalizePath(char* path) {
+    // remove './' and '../' from a given path
+    if(path == NULL) {
+        return NULL;
+    }
+    char* copy = strdup(path);
+
+    char* elements[25] = { 0 };
+    int index = 0;
+    char* token;
+    while((token = strsep(&copy, "/")) != NULL) {
+        if(*token != '\0') {
+            if(strcmp(token, ".") == 0) {
+            } else if(strcmp(token, "..") == 0) {
+                if(index >= 1) {
+                    --index;
+                    free(elements[index]);
+                    elements[index] = NULL;
+                }
+            } else {
+                elements[index] = strdup(token);
+                index++;
+                if(index >= 25) {
+                    puts("too long");
+                    break;
+                }
+            }
+        }
+    }
+    free(copy);
+
+    char* result = calloc(1, 1);
+    for(int i = 0; i < index; i++) {
+        if(elements[i] == NULL) {
+            continue;
+        }
+        char* tmp = strdup(result);
+        int len = strlen(result) + strlen(elements[i]) + 2;
+        result = (char*) realloc(result, len);
+        strcpy(result, tmp);
+        strcat(result, "/");
+        strcat(result, elements[i]);
+        free(tmp);
+    }
+
+    if(strlen(result) == 0) {
+        result = realloc(result, 2);
+        result[0] = '/';
+    }
+    return result;
+}
