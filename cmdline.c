@@ -43,6 +43,9 @@ const char *gengetopt_args_info_help[] = {
   "  -z, --max-document-size=LONG  Maximum size of a document in bytes. If a\n                                  document is larger, it won't be parsed.\n                                  (default=`128000')",
   "  -s, --allow-subdomains        Allow the crawler to go to URLs found on a\n                                  sub-domain.  (default=off)",
   "  -a, --allowed-domains=STRING  Allow the crawler to go to URLs found on other\n                                  domains.",
+  "\n Group: scheme",
+  "  -p, --http-only               Only fetch URLs with HTTP as scheme.",
+  "  -P, --https-only              Only fetch URLs with HTTPS as scheme.",
     0
 };
 
@@ -80,6 +83,9 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->max_document_size_given = 0 ;
   args_info->allow_subdomains_given = 0 ;
   args_info->allowed_domains_given = 0 ;
+  args_info->http_only_given = 0 ;
+  args_info->https_only_given = 0 ;
+  args_info->scheme_group_counter = 0 ;
 }
 
 static
@@ -118,6 +124,8 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->allowed_domains_help = gengetopt_args_info_help[8] ;
   args_info->allowed_domains_min = 0;
   args_info->allowed_domains_max = 0;
+  args_info->http_only_help = gengetopt_args_info_help[10] ;
+  args_info->https_only_help = gengetopt_args_info_help[11] ;
   
 }
 
@@ -315,6 +323,10 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
   if (args_info->allow_subdomains_given)
     write_into_file(outfile, "allow-subdomains", 0, 0 );
   write_multiple_into_file(outfile, args_info->allowed_domains_given, "allowed-domains", args_info->allowed_domains_orig, 0);
+  if (args_info->http_only_given)
+    write_into_file(outfile, "http-only", 0, 0 );
+  if (args_info->https_only_given)
+    write_into_file(outfile, "https-only", 0, 0 );
   
 
   i = EXIT_SUCCESS;
@@ -497,6 +509,18 @@ check_multiple_option_occurrences(const char *prog_name, unsigned int option_giv
     
   return error_occurred;
 }
+static void
+reset_group_scheme(struct gengetopt_args_info *args_info)
+{
+  if (! args_info->scheme_group_counter)
+    return;
+  
+  args_info->http_only_given = 0 ;
+  args_info->https_only_given = 0 ;
+
+  args_info->scheme_group_counter = 0;
+}
+
 int
 cmdline_parser (int argc, char **argv, struct gengetopt_args_info *args_info)
 {
@@ -896,10 +920,12 @@ cmdline_parser_internal (
         { "max-document-size",	1, NULL, 'z' },
         { "allow-subdomains",	0, NULL, 's' },
         { "allowed-domains",	1, NULL, 'a' },
+        { "http-only",	0, NULL, 'p' },
+        { "https-only",	0, NULL, 'P' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:r:z:sa:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:r:z:sa:pP", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -994,6 +1020,36 @@ cmdline_parser_internal (
             goto failure;
         
           break;
+        case 'p':	/* Only fetch URLs with HTTP as scheme..  */
+        
+          if (args_info->scheme_group_counter && override)
+            reset_group_scheme (args_info);
+          args_info->scheme_group_counter += 1;
+        
+          if (update_arg( 0 , 
+               0 , &(args_info->http_only_given),
+              &(local_args_info.http_only_given), optarg, 0, 0, ARG_NO,
+              check_ambiguity, override, 0, 0,
+              "http-only", 'p',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'P':	/* Only fetch URLs with HTTPS as scheme..  */
+        
+          if (args_info->scheme_group_counter && override)
+            reset_group_scheme (args_info);
+          args_info->scheme_group_counter += 1;
+        
+          if (update_arg( 0 , 
+               0 , &(args_info->https_only_given),
+              &(local_args_info.https_only_given), optarg, 0, 0, ARG_NO,
+              check_ambiguity, override, 0, 0,
+              "https-only", 'P',
+              additional_error))
+            goto failure;
+        
+          break;
 
         case 0:	/* Long option with no short option */
         case '?':	/* Invalid option.  */
@@ -1006,6 +1062,12 @@ cmdline_parser_internal (
         } /* switch */
     } /* while */
 
+  if (args_info->scheme_group_counter > 1)
+    {
+      fprintf (stderr, "%s: %d options of group scheme were given. At most one is required%s.\n", argv[0], args_info->scheme_group_counter, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
+  
 
   update_multiple_arg((void *)&(args_info->allowed_domains_arg),
     &(args_info->allowed_domains_orig), args_info->allowed_domains_given,

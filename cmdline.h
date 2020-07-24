@@ -61,6 +61,8 @@ struct gengetopt_args_info
   unsigned int allowed_domains_min; /**< @brief Allow the crawler to go to URLs found on other domains.'s minimum occurreces */
   unsigned int allowed_domains_max; /**< @brief Allow the crawler to go to URLs found on other domains.'s maximum occurreces */
   const char *allowed_domains_help; /**< @brief Allow the crawler to go to URLs found on other domains. help description.  */
+  const char *http_only_help; /**< @brief Only fetch URLs with HTTP as scheme. help description.  */
+  const char *https_only_help; /**< @brief Only fetch URLs with HTTPS as scheme. help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -71,7 +73,10 @@ struct gengetopt_args_info
   unsigned int max_document_size_given ;	/**< @brief Whether max-document-size was given.  */
   unsigned int allow_subdomains_given ;	/**< @brief Whether allow-subdomains was given.  */
   unsigned int allowed_domains_given ;	/**< @brief Whether allowed-domains was given.  */
+  unsigned int http_only_given ;	/**< @brief Whether http-only was given.  */
+  unsigned int https_only_given ;	/**< @brief Whether https-only was given.  */
 
+  int scheme_group_counter; /**< @brief Counter for group scheme */
 } ;
 
 /** @brief The additional parameters to pass to parser functions */

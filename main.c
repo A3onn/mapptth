@@ -23,6 +23,8 @@ struct WalkBundle {  // Used in walk_cb.
     int allowSubdomains;
     char** allowedDomains;
     int countAllowedDomains;
+    int httpOnly;
+    int httpsOnly;
 };
 
 lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
@@ -55,12 +57,25 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     // URL that will be added to the list of URLs to fetch
     char* finalURL;
 
+    char* scheme;
+
     CURLU* curl_u = curl_url();
     curl_url_set(curl_u, CURLUPART_URL, bundle->document->url, 0);
     curl_url_get(curl_u, CURLUPART_HOST, &documentDomain, 0);
     if(isValidLink((char*) foundURL)) {
         curl_url_set(curl_u, CURLUPART_URL, (char*) foundURL, 0);  // curl will change the url by himself based on the document's URL
         curl_url_set(curl_u, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
+
+        curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
+        if(bundle->httpOnly && strcmp("http", scheme) != 0) {
+            free(scheme);
+            free(documentDomain);
+            return LEXBOR_ACTION_OK;
+        } else if(bundle->httpsOnly && strcmp("https", scheme) != 0) {
+            free(scheme);
+            free(documentDomain);
+            return LEXBOR_ACTION_OK;
+        }
 
         curl_url_get(curl_u, CURLUPART_URL, &finalURL, 0);  // get final url
         curl_url_get(curl_u, CURLUPART_HOST, &foundURLDomain, 0);  // get the domain of the URL
@@ -175,6 +190,8 @@ int main(int argc, char* argv[]) {
     bundleWalk.allowedDomains = args_info.allowed_domains_arg;
     bundleWalk.countAllowedDomains = args_info.allowed_domains_given;
     bundleWalk.allowSubdomains = args_info.allow_subdomains_given;
+    bundleWalk.httpOnly = args_info.http_only_given;
+    bundleWalk.httpsOnly = args_info.https_only_given;
     while(1) {
         pthread_mutex_lock(&mutex);
         if(getDocumentListLength(documents) == 0) {  // no documents to parse
@@ -226,6 +243,8 @@ int main(int argc, char* argv[]) {
 
             char* currentDocumentURLDomain;
             char* redirectLocationDomain;
+            char* scheme;
+            int hasBeenAdded = 0;
 
             curl_url_set(curl_u, CURLUPART_URL, currentDocument->redirect_location, 0);
             curl_url_get(curl_u, CURLUPART_HOST, &redirectLocationDomain, 0);
@@ -234,8 +253,41 @@ int main(int argc, char* argv[]) {
             curl_url_get(curl_u, CURLUPART_HOST, &currentDocumentURLDomain, 0);
 
             pthread_mutex_lock(&mutex);
-            if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo) && isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag) == 1) {
-                pushURLList(&urls_todo, currentDocument->redirect_location);
+            if(isValidLink((char*) currentDocument->redirect_location)) {
+                curl_url_set(curl_u, CURLUPART_URL, currentDocument->redirect_location, 0);  // curl will change the url by himself based on the document's URL
+                curl_url_set(curl_u, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
+
+                curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
+                if(args_info.http_only_given && strcmp("http", scheme) != 0) {
+                    free(scheme);
+                    free(redirectLocationDomain);
+                    free(currentDocumentURLDomain);
+                    return LEXBOR_ACTION_OK;
+                } else if(args_info.https_only_given && strcmp("https", scheme) != 0) {
+                    free(scheme);
+                    free(redirectLocationDomain);
+                    free(currentDocumentURLDomain);
+                    return LEXBOR_ACTION_OK;
+                }
+
+                if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo)) {
+                    if(isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag)) {
+                        pushURLList(&urls_todo, currentDocument->redirect_location);
+                        hasBeenAdded = 1;
+                    } else {
+                        // check if it is an allowed domain
+                        for(int i = 0; i < args_info.allowed_domains_given; i++) {
+                            if(isValidDomain(redirectLocationDomain, args_info.allowed_domains_arg[i], args_info.allow_subdomains_flag)) {
+                                pushURLList(&urls_todo, currentDocument->redirect_location);
+                                hasBeenAdded = 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if(!hasBeenAdded) {
+                    free(currentDocument->redirect_location);
+                }
             }
             pthread_mutex_unlock(&mutex);
 
