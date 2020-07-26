@@ -61,6 +61,11 @@ struct gengetopt_args_info
   unsigned int allowed_domains_min; /**< @brief Allow the crawler to go to URLs found on other domains.'s minimum occurreces */
   unsigned int allowed_domains_max; /**< @brief Allow the crawler to go to URLs found on other domains.'s maximum occurreces */
   const char *allowed_domains_help; /**< @brief Allow the crawler to go to URLs found on other domains. help description.  */
+  char ** disallowed_paths_arg;	/**< @brief Disallow the crawler to go to these directories..  */
+  char ** disallowed_paths_orig;	/**< @brief Disallow the crawler to go to these directories. original value given at command line.  */
+  unsigned int disallowed_paths_min; /**< @brief Disallow the crawler to go to these directories.'s minimum occurreces */
+  unsigned int disallowed_paths_max; /**< @brief Disallow the crawler to go to these directories.'s maximum occurreces */
+  const char *disallowed_paths_help; /**< @brief Disallow the crawler to go to these directories. help description.  */
   const char *http_only_help; /**< @brief Only fetch URLs with HTTP as scheme. help description.  */
   const char *https_only_help; /**< @brief Only fetch URLs with HTTPS as scheme. help description.  */
   const char *only_body_help; /**< @brief Only parse the <body>. help description.  */
@@ -75,6 +80,7 @@ struct gengetopt_args_info
   unsigned int max_document_size_given ;	/**< @brief Whether max-document-size was given.  */
   unsigned int allow_subdomains_given ;	/**< @brief Whether allow-subdomains was given.  */
   unsigned int allowed_domains_given ;	/**< @brief Whether allowed-domains was given.  */
+  unsigned int disallowed_paths_given ;	/**< @brief Whether disallowed-paths was given.  */
   unsigned int http_only_given ;	/**< @brief Whether http-only was given.  */
   unsigned int https_only_given ;	/**< @brief Whether https-only was given.  */
   unsigned int only_body_given ;	/**< @brief Whether only-body was given.  */

@@ -8,6 +8,7 @@ option "retries" r "Maximum retries." int default="2" optional
 option "max-document-size" z "Maximum size of a document in bytes. If a document is larger, it won't be parsed." long default="128000" optional
 option "allow-subdomains" s "Allow the crawler to go to URLs found on a sub-domain." flag off
 option "allowed-domains" a "Allow the crawler to go to URLs found on other domains." string multiple optional
+option "disallowed-paths" d "Disallow the crawler to go to these directories." string multiple optional
 
 defgroup "scheme"
 groupoption "http-only" p "Only fetch URLs with HTTP as scheme." group="scheme"

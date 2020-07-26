@@ -43,6 +43,7 @@ const char *gengetopt_args_info_help[] = {
   "  -z, --max-document-size=LONG  Maximum size of a document in bytes. If a\n                                  document is larger, it won't be parsed.\n                                  (default=`128000')",
   "  -s, --allow-subdomains        Allow the crawler to go to URLs found on a\n                                  sub-domain.  (default=off)",
   "  -a, --allowed-domains=STRING  Allow the crawler to go to URLs found on other\n                                  domains.",
+  "  -d, --disallowed-paths=STRING Disallow the crawler to go to these\n                                  directories.",
   "\n Group: scheme",
   "  -p, --http-only               Only fetch URLs with HTTP as scheme.",
   "  -P, --https-only              Only fetch URLs with HTTPS as scheme.",
@@ -86,6 +87,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->max_document_size_given = 0 ;
   args_info->allow_subdomains_given = 0 ;
   args_info->allowed_domains_given = 0 ;
+  args_info->disallowed_paths_given = 0 ;
   args_info->http_only_given = 0 ;
   args_info->https_only_given = 0 ;
   args_info->only_body_given = 0 ;
@@ -111,6 +113,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->allow_subdomains_flag = 0;
   args_info->allowed_domains_arg = NULL;
   args_info->allowed_domains_orig = NULL;
+  args_info->disallowed_paths_arg = NULL;
+  args_info->disallowed_paths_orig = NULL;
   
 }
 
@@ -130,10 +134,13 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->allowed_domains_help = gengetopt_args_info_help[8] ;
   args_info->allowed_domains_min = 0;
   args_info->allowed_domains_max = 0;
-  args_info->http_only_help = gengetopt_args_info_help[10] ;
-  args_info->https_only_help = gengetopt_args_info_help[11] ;
-  args_info->only_body_help = gengetopt_args_info_help[13] ;
-  args_info->only_head_help = gengetopt_args_info_help[14] ;
+  args_info->disallowed_paths_help = gengetopt_args_info_help[9] ;
+  args_info->disallowed_paths_min = 0;
+  args_info->disallowed_paths_max = 0;
+  args_info->http_only_help = gengetopt_args_info_help[11] ;
+  args_info->https_only_help = gengetopt_args_info_help[12] ;
+  args_info->only_body_help = gengetopt_args_info_help[14] ;
+  args_info->only_head_help = gengetopt_args_info_help[15] ;
   
 }
 
@@ -276,6 +283,7 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->retries_orig));
   free_string_field (&(args_info->max_document_size_orig));
   free_multiple_string_field (args_info->allowed_domains_given, &(args_info->allowed_domains_arg), &(args_info->allowed_domains_orig));
+  free_multiple_string_field (args_info->disallowed_paths_given, &(args_info->disallowed_paths_arg), &(args_info->disallowed_paths_orig));
   
   
 
@@ -331,6 +339,7 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
   if (args_info->allow_subdomains_given)
     write_into_file(outfile, "allow-subdomains", 0, 0 );
   write_multiple_into_file(outfile, args_info->allowed_domains_given, "allowed-domains", args_info->allowed_domains_orig, 0);
+  write_multiple_into_file(outfile, args_info->disallowed_paths_given, "disallowed-paths", args_info->disallowed_paths_orig, 0);
   if (args_info->http_only_given)
     write_into_file(outfile, "http-only", 0, 0 );
   if (args_info->https_only_given)
@@ -623,6 +632,9 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
   if (check_multiple_option_occurrences(prog_name, args_info->allowed_domains_given, args_info->allowed_domains_min, args_info->allowed_domains_max, "'--allowed-domains' ('-a')"))
      error_occurred = 1;
   
+  if (check_multiple_option_occurrences(prog_name, args_info->disallowed_paths_given, args_info->disallowed_paths_min, args_info->disallowed_paths_max, "'--disallowed-paths' ('-d')"))
+     error_occurred = 1;
+  
   
   /* checks for dependences among options */
 
@@ -899,6 +911,7 @@ cmdline_parser_internal (
   int c;	/* Character of the parsed option.  */
 
   struct generic_list * allowed_domains_list = NULL;
+  struct generic_list * disallowed_paths_list = NULL;
   int error_occurred = 0;
   struct gengetopt_args_info local_args_info;
   
@@ -944,6 +957,7 @@ cmdline_parser_internal (
         { "max-document-size",	1, NULL, 'z' },
         { "allow-subdomains",	0, NULL, 's' },
         { "allowed-domains",	1, NULL, 'a' },
+        { "disallowed-paths",	1, NULL, 'd' },
         { "http-only",	0, NULL, 'p' },
         { "https-only",	0, NULL, 'P' },
         { "only-body",	0, NULL, 'B' },
@@ -951,7 +965,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:r:z:sa:pPBH", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:r:z:sa:d:pPBH", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1046,6 +1060,15 @@ cmdline_parser_internal (
             goto failure;
         
           break;
+        case 'd':	/* Disallow the crawler to go to these directories..  */
+        
+          if (update_multiple_arg_temp(&disallowed_paths_list, 
+              &(local_args_info.disallowed_paths_given), optarg, 0, 0, ARG_STRING,
+              "disallowed-paths", 'd',
+              additional_error))
+            goto failure;
+        
+          break;
         case 'p':	/* Only fetch URLs with HTTP as scheme..  */
         
           if (args_info->scheme_group_counter && override)
@@ -1135,9 +1158,15 @@ cmdline_parser_internal (
     &(args_info->allowed_domains_orig), args_info->allowed_domains_given,
     local_args_info.allowed_domains_given, 0,
     ARG_STRING, allowed_domains_list);
+  update_multiple_arg((void *)&(args_info->disallowed_paths_arg),
+    &(args_info->disallowed_paths_orig), args_info->disallowed_paths_given,
+    local_args_info.disallowed_paths_given, 0,
+    ARG_STRING, disallowed_paths_list);
 
   args_info->allowed_domains_given += local_args_info.allowed_domains_given;
   local_args_info.allowed_domains_given = 0;
+  args_info->disallowed_paths_given += local_args_info.disallowed_paths_given;
+  local_args_info.disallowed_paths_given = 0;
   
   if (check_required)
     {
@@ -1153,6 +1182,7 @@ cmdline_parser_internal (
 
 failure:
   free_list (allowed_domains_list, 1 );
+  free_list (disallowed_paths_list, 1 );
   
   cmdline_parser_release (&local_args_info);
   return (EXIT_FAILURE);

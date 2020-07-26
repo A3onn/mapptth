@@ -23,6 +23,8 @@ struct WalkBundle {  // Used in walk_cb.
     int allowSubdomains;
     char** allowedDomains;
     int countAllowedDomains;
+    char** disallowedPaths;
+    int countDisallowedPaths;
     int httpOnly;
     int httpsOnly;
 };
@@ -75,6 +77,22 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
             free(scheme);
             free(documentDomain);
             return LEXBOR_ACTION_OK;
+        }
+
+        if(bundle->countDisallowedPaths > 0) {
+            int isValidPath = 1;
+            char* path;
+            curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
+            for(int i = 0; i < bundle->countDisallowedPaths; i++) {
+                if(strstr(path, bundle->disallowedPaths[i]) == path) {
+                    isValidPath = 0;
+                }
+            }
+            if(isValidPath == 0) {
+                free(scheme);
+                free(documentDomain);
+                return LEXBOR_ACTION_OK;
+            }
         }
 
         curl_url_get(curl_u, CURLUPART_URL, &finalURL, 0);  // get final url
@@ -139,6 +157,11 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "%s: the timeout should be positive\n", argv[0]);
         exit(1);
     }
+    // normalize paths given by the user
+    char** disallowed_paths = (char**) malloc(sizeof(char*) * args_info.disallowed_paths_given);
+    for(int i = 0; i < args_info.disallowed_paths_given; i++) {
+        disallowed_paths[i] = normalizePath(args_info.disallowed_paths_arg[i]);
+    }
     pthread_t fetcher_threads[args_info.threads_arg];
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -192,6 +215,8 @@ int main(int argc, char* argv[]) {
     bundleWalk.allowSubdomains = args_info.allow_subdomains_given;
     bundleWalk.httpOnly = args_info.http_only_given;
     bundleWalk.httpsOnly = args_info.https_only_given;
+    bundleWalk.disallowedPaths = disallowed_paths;
+    bundleWalk.countDisallowedPaths = args_info.disallowed_paths_given;
     while(1) {
         pthread_mutex_lock(&mutex);
         if(getDocumentListLength(documents) == 0) {  // no documents to parse
@@ -258,19 +283,33 @@ int main(int argc, char* argv[]) {
                 curl_url_set(curl_u, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
 
                 curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
+                int isStillValid = 1;  // indicates if it is a valid URL through the checks, if not then it is useless to do checks anymore
                 if(args_info.http_only_given && strcmp("http", scheme) != 0) {
                     free(scheme);
-                    free(redirectLocationDomain);
-                    free(currentDocumentURLDomain);
-                    return LEXBOR_ACTION_OK;
+                    isStillValid = 0;
                 } else if(args_info.https_only_given && strcmp("https", scheme) != 0) {
                     free(scheme);
-                    free(redirectLocationDomain);
-                    free(currentDocumentURLDomain);
-                    return LEXBOR_ACTION_OK;
+                    isStillValid = 0;
                 }
 
-                if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo)) {
+                if(args_info.disallowed_paths_given > 0 && isStillValid) {
+                    int isValidPath = 1;
+                    char* path;
+                    curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
+                    for(int i = 0; i < args_info.disallowed_paths_given; i++) {
+                        if(strstr(path, disallowed_paths[i]) == path) {
+                            isValidPath = 0;
+                            break;
+                        }
+                    }
+                    if(isValidPath == 0) {
+                        free(scheme);
+                        isStillValid = 0;
+                    }
+                    free(path);
+                }
+
+                if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo) && isStillValid) {
                     if(isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag)) {
                         pushURLList(&urls_todo, currentDocument->redirect_location);
                         hasBeenAdded = 1;
@@ -311,6 +350,10 @@ int main(int argc, char* argv[]) {
     while(getURLListLength(urls_done) != 1) {  // all urls are allocated by curl when parsing url, except the initial url
         char* url_done = popURLList(&urls_done);
         free(url_done);
+    }
+
+    for(int i = 0; i < args_info.disallowed_paths_given; i++) {
+        free(disallowed_paths[i]);
     }
 
     cmdline_parser_free(&args_info);
