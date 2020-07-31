@@ -36,7 +36,7 @@ int isValidLink(const char* url) {
     if(url == NULL) {
         return 0;
     }
-    return url[0] != '#' && strstr(url, "mailto:") != url && strstr(url, "tel:") != url && strstr(url, "data:") != url;
+    return url[0] != '#' && strstr(url, "mailto:") != url && strstr(url, "tel:") != url && strstr(url, "data:") != url && strstr(url, "javascript:") != url;
 }
 
 char* normalizePath(char* path) {
@@ -62,7 +62,6 @@ char* normalizePath(char* path) {
                 elements[index] = strdup(token);
                 index++;
                 if(index >= 25) {
-                    puts("too long");
                     break;
                 }
             }
