@@ -286,27 +286,20 @@ int main(int argc, char* argv[]) {
 
                 curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
                 int isStillValid = 1;  // indicates if it is a valid URL through the checks, if not then it is useless to do checks anymore
-                if(args_info.http_only_given && strcmp("http", scheme) != 0) {
-                    free(scheme);
-                    isStillValid = 0;
-                } else if(args_info.https_only_given && strcmp("https", scheme) != 0) {
-                    free(scheme);
+
+                if((args_info.http_only_given && strcmp("http", scheme) != 0) || (args_info.https_only_given && strcmp("https", scheme) != 0)) {
                     isStillValid = 0;
                 }
+                free(scheme);
 
                 if(args_info.disallowed_paths_given > 0 && isStillValid) {
-                    int isValidPath = 1;
                     char* path;
                     curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
                     for(int i = 0; i < args_info.disallowed_paths_given; i++) {
                         if(strstr(path, disallowed_paths[i]) == path) {
-                            isValidPath = 0;
+                            isStillValid = 0;
                             break;
                         }
-                    }
-                    if(isValidPath == 0) {
-                        free(scheme);
-                        isStillValid = 0;
                     }
                     free(path);
                 }
