@@ -16,7 +16,7 @@
 #error "libcurl 7.62.0 or later is required"
 #endif
 
-struct WalkBundle {  // Used in walk_cb.
+struct WalkBundle {  // used with walk_cb.
     struct Document* document;
     URLNode_t** urls_todo;
     URLNode_t** urls_done;
@@ -35,12 +35,15 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     }
 
     lxb_dom_element_t* element = lxb_dom_interface_element(node);
+    // check if the element has a 'href' or a 'src' attribute
     if(!lxb_dom_element_has_attribute(element, (lxb_char_t*) "href", 4) && !lxb_dom_element_has_attribute(element, (lxb_char_t*) "src", 3)) {
         return LEXBOR_ACTION_OK;
     }
 
     struct WalkBundle* bundle = (struct WalkBundle*) ctx;
 
+    // try to get the 'href' attribute if it has one, 'src' attribute if it doesn't have an 'href' attribute instead
+    // note that the element has to have either one as it has been checked just before
     char* foundURL;
     foundURL = (char*) lxb_dom_element_get_attribute(element, (lxb_char_t*) "href", 4, NULL);
     if(foundURL == NULL) {  // if this element has a src attribute instead
@@ -61,24 +64,23 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
 
     char* scheme;
 
-    CURLU* curl_u = curl_url();
-    curl_url_set(curl_u, CURLUPART_URL, bundle->document->url, 0);
-    curl_url_get(curl_u, CURLUPART_HOST, &documentDomain, 0);
     if(isValidLink((char*) foundURL)) {
+        CURLU* curl_u = curl_url();
+        curl_url_set(curl_u, CURLUPART_URL, bundle->document->url, 0);
+        curl_url_get(curl_u, CURLUPART_HOST, &documentDomain, 0);
+
         curl_url_set(curl_u, CURLUPART_URL, (char*) foundURL, 0);  // curl will change the url by himself based on the document's URL
         curl_url_set(curl_u, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
 
+        // check scheme
         curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
-        if(bundle->httpOnly && strcmp("http", scheme) != 0) {
+        if((bundle->httpOnly && strcmp("http", scheme) != 0) || (bundle->httpsOnly && strcmp("https", scheme) != 0)) {
             free(scheme);
-            free(documentDomain);
-            return LEXBOR_ACTION_OK;
-        } else if(bundle->httpsOnly && strcmp("https", scheme) != 0) {
-            free(scheme);
-            free(documentDomain);
             return LEXBOR_ACTION_OK;
         }
+        free(scheme);
 
+        // check disallowed paths
         if(bundle->countDisallowedPaths > 0) {
             int isValidPath = 1;
             char* path;
@@ -86,19 +88,19 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
             for(int i = 0; i < bundle->countDisallowedPaths; i++) {
                 if(strstr(path, bundle->disallowedPaths[i]) == path) {
                     isValidPath = 0;
+                    break;
                 }
             }
             if(isValidPath == 0) {
-                free(scheme);
-                free(documentDomain);
+                free(path);
                 return LEXBOR_ACTION_OK;
             }
+            free(path);
         }
 
         curl_url_get(curl_u, CURLUPART_URL, &finalURL, 0);  // get final url
-        curl_url_get(curl_u, CURLUPART_HOST, &foundURLDomain, 0);  // get the domain of the URL
-
         if(canBeAdded(finalURL, *(bundle->urls_done), *(bundle->urls_todo))) {
+            curl_url_get(curl_u, CURLUPART_HOST, &foundURLDomain, 0);  // get the domain of the URL found
 
             if(isValidDomain(foundURLDomain, documentDomain, bundle->allowSubdomains)) {
                 pushURLList(bundle->urls_todo, finalURL);
@@ -113,14 +115,14 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
                     }
                 }
             }
+            free(foundURLDomain);
         }
         if(!hasBeenAdded) {
             free(finalURL);
         }
-        free(foundURLDomain);
+        free(documentDomain);
+        curl_url_cleanup(curl_u);
     }
-    free(documentDomain);
-    curl_url_cleanup(curl_u);
     return LEXBOR_ACTION_OK;
 }
 
