@@ -33,8 +33,8 @@ endif()
 
 # check for lexbor
 find_library(LEXBOR_LIBRARY NAMES lexbor required)
-if(LEXBOR_LIBRARY_NOTFOUND)
-    message(FATAL_ERROR "liblexbor not found")
+if(NOT LEXBOR_LIBRARY)
+    message(FATAL_ERROR "liblexbor not found.")
 else()
     message(STATUS "Found Lexbor ${LEXBOR_LIBRARY}")
     target_link_libraries(mapptth ${LEXBOR_LIBRARY})
