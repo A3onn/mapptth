@@ -31,7 +31,7 @@ extern "C" {
 
 #ifndef CMDLINE_PARSER_VERSION
 /** @brief the program version */
-#define CMDLINE_PARSER_VERSION "0.0.8"
+#define CMDLINE_PARSER_VERSION "0.0.9"
 #endif
 
 /** @brief Where the command line options are stored */
@@ -66,6 +66,11 @@ struct gengetopt_args_info
   unsigned int disallowed_paths_min; /**< @brief Disallow the crawler to go to these directories.'s minimum occurreces */
   unsigned int disallowed_paths_max; /**< @brief Disallow the crawler to go to these directories.'s maximum occurreces */
   const char *disallowed_paths_help; /**< @brief Disallow the crawler to go to these directories. help description.  */
+  char ** allowed_extensions_arg;	/**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot)..  */
+  char ** allowed_extensions_orig;	/**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot). original value given at command line.  */
+  unsigned int allowed_extensions_min; /**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot).'s minimum occurreces */
+  unsigned int allowed_extensions_max; /**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot).'s maximum occurreces */
+  const char *allowed_extensions_help; /**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot). help description.  */
   const char *http_only_help; /**< @brief Only fetch URLs with HTTP as scheme. help description.  */
   const char *https_only_help; /**< @brief Only fetch URLs with HTTPS as scheme. help description.  */
   const char *only_body_help; /**< @brief Only parse the <body>. help description.  */
@@ -81,6 +86,7 @@ struct gengetopt_args_info
   unsigned int allow_subdomains_given ;	/**< @brief Whether allow-subdomains was given.  */
   unsigned int allowed_domains_given ;	/**< @brief Whether allowed-domains was given.  */
   unsigned int disallowed_paths_given ;	/**< @brief Whether disallowed-paths was given.  */
+  unsigned int allowed_extensions_given ;	/**< @brief Whether allowed-extensions was given.  */
   unsigned int http_only_given ;	/**< @brief Whether http-only was given.  */
   unsigned int https_only_given ;	/**< @brief Whether https-only was given.  */
   unsigned int only_body_given ;	/**< @brief Whether only-body was given.  */

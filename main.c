@@ -23,6 +23,8 @@ struct WalkBundle {  // used with walk_cb.
     int allowSubdomains;
     char** allowedDomains;
     int countAllowedDomains;
+    char** allowedExtensions;
+    int countAllowedExtensions;
     char** disallowedPaths;
     int countDisallowedPaths;
     int httpOnly;
@@ -80,11 +82,11 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
         }
         free(scheme);
 
+        char* path;
+        curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
         // check disallowed paths
         if(bundle->countDisallowedPaths > 0) {
             int isValidPath = 1;
-            char* path;
-            curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
             for(int i = 0; i < bundle->countDisallowedPaths; i++) {
                 if(strstr(path, bundle->disallowedPaths[i]) == path) {
                     isValidPath = 0;
@@ -95,8 +97,34 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
                 free(path);
                 return LEXBOR_ACTION_OK;
             }
-            free(path);
         }
+        // check allowed extensions
+        if(bundle->countAllowedExtensions > 0) {
+            int isValidExtension = 0;
+            int hasExtension = 0;
+
+            char* filename = strrchr(path, '/');
+            char* ext;
+            if(filename != NULL) {
+                ext = strrchr(filename, '.');
+                if(ext != NULL) {
+                    hasExtension = 1;
+                }
+            }
+            if(hasExtension) {
+                for(int i = 0; i < bundle->countAllowedExtensions; i++) {
+                    if(strstr(path, bundle->allowedExtensions[i]) == ext) {
+                        isValidExtension = 1;
+                        break;
+                    }
+                }
+                if(isValidExtension == 0) {
+                    free(path);
+                    return LEXBOR_ACTION_OK;
+                }
+            }
+        }
+        free(path);
 
         curl_url_get(curl_u, CURLUPART_URL, &finalURL, 0);  // get final url
         if(canBeAdded(finalURL, *(bundle->urls_done), *(bundle->urls_todo))) {
@@ -137,27 +165,33 @@ static void unlock_cb(CURL* handle, curl_lock_data data, void* userptr) {
 int main(int argc, char* argv[]) {
     struct gengetopt_args_info args_info;
     if(cmdline_parser(argc, argv, &args_info) != 0) {
-        exit(1);
+        return 1;
     }
     if((strncmp(args_info.url_arg, "http://", 7) != 0 && strncmp(args_info.url_arg, "https://", 8) != 0) || strchr(args_info.url_arg, ' ') != NULL) {
         fprintf(stderr, "%s: invalid URL: %s\n", argv[0], args_info.url_arg);
-        exit(1);
+        return 1;
     }
     if(args_info.threads_arg <= 0) {
         fprintf(stderr, "%s: the number of threads should be positive\n", argv[0]);
-        exit(1);
+        return 1;
     }
     if(args_info.max_document_size_arg <= 0L) {
         fprintf(stderr, "%s: the max size of a document should be positive\n", argv[0]);
-        exit(1);
+        return 1;
     }
     if(args_info.retries_arg <= 0) {
         fprintf(stderr, "%s: the maximum number of retries should be positive\n", argv[0]);
-        exit(1);
+        return 1;
     }
     if(args_info.timeout_arg <= 0) {
         fprintf(stderr, "%s: the timeout should be positive\n", argv[0]);
-        exit(1);
+        return 1;
+    }
+    for(int i = 0; i < args_info.allowed_extensions_given; i++) {
+        if(args_info.allowed_extensions_arg[i][0] != '.') {
+            fprintf(stderr, "%s: extensions have to begin with a '.' (dot)\n", argv[0]);
+            return 1;
+        }
     }
     // normalize paths given by the user
     char** disallowed_paths = (char**) malloc(sizeof(char*) * args_info.disallowed_paths_given);
@@ -214,6 +248,8 @@ int main(int argc, char* argv[]) {
     struct WalkBundle bundleWalk;  // in this bundle these elements never change
     bundleWalk.allowedDomains = args_info.allowed_domains_arg;
     bundleWalk.countAllowedDomains = args_info.allowed_domains_given;
+    bundleWalk.allowedExtensions = args_info.allowed_extensions_arg;
+    bundleWalk.countAllowedExtensions = args_info.allowed_extensions_given;
     bundleWalk.allowSubdomains = args_info.allow_subdomains_given;
     bundleWalk.httpOnly = args_info.http_only_given;
     bundleWalk.httpsOnly = args_info.https_only_given;
@@ -292,17 +328,41 @@ int main(int argc, char* argv[]) {
                 }
                 free(scheme);
 
+                char* path;
+                curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
                 if(args_info.disallowed_paths_given > 0 && isStillValid) {
-                    char* path;
-                    curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
                     for(int i = 0; i < args_info.disallowed_paths_given; i++) {
                         if(strstr(path, disallowed_paths[i]) == path) {
                             isStillValid = 0;
                             break;
                         }
                     }
-                    free(path);
                 }
+                if(args_info.allowed_extensions_given > 0 && isStillValid) {
+                    int isValidExtension = 0;
+                    int hasExtension = 0;
+
+                    char* filename = strrchr(path, '/');
+                    char* ext;
+                    if(filename != NULL) {
+                        ext = strrchr(filename, '.');
+                        if(ext != NULL) {
+                            hasExtension = 1;
+                        }
+                    }
+                    if(hasExtension) {
+                        for(int i = 0; i < args_info.allowed_extensions_given; i++) {
+                            if(strstr(path, args_info.allowed_extensions_arg[i]) == ext) {
+                                isValidExtension = 1;
+                                break;
+                            }
+                        }
+                        if(isValidExtension == 0) {
+                            isStillValid = 0;
+                        }
+                    }
+                }
+                free(path);
 
                 if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo) && isStillValid) {
                     if(isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag)) {
