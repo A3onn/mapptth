@@ -24,9 +24,12 @@ struct BundleVarsThread {  // used to needed variables to the thread
     int* shouldExit;  // if thread should exit; set by the main thread
 
     CURLSH* curl_share;
+
     int maxRetries;
     int timeout;
     long maxFileSize;
+
+    int resolve_ip_versions;
 };
 
 void* fetcher_thread_func(void* bundle_arg);

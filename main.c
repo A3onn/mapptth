@@ -198,6 +198,14 @@ int main(int argc, char* argv[]) {
     for(int i = 0; i < args_info.disallowed_paths_given; i++) {
         disallowed_paths[i] = normalizePath(args_info.disallowed_paths_arg[i]);
     }
+
+    int resolve_ip_version = CURL_IPRESOLVE_WHATEVER;
+    if(args_info.IPv4_given) {
+        resolve_ip_version = CURL_IPRESOLVE_V4;
+    } else if(args_info.IPv6_given) {
+        resolve_ip_version = CURL_IPRESOLVE_V6;
+    }
+
     pthread_t fetcher_threads[args_info.threads_arg];
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -238,6 +246,7 @@ int main(int argc, char* argv[]) {
         bundles[i].maxRetries = args_info.retries_arg;
         bundles[i].timeout = args_info.timeout_arg;
         bundles[i].maxFileSize = args_info.max_document_size_arg;
+        bundles[i].resolve_ip_versions = resolve_ip_version;
         bundles[i].curl_share = curl_share;
         pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*) &(bundles[i]));
     }

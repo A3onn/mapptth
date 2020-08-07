@@ -75,6 +75,8 @@ struct gengetopt_args_info
   const char *https_only_help; /**< @brief Only fetch URLs with HTTPS as scheme. help description.  */
   const char *only_body_help; /**< @brief Only parse the <body>. help description.  */
   const char *only_head_help; /**< @brief Only parse the <head>. help description.  */
+  const char *IPv6_help; /**< @brief Only resolve to IPv6 addresses. help description.  */
+  const char *IPv4_help; /**< @brief Only resolve to IPv4 addresses. help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -91,8 +93,11 @@ struct gengetopt_args_info
   unsigned int https_only_given ;	/**< @brief Whether https-only was given.  */
   unsigned int only_body_given ;	/**< @brief Whether only-body was given.  */
   unsigned int only_head_given ;	/**< @brief Whether only-head was given.  */
+  unsigned int IPv6_given ;	/**< @brief Whether IPv6 was given.  */
+  unsigned int IPv4_given ;	/**< @brief Whether IPv4 was given.  */
 
   int parsing_part_group_counter; /**< @brief Counter for group parsing_part */
+  int resolving_ip_version_group_counter; /**< @brief Counter for group resolving_ip_version */
   int scheme_group_counter; /**< @brief Counter for group scheme */
 } ;
 

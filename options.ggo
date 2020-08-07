@@ -18,3 +18,7 @@ groupoption "https-only" P "Only fetch URLs with HTTPS as scheme." group="scheme
 defgroup "parsing-part"
 groupoption "only-body" B "Only parse the <body>." group="parsing-part"
 groupoption "only-head" H "Only parse the <head>." group="parsing-part"
+
+defgroup "resolving-ip-version"
+groupoption "IPv6" 6 "Only resolve to IPv6 addresses." group="resolving-ip-version"
+groupoption "IPv4" 4 "Only resolve to IPv4 addresses." group="resolving-ip-version"
