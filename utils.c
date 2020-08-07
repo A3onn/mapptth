@@ -4,12 +4,12 @@
 int canBeAdded(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
     // Just check if a given url has already been seen.
     // Could just be:
-    //  return !findURLList(*urls_done, urlFinal) && !findURLList(*urls_done, urlFinal)
-    // but it would be longer as both findURLList are called every time
-    if(findURLList(urls_done, url)) {
+    //  return !findURLQueue(*urls_done, urlFinal) && !findURLQueue(*urls_done, urlFinal)
+    // but it would be longer as both findURLQueue are called every time
+    if(findURLQueue(urls_done, url)) {
         return 0;
     }
-    if(findURLList(urls_todo, url)) {
+    if(findURLQueue(urls_todo, url)) {
         return 0;
     }
     return 1;

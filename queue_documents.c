@@ -1,6 +1,6 @@
-#include "linked_list_documents.h"
+#include "queue_documents.h"
 
-void pushDocumentList(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code_http, char* content_type, char* redirect_location) {
+void pushDocumentQueue(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code_http, char* content_type, char* redirect_location) {
     DocumentNode_t* newNode = (DocumentNode_t*) malloc(sizeof(DocumentNode_t));
     newNode->next = *head;
     newNode->document.document = document;
@@ -11,7 +11,7 @@ void pushDocumentList(DocumentNode_t** head, lxb_html_document_t* document, char
     *head = newNode;
 }
 
-struct Document* popDocumentList(DocumentNode_t** head) {
+struct Document* popDocumentQueue(DocumentNode_t** head) {
     DocumentNode_t* tmp = *head;
     if(tmp == NULL) {
         return NULL;
@@ -28,7 +28,7 @@ struct Document* popDocumentList(DocumentNode_t** head) {
     return res;
 }
 
-int getDocumentListLength(DocumentNode_t* head) {
+int getDocumentQueueLength(DocumentNode_t* head) {
     DocumentNode_t* tmp = head;
     if(tmp == NULL) {
         return 0;

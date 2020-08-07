@@ -6,8 +6,8 @@
 #include <string.h>
 
 #include "fetcher_thread.h"
-#include "linked_list_documents.h"
-#include "linked_list_urls.h"
+#include "queue_documents.h"
+#include "queue_urls.h"
 #include "utils.h"
 
 #include "cmdline.h"
@@ -61,7 +61,7 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     char* documentDomain;
     char* foundURLDomain;
 
-    // URL that will be added to the list of URLs to fetch
+    // URL that will be added to the queue of URLs to fetch
     char* finalURL;
 
     char* scheme;
@@ -131,13 +131,13 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
             curl_url_get(curl_u, CURLUPART_HOST, &foundURLDomain, 0);  // get the domain of the URL found
 
             if(isValidDomain(foundURLDomain, documentDomain, bundle->allowSubdomains)) {
-                pushURLList(bundle->urls_todo, finalURL);
+                pushURLQueue(bundle->urls_todo, finalURL);
                 hasBeenAdded = 1;
             } else {
                 // check if it is an allowed domain
                 for(int i = 0; i < bundle->countAllowedDomains; i++) {
                     if(isValidDomain(foundURLDomain, bundle->allowedDomains[i], bundle->allowSubdomains)) {
-                        pushURLList(bundle->urls_todo, finalURL);
+                        pushURLQueue(bundle->urls_todo, finalURL);
                         hasBeenAdded = 1;
                         break;
                     }
@@ -205,7 +205,7 @@ int main(int argc, char* argv[]) {
 
     URLNode_t* urls_todo = NULL;
     URLNode_t* urls_done = NULL;
-    pushURLList(&urls_todo, args_info.url_arg);
+    pushURLQueue(&urls_todo, args_info.url_arg);
 
     curl_global_init(CURL_GLOBAL_ALL);
 
@@ -224,17 +224,17 @@ int main(int argc, char* argv[]) {
     curl_share_setopt(curl_share, CURLSHOPT_USERDATA, (void*) &mutex_conn);
 
     int shouldExit = 0;  // if threads should exit, set to 1 when all threads have isRunning == 1
-    int* listRunningThreads = (int*) malloc(sizeof(int) * args_info.threads_arg);
+    int* queueRunningThreads = (int*) malloc(sizeof(int) * args_info.threads_arg);
     struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * args_info.threads_arg);
     for(int i = 0; i < args_info.threads_arg; i++) {
-        listRunningThreads[i] = 1;
+        queueRunningThreads[i] = 1;
 
         bundles[i].documents = &documents;
         bundles[i].urls_todo = &urls_todo;
         bundles[i].urls_done = &urls_done;
         bundles[i].mutex = &mutex;
         bundles[i].shouldExit = &shouldExit;
-        bundles[i].isRunning = &(listRunningThreads[i]);
+        bundles[i].isRunning = &(queueRunningThreads[i]);
         bundles[i].maxRetries = args_info.retries_arg;
         bundles[i].timeout = args_info.timeout_arg;
         bundles[i].maxFileSize = args_info.max_document_size_arg;
@@ -257,18 +257,18 @@ int main(int argc, char* argv[]) {
     bundleWalk.countDisallowedPaths = args_info.disallowed_paths_given;
     while(1) {
         pthread_mutex_lock(&mutex);
-        if(getDocumentListLength(documents) == 0) {  // no documents to parse
+        if(getDocumentQueueLength(documents) == 0) {  // no documents to parse
             // if this thread has no document to parse and all threads are waiting for urls,
             // then it means that everything was discovered and they should quit,
             // otherwise just continue to check for something to do
             int shouldQuit = 1;
             for(int i = 0; i < args_info.threads_arg; i++) {  // check if all threads are running
-                if(listRunningThreads[i] == 1) {  // if one is running
+                if(queueRunningThreads[i] == 1) {  // if one is running
                     shouldQuit = 0;  // should not quit
                     break;  // don't need to check other threads
                 }
             }
-            if(shouldQuit == 1 && isURLListEmpty(urls_todo)) {  // if no threads are running and no urls to fetch left
+            if(shouldQuit == 1 && isURLQueueEmpty(urls_todo)) {  // if no threads are running and no urls to fetch left
                 // quit
                 shouldExit = 1;
                 pthread_mutex_unlock(&mutex);
@@ -279,7 +279,7 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        currentDocument = popDocumentList(&documents);
+        currentDocument = popDocumentQueue(&documents);
         pthread_mutex_unlock(&mutex);
 
         printf("%s (%lu) %s\n", currentDocument->url, currentDocument->status_code_http, currentDocument->content_type);
@@ -366,13 +366,13 @@ int main(int argc, char* argv[]) {
 
                 if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo) && isStillValid) {
                     if(isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag)) {
-                        pushURLList(&urls_todo, currentDocument->redirect_location);
+                        pushURLQueue(&urls_todo, currentDocument->redirect_location);
                         hasBeenAdded = 1;
                     } else {
                         // check if it is an allowed domain
                         for(int i = 0; i < args_info.allowed_domains_given; i++) {
                             if(isValidDomain(redirectLocationDomain, args_info.allowed_domains_arg[i], args_info.allow_subdomains_flag)) {
-                                pushURLList(&urls_todo, currentDocument->redirect_location);
+                                pushURLQueue(&urls_todo, currentDocument->redirect_location);
                                 hasBeenAdded = 1;
                                 break;
                             }
@@ -400,10 +400,10 @@ int main(int argc, char* argv[]) {
 
     // CLEANUP
     free(bundles);
-    free(listRunningThreads);
+    free(queueRunningThreads);
 
-    while(getURLListLength(urls_done) != 1) {  // all urls are allocated by curl when parsing url, except the initial url
-        char* url_done = popURLList(&urls_done);
+    while(getURLQueueLength(urls_done) != 1) {  // all urls are allocated by curl when parsing url, except the initial url
+        char* url_done = popURLQueue(&urls_done);
         free(url_done);
     }
 

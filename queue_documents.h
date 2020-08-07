@@ -1,6 +1,8 @@
 #ifndef LINKED_LIST_DOCUMENTS_H
 #define LINKED_LIST_DOCUMENTS_H
 
+// FIFO
+
 #include <curl/curl.h>
 #include <lexbor/html/html.h>
 #include <stdio.h>
@@ -25,10 +27,10 @@ struct DocumentNode {
 };
 typedef struct DocumentNode DocumentNode_t;
 
-void pushDocumentList(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code, char* content_type, char* redirect_location);
+void pushDocumentQueue(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code, char* content_type, char* redirect_location);
 
-struct Document* popDocumentList(DocumentNode_t** head);
+struct Document* popDocumentQueue(DocumentNode_t** head);
 
-int getDocumentListLength(DocumentNode_t* head);
+int getDocumentQueueLength(DocumentNode_t* head);
 
 #endif

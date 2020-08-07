@@ -1,13 +1,13 @@
-#include "linked_list_urls.h"
+#include "queue_urls.h"
 
-void pushURLList(URLNode_t** head, char* url) {
+void pushURLQueue(URLNode_t** head, char* url) {
     URLNode_t* newNode = (URLNode_t*) malloc(sizeof(URLNode_t));
     newNode->next = *head;
     newNode->url = url;
     *head = newNode;
 }
 
-char* popURLList(URLNode_t** head) {
+char* popURLQueue(URLNode_t** head) {
     URLNode_t* tmp = *head;
     if(tmp == NULL) {
         return NULL;
@@ -19,11 +19,11 @@ char* popURLList(URLNode_t** head) {
     return res;
 }
 
-int isURLListEmpty(URLNode_t* head) {
+int isURLQueueEmpty(URLNode_t* head) {
     return head == 0;
 }
 
-int getURLListLength(URLNode_t* head) {
+int getURLQueueLength(URLNode_t* head) {
     URLNode_t* tmp = head;
     if(tmp == NULL) {
         return 0;
@@ -37,7 +37,7 @@ int getURLListLength(URLNode_t* head) {
     return res;
 }
 
-int findURLList(URLNode_t* head, char* url) {
+int findURLQueue(URLNode_t* head, char* url) {
     URLNode_t* tmp = head;
     if(tmp == NULL) {
         return 0;
@@ -52,7 +52,7 @@ int findURLList(URLNode_t* head, char* url) {
     return 0;
 }
 
-void printURLList(URLNode_t* head) {
+void printURLQueue(URLNode_t* head) {
     if(head == NULL) {
         puts("<empty>");
         return;

@@ -42,14 +42,14 @@ void* fetcher_thread_func(void* bundle_arg) {
             pthread_mutex_unlock(mutex);
             break;
         }
-        if(isURLListEmpty(*urls_todo)) {  // no url to fetch
+        if(isURLQueueEmpty(*urls_todo)) {  // no url to fetch
             *isRunning = 0;  // change state
             pthread_mutex_unlock(mutex);
             continue;
         }
         *isRunning = 1;
-        currentURL = popURLList(urls_todo);
-        pushURLList(urls_done, currentURL);
+        currentURL = popURLQueue(urls_todo);
+        pushURLQueue(urls_done, currentURL);
         pthread_mutex_unlock(mutex);
 
         currentDocument = lxb_html_document_create();
@@ -107,7 +107,7 @@ void* fetcher_thread_func(void* bundle_arg) {
         }
 
         pthread_mutex_lock(mutex);
-        pushDocumentList(documents, currentDocument, currentURL, status_code_http, content_type, redirect_location);
+        pushDocumentQueue(documents, currentDocument, currentURL, status_code_http, content_type, redirect_location);
         pthread_mutex_unlock(mutex);
     }
     curl_easy_cleanup(curl);

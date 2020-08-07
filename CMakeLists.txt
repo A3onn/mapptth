@@ -4,8 +4,8 @@ project(mapptth VERSION 0.0.9 LANGUAGES C)
 include(CTest)
 enable_testing()
 
-set(SRCS main.c fetcher_thread.c linked_list_documents.c linked_list_urls.c cmdline.c utils.c)
-set(HEADERS fetcher_thread.h linked_list_documents.h linked_list_urls.h cmdline.h utils.h)
+set(SRCS main.c fetcher_thread.c queue_documents.c queue_urls.c cmdline.c utils.c)
+set(HEADERS fetcher_thread.h queue_documents.h queue_urls.h cmdline.h utils.h)
 
 add_executable(mapptth ${SRCS} ${HEADERS})
 
@@ -20,7 +20,7 @@ include(FindCURL)
 if(NOT CURL_FOUND)
     message(FATAL_ERROR "libcurl not found")
 else()
-    string(REPLACE "." ";" CURL_VERSION_LIST ${CURL_VERSION_STRING}) # str -> list
+    string(REPLACE "." ";" CURL_VERSION_LIST ${CURL_VERSION_STRING}) # str -> queue
     list(GET CURL_VERSION_LIST 0 CURL_VERSION_MAJOR)
     list(GET CURL_VERSION_LIST 1 CURL_VERSION_MINOR)
     if((CURL_VERSION_MAJOR GREATER_EQUAL 7) AND (CURL_VERSION_MINOR GREATER_EQUAL 62))
