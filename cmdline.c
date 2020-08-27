@@ -45,6 +45,7 @@ const char *gengetopt_args_info_help[] = {
   "  -a, --allowed-domains=STRING  Allow the crawler to go to URLs found on other\n                                  domains.",
   "  -d, --disallowed-paths=STRING Disallow the crawler to go to these\n                                  directories.",
   "  -x, --allowed-extensions=STRING\n                                The crawler will only fetch documents with\n                                  these extensions, but if no extension is\n                                  found in an URL, this filter won't apply.\n                                  Extensions have to start with a '.' (dot).",
+  "  -k, --keep-query              Keep the query part in the URL.  (default=off)",
   "\n Group: scheme",
   "  -p, --http-only               Only fetch URLs with HTTP as scheme.",
   "  -P, --https-only              Only fetch URLs with HTTPS as scheme.",
@@ -93,6 +94,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->allowed_domains_given = 0 ;
   args_info->disallowed_paths_given = 0 ;
   args_info->allowed_extensions_given = 0 ;
+  args_info->keep_query_given = 0 ;
   args_info->http_only_given = 0 ;
   args_info->https_only_given = 0 ;
   args_info->only_body_given = 0 ;
@@ -125,6 +127,7 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->disallowed_paths_orig = NULL;
   args_info->allowed_extensions_arg = NULL;
   args_info->allowed_extensions_orig = NULL;
+  args_info->keep_query_flag = 0;
   
 }
 
@@ -150,12 +153,13 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->allowed_extensions_help = gengetopt_args_info_help[10] ;
   args_info->allowed_extensions_min = 0;
   args_info->allowed_extensions_max = 0;
-  args_info->http_only_help = gengetopt_args_info_help[12] ;
-  args_info->https_only_help = gengetopt_args_info_help[13] ;
-  args_info->only_body_help = gengetopt_args_info_help[15] ;
-  args_info->only_head_help = gengetopt_args_info_help[16] ;
-  args_info->IPv6_help = gengetopt_args_info_help[18] ;
-  args_info->IPv4_help = gengetopt_args_info_help[19] ;
+  args_info->keep_query_help = gengetopt_args_info_help[11] ;
+  args_info->http_only_help = gengetopt_args_info_help[13] ;
+  args_info->https_only_help = gengetopt_args_info_help[14] ;
+  args_info->only_body_help = gengetopt_args_info_help[16] ;
+  args_info->only_head_help = gengetopt_args_info_help[17] ;
+  args_info->IPv6_help = gengetopt_args_info_help[19] ;
+  args_info->IPv4_help = gengetopt_args_info_help[20] ;
   
 }
 
@@ -357,6 +361,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
   write_multiple_into_file(outfile, args_info->allowed_domains_given, "allowed-domains", args_info->allowed_domains_orig, 0);
   write_multiple_into_file(outfile, args_info->disallowed_paths_given, "disallowed-paths", args_info->disallowed_paths_orig, 0);
   write_multiple_into_file(outfile, args_info->allowed_extensions_given, "allowed-extensions", args_info->allowed_extensions_orig, 0);
+  if (args_info->keep_query_given)
+    write_into_file(outfile, "keep-query", 0, 0 );
   if (args_info->http_only_given)
     write_into_file(outfile, "http-only", 0, 0 );
   if (args_info->https_only_given)
@@ -996,6 +1002,7 @@ cmdline_parser_internal (
         { "allowed-domains",	1, NULL, 'a' },
         { "disallowed-paths",	1, NULL, 'd' },
         { "allowed-extensions",	1, NULL, 'x' },
+        { "keep-query",	0, NULL, 'k' },
         { "http-only",	0, NULL, 'p' },
         { "https-only",	0, NULL, 'P' },
         { "only-body",	0, NULL, 'B' },
@@ -1005,7 +1012,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:r:z:sa:d:x:pPBH64", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:r:z:sa:d:x:kpPBH64", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1114,6 +1121,16 @@ cmdline_parser_internal (
           if (update_multiple_arg_temp(&allowed_extensions_list, 
               &(local_args_info.allowed_extensions_given), optarg, 0, 0, ARG_STRING,
               "allowed-extensions", 'x',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'k':	/* Keep the query part in the URL..  */
+        
+        
+          if (update_arg((void *)&(args_info->keep_query_flag), 0, &(args_info->keep_query_given),
+              &(local_args_info.keep_query_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "keep-query", 'k',
               additional_error))
             goto failure;
         

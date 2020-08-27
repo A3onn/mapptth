@@ -10,6 +10,7 @@ option "allow-subdomains" s "Allow the crawler to go to URLs found on a sub-doma
 option "allowed-domains" a "Allow the crawler to go to URLs found on other domains." string multiple optional
 option "disallowed-paths" d "Disallow the crawler to go to these directories." string multiple optional
 option "allowed-extensions" x "The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot)." string multiple optional
+option "keep-query" k "Keep the query part in the URL." flag off
 
 defgroup "scheme"
 groupoption "http-only" p "Only fetch URLs with HTTP as scheme." group="scheme"

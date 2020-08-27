@@ -29,6 +29,7 @@ struct WalkBundle {  // used with walk_cb.
     int countDisallowedPaths;
     int httpOnly;
     int httpsOnly;
+    int keepQuery;
 };
 
 lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
@@ -81,6 +82,10 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
             return LEXBOR_ACTION_OK;
         }
         free(scheme);
+
+        if(!bundle->keepQuery) {
+            curl_url_set(curl_u, CURLUPART_QUERY, NULL, 0);
+        }
 
         char* path;
         curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
@@ -264,6 +269,7 @@ int main(int argc, char* argv[]) {
     bundleWalk.httpsOnly = args_info.https_only_given;
     bundleWalk.disallowedPaths = disallowed_paths;
     bundleWalk.countDisallowedPaths = args_info.disallowed_paths_given;
+    bundleWalk.keepQuery = args_info.keep_query_given;
     while(1) {
         pthread_mutex_lock(&mutex);
         if(getDocumentQueueLength(documents) == 0) {  // no documents to parse
