@@ -73,6 +73,8 @@ struct gengetopt_args_info
   const char *allowed_extensions_help; /**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot). help description.  */
   int keep_query_flag;	/**< @brief Keep the query part in the URL. (default=off).  */
   const char *keep_query_help; /**< @brief Keep the query part in the URL. help description.  */
+  int no_color_flag;	/**< @brief Don't use color when outputing on the console. (default=off).  */
+  const char *no_color_help; /**< @brief Don't use color when outputing on the console. help description.  */
   const char *http_only_help; /**< @brief Only fetch URLs with HTTP as scheme. help description.  */
   const char *https_only_help; /**< @brief Only fetch URLs with HTTPS as scheme. help description.  */
   const char *only_body_help; /**< @brief Only parse the <body>. help description.  */
@@ -92,6 +94,7 @@ struct gengetopt_args_info
   unsigned int disallowed_paths_given ;	/**< @brief Whether disallowed-paths was given.  */
   unsigned int allowed_extensions_given ;	/**< @brief Whether allowed-extensions was given.  */
   unsigned int keep_query_given ;	/**< @brief Whether keep-query was given.  */
+  unsigned int no_color_given ;	/**< @brief Whether no-color was given.  */
   unsigned int http_only_given ;	/**< @brief Whether http-only was given.  */
   unsigned int https_only_given ;	/**< @brief Whether https-only was given.  */
   unsigned int only_body_given ;	/**< @brief Whether only-body was given.  */

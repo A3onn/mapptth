@@ -168,6 +168,14 @@ static void unlock_cb(CURL* handle, curl_lock_data data, void* userptr) {
 }
 
 int main(int argc, char* argv[]) {
+    printf("\n(_______)           (_____ (_______|_______|_)   (_)\n"
+           " _  _  _ _____ ____  _____) )  _       _    _______ \n"
+           "| ||_|| (____ |  _ \\|  ____/  | |     | |  |  ___  |\n"
+           "| |   | / ___ | |_| | |       | |     | |  | |   | |\n"
+           "|_|   |_\\_____|  __/|_|       |_|     |_|  |_|   |_|\n"
+           "              |_|                                   \n"
+           "Version %s\n\n",
+        CMDLINE_PARSER_VERSION);
     struct gengetopt_args_info args_info;
     if(cmdline_parser(argc, argv, &args_info) != 0) {
         return 1;
@@ -252,6 +260,7 @@ int main(int argc, char* argv[]) {
         bundles[i].timeout = args_info.timeout_arg;
         bundles[i].maxFileSize = args_info.max_document_size_arg;
         bundles[i].resolve_ip_versions = resolve_ip_version;
+        bundles[i].noColor = args_info.no_color_given;
         bundles[i].curl_share = curl_share;
         pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*) &(bundles[i]));
     }
@@ -297,7 +306,38 @@ int main(int argc, char* argv[]) {
         currentDocument = popDocumentQueue(&documents);
         pthread_mutex_unlock(&mutex);
 
-        printf("%s (%lu) %s\n", currentDocument->url, currentDocument->status_code_http, currentDocument->content_type);
+        int httpStatusCat = currentDocument->status_code_http / 100;
+        if(!args_info.no_color_given) {
+            char* color;
+            switch(httpStatusCat) {
+            case 5:  //5xx
+                color = RED;
+                break;
+            case 4:  //4xx
+                color = MAGENTA;
+                break;
+            case 3:  //3xx
+                color = YELLOW;
+                break;
+            case 2:  //2xx
+                color = GREEN;
+                break;
+            case 1:  //1xx
+                color = CYAN;
+                break;
+            }
+            if(httpStatusCat == 3) {
+                printf("[%s%lu%s] %s -> %s [%s]\n", color, currentDocument->status_code_http, RESET, currentDocument->url, currentDocument->redirect_location, currentDocument->content_type);
+            } else {
+                printf("[%s%lu%s] %s [%s]\n", color, currentDocument->status_code_http, RESET, currentDocument->url, currentDocument->content_type);
+            }
+        } else {
+            if(httpStatusCat == 3) {
+                printf("[%lu] %s -> %s [%s]\n", currentDocument->status_code_http, currentDocument->url, currentDocument->redirect_location, currentDocument->content_type);
+            } else {
+                printf("[%lu] %s [%s]\n", currentDocument->status_code_http, currentDocument->url, currentDocument->content_type);
+            }
+        }
 
         if(currentDocument->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
             if(strstr(currentDocument->content_type, "text/html") != NULL || strstr(currentDocument->content_type, "application/xhtml+xml") != NULL) {
