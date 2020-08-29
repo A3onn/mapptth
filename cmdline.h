@@ -39,7 +39,7 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
-  int threads_arg;	/**< @brief Number of threads. (default='10').  */
+  int threads_arg;	/**< @brief Number of threads. (default='5').  */
   char * threads_orig;	/**< @brief Number of threads. original value given at command line.  */
   const char *threads_help; /**< @brief Number of threads. help description.  */
   char * url_arg;	/**< @brief URL of where to start..  */

@@ -1,7 +1,7 @@
 package "mapptth"
 version "0.0.9"
 
-option "threads" t "Number of threads." int default="10" optional
+option "threads" t "Number of threads." int default="5" optional
 option "url" u "URL of where to start." string required
 option "timeout" m "Timeout in seconds." int default="3" optional
 option "retries" r "Maximum retries." int default="2" optional

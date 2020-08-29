@@ -36,7 +36,7 @@ const char *gengetopt_args_info_description = "";
 const char *gengetopt_args_info_help[] = {
   "  -h, --help                    Print help and exit",
   "  -V, --version                 Print version and exit",
-  "  -t, --threads=INT             Number of threads.  (default=`10')",
+  "  -t, --threads=INT             Number of threads.  (default=`5')",
   "  -u, --url=STRING              URL of where to start.",
   "  -m, --timeout=INT             Timeout in seconds.  (default=`3')",
   "  -r, --retries=INT             Maximum retries.  (default=`2')",
@@ -112,7 +112,7 @@ static
 void clear_args (struct gengetopt_args_info *args_info)
 {
   FIX_UNUSED (args_info);
-  args_info->threads_arg = 10;
+  args_info->threads_arg = 5;
   args_info->threads_orig = NULL;
   args_info->url_arg = NULL;
   args_info->url_orig = NULL;
@@ -1040,7 +1040,7 @@ cmdline_parser_internal (
         
           if (update_arg( (void *)&(args_info->threads_arg), 
                &(args_info->threads_orig), &(args_info->threads_given),
-              &(local_args_info.threads_given), optarg, 0, "10", ARG_INT,
+              &(local_args_info.threads_given), optarg, 0, "5", ARG_INT,
               check_ambiguity, override, 0, 0,
               "threads", 't',
               additional_error))
