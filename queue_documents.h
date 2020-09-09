@@ -17,6 +17,7 @@ struct Document {
     lxb_html_document_t* document;
     char* url;
     long status_code_http;
+    size_t size;
     char* content_type;
     char* redirect_location;
 };
@@ -27,7 +28,7 @@ struct DocumentNode {
 };
 typedef struct DocumentNode DocumentNode_t;
 
-void pushDocumentQueue(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code, char* content_type, char* redirect_location);
+void pushDocumentQueue(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code, size_t size, char* content_type, char* redirect_location);
 
 struct Document* popDocumentQueue(DocumentNode_t** head);
 

@@ -328,15 +328,15 @@ int main(int argc, char* argv[]) {
                 break;
             }
             if(httpStatusCat == 3) {
-                printf("[%s%lu%s] %s -> %s [%s]\n", color, currentDocument->status_code_http, RESET, currentDocument->url, currentDocument->redirect_location, currentDocument->content_type);
+                printf("[%s%lu%s] %s -> %s [%s] [%llu]\n", color, currentDocument->status_code_http, RESET, currentDocument->url, currentDocument->redirect_location, currentDocument->content_type, currentDocument->size);
             } else {
-                printf("[%s%lu%s] %s [%s]\n", color, currentDocument->status_code_http, RESET, currentDocument->url, currentDocument->content_type);
+                printf("[%s%lu%s] %s [%s] [%llu]\n", color, currentDocument->status_code_http, RESET, currentDocument->url, currentDocument->content_type, currentDocument->size);
             }
         } else {
             if(httpStatusCat == 3) {
-                printf("[%lu] %s -> %s [%s]\n", currentDocument->status_code_http, currentDocument->url, currentDocument->redirect_location, currentDocument->content_type);
+                printf("[%lu] %s -> %s [%s] [%llu]\n", currentDocument->status_code_http, currentDocument->url, currentDocument->redirect_location, currentDocument->content_type, currentDocument->size);
             } else {
-                printf("[%lu] %s [%s]\n", currentDocument->status_code_http, currentDocument->url, currentDocument->content_type);
+                printf("[%lu] %s [%s] [%llu]\n", currentDocument->status_code_http, currentDocument->url, currentDocument->content_type, currentDocument->size);
             }
         }
 

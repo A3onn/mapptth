@@ -1,10 +1,19 @@
 #include "fetcher_thread.h"
 
+struct ProcessContentBundle {
+    lxb_html_document_t* document;
+    size_t size;  // size of the document without the headers
+    // using this variable to have the size of the document
+    // even if the server doesn't send it
+};
+
 static size_t processContent(const char* content, size_t size, size_t nmemb, void* userp) {
     // called when getting data
     // passing the data received to the document using chunk parsing
-    lxb_status_t status = lxb_html_document_parse_chunk((lxb_html_document_t*) userp, (lxb_char_t*) content, size * nmemb);
+    struct ProcessContentBundle* doc = (struct ProcessContentBundle*) userp;
+    lxb_status_t status = lxb_html_document_parse_chunk(doc->document, (lxb_char_t*) content, size * nmemb);
     CHECK_LXB(status)
+    doc->size += size * nmemb;
 
     return size * nmemb;
 }
@@ -31,7 +40,7 @@ void* fetcher_thread_func(void* bundle_arg) {
     curl_easy_setopt(curl, CURLOPT_SHARE, bundle->curl_share);
 
     lxb_status_t status_l;
-    lxb_html_document_t* currentDocument;
+    struct ProcessContentBundle* currentDocument = (struct ProcessContentBundle*) malloc(sizeof(struct ProcessContentBundle));
     char* currentURL;
     char* content_type;
     char* redirect_location;
@@ -53,8 +62,9 @@ void* fetcher_thread_func(void* bundle_arg) {
         pushURLQueue(urls_done, currentURL);
         pthread_mutex_unlock(mutex);
 
-        currentDocument = lxb_html_document_create();
-        if(currentDocument == NULL) {
+        currentDocument->document = lxb_html_document_create();
+        currentDocument->size = 0L;
+        if(currentDocument->document == NULL) {
             fprintf(stderr, "lxb_html_document_create failed.");
         }
 
@@ -68,26 +78,35 @@ void* fetcher_thread_func(void* bundle_arg) {
         }
 
         // fetch
-        status_l = lxb_html_document_parse_chunk_begin(currentDocument);
+        status_l = lxb_html_document_parse_chunk_begin(currentDocument->document);
         CHECK_LXB(status_l)
 
         int countRetries = 0;
         do {
             status_c = curl_easy_perform(curl);
             countRetries += 1;
-        } while(countRetries < maxRetries && status_c != CURLE_FILESIZE_EXCEEDED);
+        } while(countRetries < maxRetries && status_c != CURLE_FILESIZE_EXCEEDED && status_c != CURLE_OK);
         if(status_c != CURLE_OK && countRetries == maxRetries) {
             if(!bundle->noColor) {
-                fprintf(stderr, "%s%s (Max retries exceeded)%s\n", BRIGHT_RED, currentURL, RESET);
+                fprintf(stderr, "%s%s : Max retries exceeded%s\n", BRIGHT_RED, currentURL, RESET);
             } else {
-                fprintf(stderr, "%s (Max retries exceeded)\n", currentURL);
+                fprintf(stderr, "%s : Max retries exceeded\n", currentURL);
             }
-            lxb_html_document_parse_chunk_end(currentDocument);
-            lxb_html_document_destroy(currentDocument);
+            lxb_html_document_parse_chunk_end(currentDocument->document);
+            lxb_html_document_destroy(currentDocument->document);
+            continue;
+        } else if(status_c == CURLE_FILESIZE_EXCEEDED) {
+            if(!bundle->noColor) {
+                fprintf(stderr, "%s%s : File size limit exceeded%s\n", BRIGHT_RED, currentURL, RESET);
+            } else {
+                fprintf(stderr, "%s : File size limit exceeded\n", currentURL);
+            }
+            lxb_html_document_parse_chunk_end(currentDocument->document);
+            lxb_html_document_destroy(currentDocument->document);
             continue;
         }
 
-        status_l = lxb_html_document_parse_chunk_end(currentDocument);
+        status_l = lxb_html_document_parse_chunk_end(currentDocument->document);
         CHECK_LXB(status_l)
 
         status_c = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code_http);
@@ -108,7 +127,7 @@ void* fetcher_thread_func(void* bundle_arg) {
         }
 
         pthread_mutex_lock(mutex);
-        pushDocumentQueue(documents, currentDocument, currentURL, status_code_http, content_type, redirect_location);
+        pushDocumentQueue(documents, currentDocument->document, currentURL, status_code_http, currentDocument->size, content_type, redirect_location);
         pthread_mutex_unlock(mutex);
     }
     curl_easy_cleanup(curl);
