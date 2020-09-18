@@ -14,15 +14,15 @@ struct URLNode {
 };
 typedef struct URLNode URLNode_t;
 
-void pushURLQueue(URLNode_t** head, char* url);
+void pushURLStack(URLNode_t** head, char* url);
 
-char* popURLQueue(URLNode_t** head);
+char* popURLStack(URLNode_t** head);
 
-void printURLQueue(URLNode_t* head);
+void printURLStack(URLNode_t* head);
 
-int getURLQueueLength(URLNode_t* head);
+int getURLStackLength(URLNode_t* head);
 
-int isURLQueueEmpty(URLNode_t* head);
+int isURLStackEmpty(URLNode_t* head);
 
-int findURLQueue(URLNode_t* head, char* url);
+int findURLStack(URLNode_t* head, char* url);
 #endif

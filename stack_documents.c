@@ -1,6 +1,6 @@
-#include "queue_documents.h"
+#include "stack_documents.h"
 
-void pushDocumentQueue(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code_http, size_t size, char* content_type, char* redirect_location) {
+void pushDocumentStack(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code_http, size_t size, char* content_type, char* redirect_location) {
     DocumentNode_t* newNode = (DocumentNode_t*) malloc(sizeof(DocumentNode_t));
     newNode->next = *head;
     newNode->document.document = document;
@@ -12,7 +12,7 @@ void pushDocumentQueue(DocumentNode_t** head, lxb_html_document_t* document, cha
     *head = newNode;
 }
 
-struct Document* popDocumentQueue(DocumentNode_t** head) {
+struct Document* popDocumentStack(DocumentNode_t** head) {
     DocumentNode_t* tmp = *head;
     if(tmp == NULL) {
         return NULL;
@@ -30,7 +30,7 @@ struct Document* popDocumentQueue(DocumentNode_t** head) {
     return res;
 }
 
-int getDocumentQueueLength(DocumentNode_t* head) {
+int getDocumentStackLength(DocumentNode_t* head) {
     DocumentNode_t* tmp = head;
     if(tmp == NULL) {
         return 0;

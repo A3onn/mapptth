@@ -1,13 +1,13 @@
-#include "queue_urls.h"
+#include "stack_urls.h"
 
-void pushURLQueue(URLNode_t** head, char* url) {
+void pushURLStack(URLNode_t** head, char* url) {
     URLNode_t* newNode = (URLNode_t*) malloc(sizeof(URLNode_t));
     newNode->next = *head;
     newNode->url = url;
     *head = newNode;
 }
 
-char* popURLQueue(URLNode_t** head) {
+char* popURLStack(URLNode_t** head) {
     URLNode_t* tmp = *head;
     if(tmp == NULL) {
         return NULL;
@@ -19,11 +19,11 @@ char* popURLQueue(URLNode_t** head) {
     return res;
 }
 
-int isURLQueueEmpty(URLNode_t* head) {
+int isURLStackEmpty(URLNode_t* head) {
     return head == 0;
 }
 
-int getURLQueueLength(URLNode_t* head) {
+int getURLStackLength(URLNode_t* head) {
     URLNode_t* tmp = head;
     if(tmp == NULL) {
         return 0;
@@ -37,7 +37,7 @@ int getURLQueueLength(URLNode_t* head) {
     return res;
 }
 
-int findURLQueue(URLNode_t* head, char* url) {
+int findURLStack(URLNode_t* head, char* url) {
     URLNode_t* tmp = head;
     if(tmp == NULL) {
         return 0;
@@ -52,7 +52,7 @@ int findURLQueue(URLNode_t* head, char* url) {
     return 0;
 }
 
-void printURLQueue(URLNode_t* head) {
+void printURLStack(URLNode_t* head) {
     if(head == NULL) {
         puts("<empty>");
         return;

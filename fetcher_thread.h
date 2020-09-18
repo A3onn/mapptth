@@ -1,8 +1,8 @@
 #ifndef FETCHER_THREAD_H
 #define FETCHER_THREAD_H
 
-#include "queue_documents.h"
-#include "queue_urls.h"
+#include "stack_documents.h"
+#include "stack_urls.h"
 #include "utils.h"
 #include <curl/curl.h>
 #include <lexbor/html/html.h>
@@ -15,9 +15,9 @@
     if((X) != LXB_STATUS_OK) { fprintf(stderr, "An error occured line %i: %i\n", __LINE__, (lxb_status_t)(X)); }
 
 struct BundleVarsThread {  // used to needed variables to the thread
-    DocumentNode_t** documents;  // queue of documents to populate
-    URLNode_t** urls_todo;  // queue of URLS to fetch
-    URLNode_t** urls_done;  // queue of URLS fetched
+    DocumentNode_t** documents;  // stack of documents to populate
+    URLNode_t** urls_todo;  // stack of URLS to fetch
+    URLNode_t** urls_done;  // stack of URLS fetched
     CURLSH* curl_share;
     pthread_mutex_t* mutex;
 
