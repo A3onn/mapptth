@@ -246,17 +246,17 @@ int main(int argc, char* argv[]) {
     curl_share_setopt(curl_share, CURLSHOPT_USERDATA, (void*) &mutex_conn);
 
     int shouldExit = 0;  // if threads should exit, set to 1 when all threads have isRunning == 1
-    int* stackRunningThreads = (int*) malloc(sizeof(int) * args_info.threads_arg);
+    int* isRunningThreadsList = (int*) malloc(sizeof(int) * args_info.threads_arg); // list containing ints indicating if each thread is fetching
     struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * args_info.threads_arg);
     for(int i = 0; i < args_info.threads_arg; i++) {
-        stackRunningThreads[i] = 1;
+        isRunningThreadsList[i] = 1;
 
         bundles[i].documents = &documents;
         bundles[i].urls_todo = &urls_todo;
         bundles[i].urls_done = &urls_done;
         bundles[i].mutex = &mutex;
         bundles[i].shouldExit = &shouldExit;
-        bundles[i].isRunning = &(stackRunningThreads[i]);
+        bundles[i].isRunning = &(isRunningThreadsList[i]);
         bundles[i].maxRetries = args_info.retries_arg;
         bundles[i].timeout = args_info.timeout_arg;
         bundles[i].maxFileSize = args_info.max_document_size_arg;
@@ -288,7 +288,7 @@ int main(int argc, char* argv[]) {
             // otherwise just continue to check for something to do
             int shouldQuit = 1;
             for(int i = 0; i < args_info.threads_arg; i++) {  // check if all threads are running
-                if(stackRunningThreads[i] == 1) {  // if one is running
+                if(isRunningThreadsList[i] == 1) {  // if one is running
                     shouldQuit = 0;  // should not quit
                     break;  // don't need to check other threads
                 }
@@ -456,7 +456,7 @@ int main(int argc, char* argv[]) {
 
     // CLEANUP
     free(bundles);
-    free(stackRunningThreads);
+    free(isRunningThreadsList);
 
     while(getURLStackLength(urls_done) != 1) {  // all urls are allocated by curl when parsing url, except the initial url
         char* url_done = popURLStack(&urls_done);

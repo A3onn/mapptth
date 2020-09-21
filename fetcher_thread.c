@@ -46,12 +46,8 @@ void* fetcher_thread_func(void* bundle_arg) {
     char* redirect_location;
     long status_code_http;
 
-    while(1) {
+    while(*shouldExit == 0) {
         pthread_mutex_lock(mutex);
-        if(*shouldExit) {
-            pthread_mutex_unlock(mutex);
-            break;
-        }
         if(isURLStackEmpty(*urls_todo)) {  // no url to fetch
             *isRunning = 0;  // change state
             pthread_mutex_unlock(mutex);
