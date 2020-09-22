@@ -11,9 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CHECK_LXB(X) \
-    if((X) != LXB_STATUS_OK) { fprintf(stderr, "An error occured line %i: %i\n", __LINE__, (lxb_status_t)(X)); }
-
 struct BundleVarsThread {  // used to needed variables to the thread
     DocumentNode_t** documents;  // stack of documents to populate
     URLNode_t** urls_todo;  // stack of URLS to fetch

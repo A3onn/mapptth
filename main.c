@@ -233,7 +233,7 @@ int main(int argc, char* argv[]) {
 
     CURLSH* curl_share = curl_share_init();
     if(curl_share == NULL) {
-        fprintf(stderr, "curl_share_init() failed. Quitting...");
+        fprintf(stderr, "Could not create share interface. Quitting...");
         curl_global_cleanup();
         return 1;
     }

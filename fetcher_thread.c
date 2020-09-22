@@ -12,7 +12,10 @@ static size_t processContent(const char* content, size_t size, size_t nmemb, voi
     // passing the data received to the document using chunk parsing
     struct ProcessContentBundle* doc = (struct ProcessContentBundle*) userp;
     lxb_status_t status = lxb_html_document_parse_chunk(doc->document, (lxb_char_t*) content, size * nmemb);
-    CHECK_LXB(status)
+    if(status != LXB_STATUS_OK) {
+        fprintf(stderr, "An error occured while parsing...\n");
+        return 0; // indicate libcurl that we didn't parse anything, meaning an error occurred
+    }
     doc->size += size * nmemb;
 
     return size * nmemb;
@@ -61,21 +64,25 @@ void* fetcher_thread_func(void* bundle_arg) {
         currentDocument->document = lxb_html_document_create();
         currentDocument->size = 0L;
         if(currentDocument->document == NULL) {
-            fprintf(stderr, "lxb_html_document_create failed.");
+            fprintf(stderr, "lxb_html_document_create failed for %s. Not doing it.\n", currentURL);
+            continue;
         }
 
         status_c = curl_easy_setopt(curl, CURLOPT_URL, currentURL);
         if(status_c != CURLE_OK) {
-            fprintf(stderr, "curl_easy_setopt failed: %s\n", curl_easy_strerror(status_c));
+            fprintf(stderr, "curl_easy_setopt for URL failed for %s. Not doing it. Error: %s.\n", currentURL, curl_easy_strerror(status_c));
+            lxb_html_document_destroy(currentDocument->document);
+            continue;
         }
         status_c = curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*) currentDocument);
         if(status_c != CURLE_OK) {
-            fprintf(stderr, "curl_easy_setopt failed: %s\n", curl_easy_strerror(status_c));
+            fprintf(stderr, "curl_easy_setopt for setting the document to write in failed for %s. Not doing it. Error: %s.\n", currentURL, curl_easy_strerror(status_c));
+            lxb_html_document_destroy(currentDocument->document);
+            continue;
         }
 
         // fetch
-        status_l = lxb_html_document_parse_chunk_begin(currentDocument->document);
-        CHECK_LXB(status_l)
+        lxb_html_document_parse_chunk_begin(currentDocument->document);
 
         int countRetries = 0;
         do {
@@ -103,22 +110,27 @@ void* fetcher_thread_func(void* bundle_arg) {
         }
 
         status_l = lxb_html_document_parse_chunk_end(currentDocument->document);
-        CHECK_LXB(status_l)
 
         status_c = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code_http);
         if(status_c != CURLE_OK) {
-            fprintf(stderr, "curl_easy_getinfo failed: %s\n", curl_easy_strerror(status_c));
+            fprintf(stderr, "curl_easy_getinfo for getting the HTTP status code failed for %s. Setting it to 0. Error: %s.\n", currentURL, curl_easy_strerror(status_c));
+            status_code_http = 0L;
         }
 
-        curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &content_type);
-        if(content_type != NULL) {
+        status_c = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &content_type);
+        if(status_c != CURLE_OK) {
+            fprintf(stderr, "curl_easy_getinfo for getting the content type failed for %s. Error: %s.\n", currentURL, curl_easy_strerror(status_c));
+            status_code_http = 0L;
+        } else if(content_type != NULL) {
             // content_type is pointing to curl's private memory
             // and it's value will change when another curl_easy_perform will occur.
             content_type = strdup(content_type);
         }
 
-        curl_easy_getinfo(curl, CURLINFO_REDIRECT_URL, &redirect_location);
-        if(redirect_location != NULL) {  // if there is a location header
+        status_c = curl_easy_getinfo(curl, CURLINFO_REDIRECT_URL, &redirect_location);
+        if(status_c != CURLE_OK) {
+            fprintf(stderr, "curl_easy_getinfo for getting the redirect URL failed for %s. Error: %s.\n", currentURL, curl_easy_strerror(status_c));
+        } else if(redirect_location != NULL) {  // if there is a location header
             redirect_location = strdup(redirect_location);
         }
 
@@ -127,6 +139,7 @@ void* fetcher_thread_func(void* bundle_arg) {
         pthread_mutex_unlock(mutex);
     }
     curl_easy_cleanup(curl);
+    free(currentDocument);
 
     return NULL;
 }
