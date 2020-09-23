@@ -1,5 +1,5 @@
 package "mapptth"
-version "0.0.9"
+version "0.1.0"
 
 option "threads" t "Number of threads." int default="5" optional
 option "url" u "URL of where to start." string required

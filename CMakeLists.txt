@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0)
-project(mapptth VERSION 0.0.9 LANGUAGES C)
+project(mapptth VERSION 0.1.0 LANGUAGES C)
 
 include(CTest)
 enable_testing()
