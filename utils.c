@@ -102,3 +102,38 @@ char* normalizePath(char* path) {
     }
     return result;
 }
+
+
+int isDisallowedPath(char* path, char** disallowedPaths, int countDisallowedPaths) {
+    if(countDisallowedPaths == 0) { // if no paths where specified, then it is allowed
+        return 0;
+    }
+
+    for(int i = 0; i < countDisallowedPaths; i++) {
+        if(strstr(path, disallowedPaths[i]) == path) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+int isAllowedExtension(char* path, char** allowedExtensions, int countAllowedExtensions) {
+    if(countAllowedExtensions == 0) { // if no extensions where specified, then it is allowed
+        return 1;
+    }
+    char* filename = strrchr(path, '/'); // find last '/', this will give the name of the file
+    if(filename != NULL) {
+        char* ext = strrchr(filename, '.'); // find extension
+        if(ext != NULL) { // if there is an extension
+            for(int i = 0; i < countAllowedExtensions; i++) {
+                if(strstr(path, allowedExtensions[i]) == ext) {
+                    return 1;
+                }
+            }
+        } else { // if there isn't any extension, then it is valid
+            return 1;
+        }
+    }
+    return 0;
+}

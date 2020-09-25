@@ -21,4 +21,8 @@ int isValidLink(const char* url);
 
 char* normalizePath(char* path);
 
+int isDisallowedPath(char* path, char** disallowedPaths, int countDisallowedPaths);
+
+int isAllowedExtension(char* path, char** allowedExtensions, int countAllowedExtensions);
+
 #endif
