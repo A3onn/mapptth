@@ -9,6 +9,7 @@
 #include "stack_documents.h"
 #include "stack_urls.h"
 #include "utils.h"
+#include "sitemaps_parser.h"
 
 #include "cmdline.h"
 

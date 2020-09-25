@@ -1,0 +1,115 @@
+#include "sitemaps_parser.h"
+#include <curl/curl.h>
+#include "stack_urls.h"
+#include <string.h>
+
+static size_t sitemapXMLFetchCallback(const char *content, size_t size, size_t nmemb, void *userp) {
+    xmlParseChunk(*((xmlParserCtxtPtr*) userp), content, size*nmemb, 0);
+    return size * nmemb;
+}
+
+
+char* _GetLocationSitemap(xmlNode* sitemap_root) {
+    xmlNode *cur_node = NULL;
+
+    for (cur_node = sitemap_root; cur_node; cur_node = cur_node->next) {
+        if (cur_node->type == XML_ELEMENT_NODE) {
+            if(strcmp((const char*)cur_node->name, "loc") == 0) {
+                return (char*)xmlNodeGetContent(cur_node);
+            }
+        }
+    }
+    return ""; // should not happen
+}
+
+void _GetLocationURLs(xmlNode* sitemap_root, URLNode_t** urls_found) {
+    xmlNode *cur_node = NULL;
+
+    for (cur_node = sitemap_root; cur_node; cur_node = cur_node->next) {
+        if (cur_node->type == XML_ELEMENT_NODE) {
+            if(strcmp((const char*)cur_node->name, "loc") == 0) {
+                if(!findURLStack(*urls_found, (char*)xmlNodeGetContent(cur_node))) {
+                    pushURLStack(urls_found, (char*)xmlNodeGetContent(cur_node));
+                }
+            } else if(strcmp((const char*)cur_node->name, "link") == 0) {
+                for(xmlAttrPtr attr = cur_node->properties; NULL != attr; attr = attr->next) {
+                    if(strcmp((const char*)attr->name, "href") == 0) {
+                        if(!findURLStack(*urls_found, (char*)attr->children->content)) {
+                            pushURLStack(urls_found, (char*)attr->children->content);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void addURLsFromSitemap(xmlNode* root, URLNode_t** urls_sitemaps, URLNode_t** urls_found) {
+    xmlNode *cur_node = NULL;
+
+    for (cur_node = root; cur_node; cur_node = cur_node->next) {
+        if (cur_node->type == XML_ELEMENT_NODE) {
+            if(strcmp((const char*)cur_node->name, "sitemap") == 0) {
+                if(!findURLStack(*urls_found, (char*)xmlNodeGetContent(cur_node))) {
+                    pushURLStack(urls_sitemaps, _GetLocationSitemap(cur_node->children));
+                }
+            } else if(strcmp((const char*)cur_node->name, "url") == 0) {
+                _GetLocationURLs(cur_node->children, urls_found);
+            }
+        }
+
+        addURLsFromSitemap(cur_node->children, urls_sitemaps, urls_found);
+    }
+}
+
+URLNode_t* getSitemap(char *url) {
+
+    LIBXML_TEST_VERSION // tests for libxml2
+
+    xmlParserCtxtPtr ctxt; // used for chunk parsing
+    xmlDocPtr doc;
+
+    URLNode_t* list_sitemaps = NULL;
+    URLNode_t* list_urls_found = NULL;
+    pushURLStack(&list_sitemaps, url);
+
+    CURL* curl = curl_easy_init();
+    curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS | CURLPROTO_HTTP);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, sitemapXMLFetchCallback);
+
+    while(!isURLStackEmpty(list_sitemaps)) {
+        char* currentSitemap = popURLStack(&list_sitemaps);
+
+        ctxt = xmlCreatePushParserCtxt(NULL, NULL, NULL, 0, NULL);
+        if(!ctxt) {
+            fprintf(stderr, "Failed to create parser context while doing %s\n", url);
+            return NULL;
+        }
+
+        curl_easy_setopt(curl, CURLOPT_URL, currentSitemap);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*) &ctxt);
+        curl_easy_perform(curl);
+
+        xmlParseChunk(ctxt, NULL, 0, 1); // indicate the end of chunk parsing
+
+        doc = ctxt->myDoc; // get the final document
+        int res = ctxt->wellFormed;
+        xmlFreeParserCtxt(ctxt);
+
+        if (!res) {
+            fprintf(stderr, "Failed to parse %s\n", url);
+            continue;
+        }
+
+        xmlNode* root_element = xmlDocGetRootElement(doc);
+
+        addURLsFromSitemap(root_element, &list_sitemaps, &list_urls_found);
+
+        xmlFreeDoc(doc);
+    }
+
+    xmlCleanupParser();
+    xmlMemoryDump();
+
+    return list_urls_found;
+}

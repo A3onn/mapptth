@@ -4,11 +4,12 @@ project(mapptth VERSION 0.1.0 LANGUAGES C)
 include(CTest)
 enable_testing()
 
-set(SRCS main.c fetcher_thread.c stack_documents.c stack_urls.c cmdline.c utils.c)
-set(HEADERS fetcher_thread.h stack_documents.h stack_urls.h cmdline.h utils.h)
+set(SRCS main.c fetcher_thread.c stack_documents.c stack_urls.c cmdline.c utils.c sitemaps_parser.c)
+set(HEADERS fetcher_thread.h stack_documents.h stack_urls.h cmdline.h utils.h sitemaps_parser.h)
 
 add_executable(mapptth ${SRCS} ${HEADERS})
 
+# check for threads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(mapptth Threads::Threads)
@@ -46,4 +47,14 @@ if(NOT LEXBOR_LIBRARY)
 else()
     message(STATUS "Found Lexbor ${LEXBOR_LIBRARY}")
     target_link_libraries(mapptth ${LEXBOR_LIBRARY})
+endif()
+
+#check for libxml2
+include(FindLibXml2)
+if(NOT LIBXML2_FOUND)
+    message(FATAL_ERROR "libxml2 not found")
+else()
+    include_directories(mapptth ${LIBXML2_INCLUDE_DIRS})
+    target_link_libraries(mapptth ${LIBXML2_LIBRARY})
+    add_definitions(${LIBXML2_DEFINITIONS})
 endif()
