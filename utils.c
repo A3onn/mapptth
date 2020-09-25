@@ -36,7 +36,20 @@ int isValidLink(const char* url) {
     if(url == NULL) {
         return 0;
     }
-    return url[0] != '#' && strstr(url, "mailto:") != url && strstr(url, "tel:") != url && strstr(url, "data:") != url && strstr(url, "javascript:") != url;
+    char* scheme;
+    CURLU* curl_u = curl_url();
+    curl_url_set(curl_u, CURLUPART_URL, url, 0);
+    curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
+    int result = 0;
+    if(scheme == NULL) {
+        result = 1;
+    } else {
+        if(strcmp(scheme, "http") == 0 || strcmp(scheme, "https") == 0) {
+            result = 1;
+        }
+    }
+    curl_url_cleanup(curl_u);
+    return result;
 }
 
 char* normalizePath(char* path) {
