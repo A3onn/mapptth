@@ -78,7 +78,7 @@ URLNode_t* getSitemap(char *url) {
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, sitemapXMLFetchCallback);
 
     while(!isURLStackEmpty(list_sitemaps)) {
-        char* currentSitemap = popURLStack(&list_sitemaps);
+        char* currentSitemapURL = popURLStack(&list_sitemaps);
 
         ctxt = xmlCreatePushParserCtxt(NULL, NULL, NULL, 0, NULL);
         if(!ctxt) {
@@ -86,9 +86,21 @@ URLNode_t* getSitemap(char *url) {
             return NULL;
         }
 
-        curl_easy_setopt(curl, CURLOPT_URL, currentSitemap);
+        curl_easy_setopt(curl, CURLOPT_URL, currentSitemapURL);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*) &ctxt);
-        curl_easy_perform(curl);
+        CURLcode status = curl_easy_perform(curl);
+        if(status != CURLE_OK) {
+            printf("Failed to fetch %s\n", currentSitemapURL);
+            xmlFreeParserCtxt(ctxt);
+            continue;
+        }
+        long status_code;
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
+        if(status_code != 200) {
+            printf("%s doesn't exist...\n", currentSitemapURL);
+            xmlFreeParserCtxt(ctxt);
+            continue;
+        }
 
         xmlParseChunk(ctxt, NULL, 0, 1); // indicate the end of chunk parsing
 
@@ -107,6 +119,7 @@ URLNode_t* getSitemap(char *url) {
 
         xmlFreeDoc(doc);
     }
+    printf("inside %i\n", getURLStackLength(list_urls_found));
 
     xmlCleanupParser();
     xmlMemoryDump();

@@ -9,6 +9,6 @@
 
 static size_t sitemapXMLFetchCallback(const char* content, size_t size, size_t nmemb, void* userp);
 
-URLNode_t* getSitemapText(char* url);
+URLNode_t* getSitemap(char* url);
 
 #endif
