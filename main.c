@@ -33,6 +33,41 @@ struct WalkBundle {  // used with walk_cb.
     int keepQuery;
 };
 
+int isDisallowedPath(char* path, char** disallowedPaths, int countDisallowedPaths) {
+    if(countDisallowedPaths == 0) { // if no paths where specified, then it is allowed
+        return 0;
+    }
+
+    for(int i = 0; i < countDisallowedPaths; i++) {
+        if(strstr(path, disallowedPaths[i]) == path) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
+int isAllowedExtension(char* path, char** allowedExtensions, int countAllowedExtensions) {
+    if(countAllowedExtensions == 0) { // if no extensions where specified, then it is allowed
+        return 1;
+    }
+    char* filename = strrchr(path, '/'); // find last '/', this will give the name of the file
+    if(filename != NULL) {
+        char* ext = strrchr(filename, '.'); // find extension
+        if(ext != NULL) { // if there is an extension
+            for(int i = 0; i < countAllowedExtensions; i++) {
+                if(strstr(path, allowedExtensions[i]) == ext) {
+                    return 1;
+                }
+            }
+        } else { // if there isn't any extension, then it is valid
+            return 1;
+        }
+    }
+    return 0;
+}
+
+
 lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     if(node->type != LXB_DOM_NODE_TYPE_ELEMENT) {
         return LEXBOR_ACTION_OK;
@@ -90,45 +125,17 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
 
         char* path;
         curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
+
         // check disallowed paths
-        if(bundle->countDisallowedPaths > 0) {
-            int isValidPath = 1;
-            for(int i = 0; i < bundle->countDisallowedPaths; i++) {
-                if(strstr(path, bundle->disallowedPaths[i]) == path) {
-                    isValidPath = 0;
-                    break;
-                }
-            }
-            if(isValidPath == 0) {
-                free(path);
-                return LEXBOR_ACTION_OK;
-            }
+        if(isDisallowedPath(path, bundle->disallowedPaths, bundle->countDisallowedPaths)) {
+            free(path);
+            return LEXBOR_ACTION_OK;
+
         }
         // check allowed extensions
-        if(bundle->countAllowedExtensions > 0) {
-            int isValidExtension = 0;
-            int hasExtension = 0;
-
-            char* filename = strrchr(path, '/');
-            char* ext;
-            if(filename != NULL) {
-                ext = strrchr(filename, '.');
-                if(ext != NULL) {
-                    hasExtension = 1;
-                }
-            }
-            if(hasExtension) {
-                for(int i = 0; i < bundle->countAllowedExtensions; i++) {
-                    if(strstr(path, bundle->allowedExtensions[i]) == ext) {
-                        isValidExtension = 1;
-                        break;
-                    }
-                }
-                if(isValidExtension == 0) {
-                    free(path);
-                    return LEXBOR_ACTION_OK;
-                }
-            }
+        if(!isAllowedExtension(path, bundle->allowedExtensions, bundle->countAllowedExtensions)) {
+            free(path);
+            return LEXBOR_ACTION_OK;
         }
         free(path);
 
@@ -387,37 +394,11 @@ int main(int argc, char* argv[]) {
 
                 char* path;
                 curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
-                if(args_info.disallowed_paths_given > 0 && isStillValid) {
-                    for(int i = 0; i < args_info.disallowed_paths_given; i++) {
-                        if(strstr(path, disallowed_paths[i]) == path) {
-                            isStillValid = 0;
-                            break;
-                        }
-                    }
+                if(isDisallowedPath(path, args_info.disallowed_paths_arg, args_info.disallowed_paths_given) && isStillValid) {
+                    isStillValid = 0;
                 }
-                if(args_info.allowed_extensions_given > 0 && isStillValid) {
-                    int isValidExtension = 0;
-                    int hasExtension = 0;
-
-                    char* filename = strrchr(path, '/');
-                    char* ext;
-                    if(filename != NULL) {
-                        ext = strrchr(filename, '.');
-                        if(ext != NULL) {
-                            hasExtension = 1;
-                        }
-                    }
-                    if(hasExtension) {
-                        for(int i = 0; i < args_info.allowed_extensions_given; i++) {
-                            if(strstr(path, args_info.allowed_extensions_arg[i]) == ext) {
-                                isValidExtension = 1;
-                                break;
-                            }
-                        }
-                        if(isValidExtension == 0) {
-                            isStillValid = 0;
-                        }
-                    }
+                if(!isAllowedExtension(path, args_info.allowed_extensions_arg, args_info.allowed_extensions_given) && isStillValid) {
+                    isStillValid = 0;
                 }
                 free(path);
 
