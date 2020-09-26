@@ -109,18 +109,9 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
         if(canBeAdded(finalURL, *(bundle->urls_done), *(bundle->urls_todo))) {
             curl_url_get(curl_u, CURLUPART_HOST, &foundURLDomain, 0);  // get the domain of the URL found
 
-            if(isValidDomain(foundURLDomain, documentDomain, bundle->allowSubdomains)) {
+            if(isValidDomain(foundURLDomain, documentDomain, bundle->allowSubdomains) || isInValidDomains(foundURLDomain, bundle->allowedDomains, bundle->countAllowedDomains, bundle->allowSubdomains)) {
                 pushURLStack(bundle->urls_todo, finalURL);
                 hasBeenAdded = 1;
-            } else {
-                // check if it is an allowed domain
-                for(int i = 0; i < bundle->countAllowedDomains; i++) {
-                    if(isValidDomain(foundURLDomain, bundle->allowedDomains[i], bundle->allowSubdomains)) {
-                        pushURLStack(bundle->urls_todo, finalURL);
-                        hasBeenAdded = 1;
-                        break;
-                    }
-                }
             }
             free(foundURLDomain);
         }
@@ -380,18 +371,10 @@ int main(int argc, char* argv[]) {
                 free(path);
 
                 if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo) && isStillValid) {
-                    if(isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag)) {
+                    if(isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag) ||
+                            isInValidDomains(redirectLocationDomain, args_info.allowed_domains_arg, args_info.allowed_domains_given, args_info.allow_subdomains_flag)) {
                         pushURLStack(&urls_todo, currentDocument->redirect_location);
                         hasBeenAdded = 1;
-                    } else {
-                        // check if it is an allowed domain
-                        for(int i = 0; i < args_info.allowed_domains_given; i++) {
-                            if(isValidDomain(redirectLocationDomain, args_info.allowed_domains_arg[i], args_info.allow_subdomains_flag)) {
-                                pushURLStack(&urls_todo, currentDocument->redirect_location);
-                                hasBeenAdded = 1;
-                                break;
-                            }
-                        }
                     }
                 }
                 if(!hasBeenAdded) {

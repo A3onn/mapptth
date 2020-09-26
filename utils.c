@@ -32,6 +32,15 @@ int isValidDomain(char* domainToCompare, char* domain, int canBeSubDomain) {
     return 0;
 }
 
+int isInValidDomains(char* domain, char** allowedDomains, int countAllowedDomains, int canBeSubDomain) {
+    for(int i = 0; i < countAllowedDomains; i++) {
+        if(isValidDomain(domain, allowedDomains[i], canBeSubDomain)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int isValidLink(const char* url) {
     if(url == NULL) {
         return 0;
@@ -116,7 +125,6 @@ int isDisallowedPath(char* path, char** disallowedPaths, int countDisallowedPath
     }
     return 0;
 }
-
 
 int isAllowedExtension(char* path, char** allowedExtensions, int countAllowedExtensions) {
     if(countAllowedExtensions == 0) { // if no extensions where specified, then it is allowed

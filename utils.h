@@ -25,4 +25,5 @@ int isDisallowedPath(char* path, char** disallowedPaths, int countDisallowedPath
 
 int isAllowedExtension(char* path, char** allowedExtensions, int countAllowedExtensions);
 
+int isInValidDomains(char* domain, char** allowedDomains, int countAllowedDomains, int canBeSubDomain);
 #endif
