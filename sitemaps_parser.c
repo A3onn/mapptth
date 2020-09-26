@@ -1,7 +1,9 @@
 #include "sitemaps_parser.h"
-#include <curl/curl.h>
 #include "stack_urls.h"
+#include <curl/curl.h>
+#include <libxml/parser.h>
 #include <string.h>
+#include <stdlib.h>
 
 static size_t sitemapXMLFetchCallback(const char *content, size_t size, size_t nmemb, void *userp) {
     xmlParseChunk(*((xmlParserCtxtPtr*) userp), content, size*nmemb, 0);
@@ -62,7 +64,7 @@ void addURLsFromSitemap(xmlNode* root, URLNode_t** urls_sitemaps, URLNode_t** ur
     }
 }
 
-URLNode_t* getSitemap(char *url) {
+URLNode_t* getSitemap(char *url, int noColor) {
 
     LIBXML_TEST_VERSION // tests for libxml2
 
@@ -119,7 +121,6 @@ URLNode_t* getSitemap(char *url) {
 
         xmlFreeDoc(doc);
     }
-    printf("inside %i\n", getURLStackLength(list_urls_found));
 
     xmlCleanupParser();
     xmlMemoryDump();

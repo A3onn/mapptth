@@ -47,6 +47,7 @@ const char *gengetopt_args_info_help[] = {
   "  -x, --allowed-extensions=STRING\n                                The crawler will only fetch documents with\n                                  these extensions, but if no extension is\n                                  found in an URL, this filter won't apply.\n                                  Extensions have to start with a '.' (dot).",
   "  -k, --keep-query              Keep the query part in the URL.  (default=off)",
   "  -c, --no-color                Don't use color when outputing on the console.\n                                  (default=off)",
+  "  -S, --sitemap=STRING          URL of the sitemap.",
   "\n Group: scheme",
   "  -p, --http-only               Only fetch URLs with HTTP as scheme.",
   "  -P, --https-only              Only fetch URLs with HTTPS as scheme.",
@@ -97,6 +98,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->allowed_extensions_given = 0 ;
   args_info->keep_query_given = 0 ;
   args_info->no_color_given = 0 ;
+  args_info->sitemap_given = 0 ;
   args_info->http_only_given = 0 ;
   args_info->https_only_given = 0 ;
   args_info->only_body_given = 0 ;
@@ -131,6 +133,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->allowed_extensions_orig = NULL;
   args_info->keep_query_flag = 0;
   args_info->no_color_flag = 0;
+  args_info->sitemap_arg = NULL;
+  args_info->sitemap_orig = NULL;
   
 }
 
@@ -158,12 +162,13 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->allowed_extensions_max = 0;
   args_info->keep_query_help = gengetopt_args_info_help[11] ;
   args_info->no_color_help = gengetopt_args_info_help[12] ;
-  args_info->http_only_help = gengetopt_args_info_help[14] ;
-  args_info->https_only_help = gengetopt_args_info_help[15] ;
-  args_info->only_body_help = gengetopt_args_info_help[17] ;
-  args_info->only_head_help = gengetopt_args_info_help[18] ;
-  args_info->IPv6_help = gengetopt_args_info_help[20] ;
-  args_info->IPv4_help = gengetopt_args_info_help[21] ;
+  args_info->sitemap_help = gengetopt_args_info_help[13] ;
+  args_info->http_only_help = gengetopt_args_info_help[15] ;
+  args_info->https_only_help = gengetopt_args_info_help[16] ;
+  args_info->only_body_help = gengetopt_args_info_help[18] ;
+  args_info->only_head_help = gengetopt_args_info_help[19] ;
+  args_info->IPv6_help = gengetopt_args_info_help[21] ;
+  args_info->IPv4_help = gengetopt_args_info_help[22] ;
   
 }
 
@@ -308,6 +313,8 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_multiple_string_field (args_info->allowed_domains_given, &(args_info->allowed_domains_arg), &(args_info->allowed_domains_orig));
   free_multiple_string_field (args_info->disallowed_paths_given, &(args_info->disallowed_paths_arg), &(args_info->disallowed_paths_orig));
   free_multiple_string_field (args_info->allowed_extensions_given, &(args_info->allowed_extensions_arg), &(args_info->allowed_extensions_orig));
+  free_string_field (&(args_info->sitemap_arg));
+  free_string_field (&(args_info->sitemap_orig));
   
   
 
@@ -369,6 +376,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "keep-query", 0, 0 );
   if (args_info->no_color_given)
     write_into_file(outfile, "no-color", 0, 0 );
+  if (args_info->sitemap_given)
+    write_into_file(outfile, "sitemap", args_info->sitemap_orig, 0);
   if (args_info->http_only_given)
     write_into_file(outfile, "http-only", 0, 0 );
   if (args_info->https_only_given)
@@ -1010,6 +1019,7 @@ cmdline_parser_internal (
         { "allowed-extensions",	1, NULL, 'x' },
         { "keep-query",	0, NULL, 'k' },
         { "no-color",	0, NULL, 'c' },
+        { "sitemap",	1, NULL, 'S' },
         { "http-only",	0, NULL, 'p' },
         { "https-only",	0, NULL, 'P' },
         { "only-body",	0, NULL, 'B' },
@@ -1019,7 +1029,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:r:z:sa:d:x:kcpPBH64", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:r:z:sa:d:x:kcS:pPBH64", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1148,6 +1158,18 @@ cmdline_parser_internal (
           if (update_arg((void *)&(args_info->no_color_flag), 0, &(args_info->no_color_given),
               &(local_args_info.no_color_given), optarg, 0, 0, ARG_FLAG,
               check_ambiguity, override, 1, 0, "no-color", 'c',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'S':	/* URL of the sitemap..  */
+        
+        
+          if (update_arg( (void *)&(args_info->sitemap_arg), 
+               &(args_info->sitemap_orig), &(args_info->sitemap_given),
+              &(local_args_info.sitemap_given), optarg, 0, 0, ARG_STRING,
+              check_ambiguity, override, 0, 0,
+              "sitemap", 'S',
               additional_error))
             goto failure;
         

@@ -201,6 +201,17 @@ int main(int argc, char* argv[]) {
 
     URLNode_t* urls_todo = NULL;
     URLNode_t* urls_done = NULL;
+
+    if(args_info.sitemap_given) {
+        URLNode_t* urlsFromSitemap = getSitemap(args_info.sitemap_arg, args_info.no_color_flag);
+        while(!isURLStackEmpty(urlsFromSitemap)) {
+            char* url = popURLStack(&urlsFromSitemap);
+            // TODO: add checks
+            pushURLStack(&urls_todo, url);
+        }
+        
+    }
+
     pushURLStack(&urls_todo, args_info.url_arg);
 
     curl_global_init(CURL_GLOBAL_ALL);

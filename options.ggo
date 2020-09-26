@@ -12,6 +12,7 @@ option "disallowed-paths" d "Disallow the crawler to go to these directories." s
 option "allowed-extensions" x "The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot)." string multiple optional
 option "keep-query" k "Keep the query part in the URL." flag off
 option "no-color" c "Don't use color when outputing on the console." flag off
+option "sitemap" S "URL of the sitemap." string optional
 
 defgroup "scheme"
 groupoption "http-only" p "Only fetch URLs with HTTP as scheme." group="scheme"

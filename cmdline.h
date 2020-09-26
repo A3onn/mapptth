@@ -75,6 +75,9 @@ struct gengetopt_args_info
   const char *keep_query_help; /**< @brief Keep the query part in the URL. help description.  */
   int no_color_flag;	/**< @brief Don't use color when outputing on the console. (default=off).  */
   const char *no_color_help; /**< @brief Don't use color when outputing on the console. help description.  */
+  char * sitemap_arg;	/**< @brief URL of the sitemap..  */
+  char * sitemap_orig;	/**< @brief URL of the sitemap. original value given at command line.  */
+  const char *sitemap_help; /**< @brief URL of the sitemap. help description.  */
   const char *http_only_help; /**< @brief Only fetch URLs with HTTP as scheme. help description.  */
   const char *https_only_help; /**< @brief Only fetch URLs with HTTPS as scheme. help description.  */
   const char *only_body_help; /**< @brief Only parse the <body>. help description.  */
@@ -95,6 +98,7 @@ struct gengetopt_args_info
   unsigned int allowed_extensions_given ;	/**< @brief Whether allowed-extensions was given.  */
   unsigned int keep_query_given ;	/**< @brief Whether keep-query was given.  */
   unsigned int no_color_given ;	/**< @brief Whether no-color was given.  */
+  unsigned int sitemap_given ;	/**< @brief Whether sitemap was given.  */
   unsigned int http_only_given ;	/**< @brief Whether http-only was given.  */
   unsigned int https_only_given ;	/**< @brief Whether https-only was given.  */
   unsigned int only_body_given ;	/**< @brief Whether only-body was given.  */
