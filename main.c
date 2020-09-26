@@ -195,11 +195,14 @@ int main(int argc, char* argv[]) {
 
     if(args_info.sitemap_given) {
         URLNode_t* urlsFromSitemap = getSitemap(args_info.sitemap_arg, args_info.no_color_flag);
+        int count = 0;
         while(!isURLStackEmpty(urlsFromSitemap)) {
             char* url = popURLStack(&urlsFromSitemap);
             // TODO: add checks
             pushURLStack(&urls_todo, url);
+            count++;
         }
+        printf("Added %i new URLs.\n", count);
         
     }
 
