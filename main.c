@@ -6,10 +6,10 @@
 #include <string.h>
 
 #include "fetcher_thread.h"
+#include "sitemaps_parser.h"
 #include "stack_documents.h"
 #include "stack_urls.h"
 #include "utils.h"
-#include "sitemaps_parser.h"
 
 #include "cmdline.h"
 
@@ -32,7 +32,6 @@ struct WalkBundle {  // used with walk_cb.
     int httpsOnly;
     int keepQuery;
 };
-
 
 lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     if(node->type != LXB_DOM_NODE_TYPE_ELEMENT) {
@@ -96,7 +95,6 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
         if(isDisallowedPath(path, bundle->disallowedPaths, bundle->countDisallowedPaths)) {
             free(path);
             return LEXBOR_ACTION_OK;
-
         }
         // check allowed extensions
         if(!isAllowedExtension(path, bundle->allowedExtensions, bundle->countAllowedExtensions)) {
@@ -195,15 +193,57 @@ int main(int argc, char* argv[]) {
 
     if(args_info.sitemap_given) {
         URLNode_t* urlsFromSitemap = getSitemap(args_info.sitemap_arg, args_info.no_color_flag);
+        CURLU* curl_u = curl_url();
         int count = 0;
         while(!isURLStackEmpty(urlsFromSitemap)) {
             char* url = popURLStack(&urlsFromSitemap);
-            // TODO: add checks
-            pushURLStack(&urls_todo, url);
-            count++;
+            curl_url_set(curl_u, CURLUPART_URL, url, 0);
+
+            if(isValidLink(url)) {
+                if(!args_info.keep_query_flag) {
+                    curl_url_set(curl_u, CURLUPART_QUERY, NULL, 0);
+                }
+                char* path;
+                curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
+
+                // check disallowed paths
+                if(isDisallowedPath(path, args_info.disallowed_paths_arg, args_info.disallowed_paths_given)) {
+                    free(url);
+                    free(path);
+                    continue;
+                }
+                // check allowed extensions
+                if(!isAllowedExtension(path, args_info.allowed_extensions_arg, args_info.allowed_extensions_given)) {
+                    free(url);
+                    free(path);
+                    continue;
+                }
+                free(path);
+
+                if(canBeAdded(url, urls_done, urls_todo)) {
+                    char* domainURLFound;
+                    curl_url_get(curl_u, CURLUPART_HOST, &domainURLFound, 0);  // get the domain of the URL
+
+                    char* domainInitialURL;  // URL specified by -u
+                    curl_url_set(curl_u, CURLUPART_URL, args_info.url_arg, 0);
+                    curl_url_get(curl_u, CURLUPART_HOST, &domainInitialURL, 0);
+
+                    // check domains
+                    if(isValidDomain(domainURLFound, domainInitialURL, args_info.allow_subdomains_flag) || isInValidDomains(domainURLFound, args_info.allowed_domains_arg, args_info.allowed_domains_given, args_info.allow_subdomains_flag)) {
+                        pushURLStack(&urls_todo, url);
+                        count++;
+                    } else {
+                        free(url);
+                    }
+                    free(domainURLFound);
+                    free(domainInitialURL);
+                }
+            } else {
+                free(url);
+            }
         }
+        curl_url_cleanup(curl_u);
         printf("Added %i new URLs.\n", count);
-        
     }
 
     pushURLStack(&urls_todo, args_info.url_arg);
@@ -225,7 +265,7 @@ int main(int argc, char* argv[]) {
     curl_share_setopt(curl_share, CURLSHOPT_USERDATA, (void*) &mutex_conn);
 
     int shouldExit = 0;  // if threads should exit, set to 1 when all threads have isRunning == 1
-    int* isRunningThreadsList = (int*) malloc(sizeof(int) * args_info.threads_arg); // list containing ints indicating if each thread is fetching
+    int* isRunningThreadsList = (int*) malloc(sizeof(int) * args_info.threads_arg);  // list containing ints indicating if each thread is fetching
     struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * args_info.threads_arg);
     for(int i = 0; i < args_info.threads_arg; i++) {
         isRunningThreadsList[i] = 1;
@@ -374,8 +414,7 @@ int main(int argc, char* argv[]) {
                 free(path);
 
                 if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo) && isStillValid) {
-                    if(isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag) ||
-                            isInValidDomains(redirectLocationDomain, args_info.allowed_domains_arg, args_info.allowed_domains_given, args_info.allow_subdomains_flag)) {
+                    if(isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag) || isInValidDomains(redirectLocationDomain, args_info.allowed_domains_arg, args_info.allowed_domains_given, args_info.allow_subdomains_flag)) {
                         pushURLStack(&urls_todo, currentDocument->redirect_location);
                         hasBeenAdded = 1;
                     }
