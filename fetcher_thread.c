@@ -91,22 +91,19 @@ void* fetcher_thread_func(void* bundle_arg) {
         } while(countRetries < maxRetries && status_c != CURLE_FILESIZE_EXCEEDED && status_c != CURLE_OK);
         if(status_c != CURLE_OK && countRetries == maxRetries) {
             if(!bundle->noColor) {
-                fprintf(stderr, "%s%s : Max retries exceeded%s\n", BRIGHT_RED, currentURL, RESET);
+                fprintf(stderr, "%s%s : Max retries exceeded.%s\n", BRIGHT_RED, currentURL, RESET);
             } else {
-                fprintf(stderr, "%s : Max retries exceeded\n", currentURL);
+                fprintf(stderr, "%s : Max retries exceeded.\n", currentURL);
             }
             lxb_html_document_parse_chunk_end(currentDocument->document);
             lxb_html_document_destroy(currentDocument->document);
             continue;
         } else if(status_c == CURLE_FILESIZE_EXCEEDED) {
             if(!bundle->noColor) {
-                fprintf(stderr, "%s%s : File size limit exceeded%s\n", BRIGHT_RED, currentURL, RESET);
+                fprintf(stderr, "%s%s : File size limit exceeded.%s\n", BRIGHT_RED, currentURL, RESET);
             } else {
-                fprintf(stderr, "%s : File size limit exceeded\n", currentURL);
+                fprintf(stderr, "%s : File size limit exceeded.\n", currentURL);
             }
-            lxb_html_document_parse_chunk_end(currentDocument->document);
-            lxb_html_document_destroy(currentDocument->document);
-            continue;
         }
 
         status_l = lxb_html_document_parse_chunk_end(currentDocument->document);

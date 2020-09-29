@@ -45,20 +45,29 @@ int isValidLink(const char* url) {
     if(url == NULL) {
         return 0;
     }
+
+    // libcurl thinks they are path and not schemes, so it's necessary to make checks
+    if(strncmp("mailto:", url, 7) == 0 || strncmp("javascript:", url, 11) == 0 || strncmp("tel:", url, 4) == 0) {
+        return 0;
+    }
+
+    // check scheme    
     char* scheme;
     CURLU* curl_u = curl_url();
     curl_url_set(curl_u, CURLUPART_URL, url, 0);
     curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
-    int result = 0;
+
     if(scheme == NULL) {
-        result = 1;
+        curl_url_cleanup(curl_u);
+        return 1;
     } else {
         if(strcmp(scheme, "http") == 0 || strcmp(scheme, "https") == 0) {
-            result = 1;
+            curl_url_cleanup(curl_u);
+            return 1;
         }
     }
     curl_url_cleanup(curl_u);
-    return result;
+    return 0;
 }
 
 char* normalizePath(char* path, int isDirectory) {
