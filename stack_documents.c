@@ -7,7 +7,13 @@ void pushDocumentStack(DocumentNode_t** head, lxb_html_document_t* document, cha
     newNode->document.url = url;
     newNode->document.size = size;
     newNode->document.status_code_http = status_code_http;
-    newNode->document.content_type = content_type;
+    if(content_type != NULL) {
+        newNode->document.content_type = content_type;
+    } else {
+        char* defaultContentType = (char*) calloc(2, sizeof (char));
+        strcat(defaultContentType, " ");
+        newNode->document.content_type = defaultContentType;
+    }
     newNode->document.redirect_location = redirect_location;
     *head = newNode;
 }
