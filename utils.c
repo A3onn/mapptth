@@ -61,7 +61,7 @@ int isValidLink(const char* url) {
     return result;
 }
 
-char* normalizePath(char* path) {
+char* normalizePath(char* path, int isDirectory) {
     // remove './' and '../' from a given path
     if(path == NULL) {
         return NULL;
@@ -102,6 +102,15 @@ char* normalizePath(char* path) {
         strcpy(result, tmp);
         strcat(result, "/");
         strcat(result, elements[i]);
+        free(tmp);
+    }
+
+    if(isDirectory) {
+        // add '/' at the end
+        char* tmp = strdup(result);
+        result = (char*) realloc(result, strlen(tmp)+1);
+        strcpy(result, tmp);
+        strcat(result, "/");
         free(tmp);
     }
 

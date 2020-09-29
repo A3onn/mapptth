@@ -19,7 +19,7 @@ int isValidDomain(char* domainToCompare, char* domain, int canBeSubDomain);
 
 int isValidLink(const char* url);
 
-char* normalizePath(char* path);
+char* normalizePath(char* path, int isDirectory);
 
 int isDisallowedPath(char* path, char** disallowedPaths, int countDisallowedPaths);
 
