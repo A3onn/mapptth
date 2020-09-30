@@ -46,8 +46,9 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
 
     struct WalkBundle* bundle = (struct WalkBundle*) ctx;
 
-    // try to get the 'href' attribute if it has one, 'src' attribute if it doesn't have an 'href' attribute instead
-    // note that the element has to have either one as it has been checked just before
+    // try to get the 'href' attribute if it has one, 'src' attribute if it
+    // doesn't have an 'href' attribute instead note that the element has to have
+    // either one as it has been checked just before
     char* foundURL;
     foundURL = (char*) lxb_dom_element_get_attribute(element, (lxb_char_t*) "href", 4, NULL);
     if(foundURL == NULL) {  // if this element has a src attribute instead
@@ -191,11 +192,17 @@ int main(int argc, char* argv[]) {
     URLNode_t* urls_todo = NULL;
     URLNode_t* urls_done = NULL;
 
+    curl_global_init(CURL_GLOBAL_ALL);  // initialize libcurl
+
     if(args_info.sitemap_given) {
+        // get the content of the sitemap
         URLNode_t* urlsFromSitemap = getSitemap(args_info.sitemap_arg, args_info.no_color_flag);
+
+        // validate the URLs found in the sitemap, same code as when finding an URL
+        // in a document
         CURLU* curl_u = curl_url();
-        int count = 0;
-        while(!isURLStackEmpty(urlsFromSitemap)) {
+        int count = 0;  // keep track of how many validated URLs were added
+        while(!isURLStackEmpty(urlsFromSitemap)) {  // loop over URLs
             char* url = popURLStack(&urlsFromSitemap);
             curl_url_set(curl_u, CURLUPART_URL, url, 0);
 
@@ -203,9 +210,9 @@ int main(int argc, char* argv[]) {
                 if(!args_info.keep_query_flag) {
                     curl_url_set(curl_u, CURLUPART_QUERY, NULL, 0);
                 }
+
                 char* path;
                 curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
-
                 // check disallowed paths
                 if(isDisallowedPath(path, args_info.disallowed_paths_arg, args_info.disallowed_paths_given)) {
                     free(url);
@@ -246,10 +253,9 @@ int main(int argc, char* argv[]) {
         printf("Added %i new URLs.\n", count);
     }
 
-    pushURLStack(&urls_todo, args_info.url_arg);
+    pushURLStack(&urls_todo, args_info.url_arg);  // add the URL specified by -u
 
-    curl_global_init(CURL_GLOBAL_ALL);
-
+    // create shared interface
     CURLSH* curl_share = curl_share_init();
     if(curl_share == NULL) {
         fprintf(stderr, "Could not create share interface. Quitting...");
@@ -257,11 +263,11 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    pthread_mutex_t mutex_conn = PTHREAD_MUTEX_INITIALIZER;
     curl_share_setopt(curl_share, CURLSHOPT_SHARE, CURL_LOCK_DATA_SSL_SESSION);
     curl_share_setopt(curl_share, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
     curl_share_setopt(curl_share, CURLSHOPT_LOCKFUNC, lock_cb);
     curl_share_setopt(curl_share, CURLSHOPT_UNLOCKFUNC, unlock_cb);
+    pthread_mutex_t mutex_conn = PTHREAD_MUTEX_INITIALIZER;
     curl_share_setopt(curl_share, CURLSHOPT_USERDATA, (void*) &mutex_conn);
 
     int shouldExit = 0;  // if threads should exit, set to 1 when all threads have isRunning == 1
@@ -299,12 +305,13 @@ int main(int argc, char* argv[]) {
     bundleWalk.disallowedPaths = disallowed_paths;
     bundleWalk.countDisallowedPaths = args_info.disallowed_paths_given;
     bundleWalk.keepQuery = args_info.keep_query_given;
+
     while(1) {
         pthread_mutex_lock(&mutex);
         if(getDocumentStackLength(documents) == 0) {  // no documents to parse
-            // if this thread has no document to parse and all threads are waiting for urls,
-            // then it means that everything was discovered and they should quit,
-            // otherwise just continue to check for something to do
+            // if this thread has no document to parse and all threads are waiting for
+            // urls, then it means that everything was discovered and they should
+            // quit, otherwise just continue to check for something to do
             int shouldQuit = 1;
             for(int i = 0; i < args_info.threads_arg; i++) {  // check if all threads are running
                 if(isRunningThreadsList[i] == 1) {  // if one is running
@@ -330,32 +337,41 @@ int main(int argc, char* argv[]) {
         if(!args_info.no_color_given) {
             char* color;
             switch(httpStatusCat) {
-            case 5:  //5xx
+            case 5:  // 5xx
                 color = RED;
                 break;
-            case 4:  //4xx
+            case 4:  // 4xx
                 color = MAGENTA;
                 break;
-            case 3:  //3xx
+            case 3:  // 3xx
                 color = YELLOW;
                 break;
-            case 2:  //2xx
+            case 2:  // 2xx
                 color = GREEN;
                 break;
-            case 1:  //1xx
+            case 1:  // 1xx
                 color = CYAN;
                 break;
             }
             if(httpStatusCat == 3) {
-                printf("[%s%lu%s] %s -> %s [%s] [%zu]\n", color, currentDocument->status_code_http, RESET, currentDocument->url, currentDocument->redirect_location, currentDocument->content_type, currentDocument->size);
+                printf("[%s%lu%s] %s -> %s [%s] [%zu]\n", color,
+                    currentDocument->status_code_http, RESET, currentDocument->url,
+                    currentDocument->redirect_location,
+                    currentDocument->content_type, currentDocument->size);
             } else {
-                printf("[%s%lu%s] %s [%s] [%zu]\n", color, currentDocument->status_code_http, RESET, currentDocument->url, currentDocument->content_type, currentDocument->size);
+                printf("[%s%lu%s] %s [%s] [%zu]\n", color,
+                    currentDocument->status_code_http, RESET, currentDocument->url,
+                    currentDocument->content_type, currentDocument->size);
             }
         } else {
             if(httpStatusCat == 3) {
-                printf("[%lu] %s -> %s [%s] [%zu]\n", currentDocument->status_code_http, currentDocument->url, currentDocument->redirect_location, currentDocument->content_type, currentDocument->size);
+                printf("[%lu] %s -> %s [%s] [%zu]\n", currentDocument->status_code_http,
+                    currentDocument->url, currentDocument->redirect_location,
+                    currentDocument->content_type, currentDocument->size);
             } else {
-                printf("[%lu] %s [%s] [%zu]\n", currentDocument->status_code_http, currentDocument->url, currentDocument->content_type, currentDocument->size);
+                printf("[%lu] %s [%s] [%zu]\n", currentDocument->status_code_http,
+                    currentDocument->url, currentDocument->content_type,
+                    currentDocument->size);
             }
         }
 
@@ -378,11 +394,9 @@ int main(int argc, char* argv[]) {
 
         if(currentDocument->redirect_location != NULL) {
             // get the domain of the current document and the domain of the redirect URL
-
             char* currentDocumentURLDomain;
             char* redirectLocationDomain;
             char* scheme;
-            int hasBeenAdded = 0;
 
             curl_url_set(curl_u, CURLUPART_URL, currentDocument->redirect_location, 0);
             curl_url_get(curl_u, CURLUPART_HOST, &redirectLocationDomain, 0);
@@ -396,6 +410,7 @@ int main(int argc, char* argv[]) {
                 curl_url_set(curl_u, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
 
                 curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
+
                 int isStillValid = 1;  // indicates if it is a valid URL through the checks, if not then it is useless to do checks anymore
 
                 if((args_info.http_only_given && strcmp("http", scheme) != 0) || (args_info.https_only_given && strcmp("https", scheme) != 0)) {
@@ -405,18 +420,26 @@ int main(int argc, char* argv[]) {
 
                 char* path;
                 curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
-                if(isDisallowedPath(path, args_info.disallowed_paths_arg, args_info.disallowed_paths_given) && isStillValid) {
-                    isStillValid = 0;
+                if(isStillValid) {
+                    if(isDisallowedPath(path, args_info.disallowed_paths_arg, args_info.disallowed_paths_given)) {
+                        isStillValid = 0;
+                    }
                 }
-                if(!isAllowedExtension(path, args_info.allowed_extensions_arg, args_info.allowed_extensions_given) && isStillValid) {
-                    isStillValid = 0;
+                if(isStillValid) {
+                    if(!isAllowedExtension(path, args_info.allowed_extensions_arg, args_info.allowed_extensions_given)) {
+                        isStillValid = 0;
+                    }
                 }
                 free(path);
 
-                if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo) && isStillValid) {
-                    if(isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag) || isInValidDomains(redirectLocationDomain, args_info.allowed_domains_arg, args_info.allowed_domains_given, args_info.allow_subdomains_flag)) {
-                        pushURLStack(&urls_todo, currentDocument->redirect_location);
-                        hasBeenAdded = 1;
+                int hasBeenAdded = 0;  // used to check if the URL has been added, if not it will be freed
+                if(isStillValid) {
+                    if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo)) {
+                        if(isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag) ||
+                                isInValidDomains(redirectLocationDomain, args_info.allowed_domains_arg, args_info.allowed_domains_given, args_info.allow_subdomains_flag)) {
+                            pushURLStack(&urls_todo, currentDocument->redirect_location);
+                            hasBeenAdded = 1;
+                        }
                     }
                 }
                 if(!hasBeenAdded) {
