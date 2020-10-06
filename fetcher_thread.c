@@ -92,9 +92,9 @@ void* fetcher_thread_func(void* bundle_arg) {
         } while(countRetries < maxRetries && status_c != CURLE_FILESIZE_EXCEEDED && status_c != CURLE_OK);
         if(status_c != CURLE_OK && countRetries == maxRetries) {
             if(!bundle->noColor) {
-                fprintf(stderr, "%s%s : Max retries exceeded.%s\n", BRIGHT_RED, currentURL, RESET);
+                fprintf(stderr, "%s%s : Max retries exceeded. Last error was: %s.%s\n", BRIGHT_RED, currentURL, curl_easy_strerror(status_c), RESET);
             } else {
-                fprintf(stderr, "%s : Max retries exceeded.\n", currentURL);
+                fprintf(stderr, "%s : Max retries exceeded. Last error was: %s.\n", currentURL, curl_easy_strerror(status_c));
             }
             lxb_html_document_parse_chunk_end(currentDocument->document);
             lxb_html_document_destroy(currentDocument->document);
