@@ -26,6 +26,8 @@ struct BundleVarsThread {  // used to needed variables to the thread
     long maxFileSize;
     int resolve_ip_versions;
     int noColor;
+
+    char* userAgent;
 };
 
 void* fetcher_thread_func(void* bundle_arg);

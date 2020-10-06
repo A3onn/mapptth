@@ -288,6 +288,11 @@ int main(int argc, char* argv[]) {
         bundles[i].resolve_ip_versions = resolve_ip_version;
         bundles[i].noColor = args_info.no_color_given;
         bundles[i].curl_share = curl_share;
+        if(args_info.user_agent_given) {
+            bundles[i].userAgent = args_info.user_agent_arg;
+        } else {
+            bundles[i].userAgent = "MapPTTH/" CMDLINE_PARSER_VERSION;
+        }
         pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*) &(bundles[i]));
     }
 
