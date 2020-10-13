@@ -31,6 +31,7 @@ struct WalkBundle {  // used with walk_cb.
     int httpOnly;
     int httpsOnly;
     int keepQuery;
+    int maxDepth;
 };
 
 lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
@@ -102,6 +103,10 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
             free(path);
             return LEXBOR_ACTION_OK;
         }
+        if(bundle->maxDepth > 0 && pathDepth(path) > bundle->maxDepth) {
+            free(path);
+            return LEXBOR_ACTION_OK;
+        }
         free(path);
 
         curl_url_get(curl_u, CURLUPART_URL, &finalURL, 0);  // get final url
@@ -165,6 +170,10 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "%s: the timeout should be positive\n", argv[0]);
         return 1;
     }
+    if(args_info.max_depth_given && args_info.max_depth_arg <= 0) {
+        fprintf(stderr, "%s: max-depth have to be positive\n", argv[0]);
+        return 1;
+    }
     for(int i = 0; i < args_info.allowed_extensions_given; i++) {
         if(args_info.allowed_extensions_arg[i][0] != '.') {
             fprintf(stderr, "%s: extensions have to begin with a '.' (dot)\n", argv[0]);
@@ -221,6 +230,11 @@ int main(int argc, char* argv[]) {
                 }
                 // check allowed extensions
                 if(!isAllowedExtension(path, args_info.allowed_extensions_arg, args_info.allowed_extensions_given)) {
+                    free(url);
+                    free(path);
+                    continue;
+                }
+                if(args_info.max_depth_given && pathDepth(path) > args_info.max_depth_given) {
                     free(url);
                     free(path);
                     continue;
@@ -310,6 +324,7 @@ int main(int argc, char* argv[]) {
     bundleWalk.disallowedPaths = disallowed_paths;
     bundleWalk.countDisallowedPaths = args_info.disallowed_paths_given;
     bundleWalk.keepQuery = args_info.keep_query_given;
+    bundleWalk.maxDepth = args_info.max_depth_arg;
 
     while(1) {
         pthread_mutex_lock(&mutex);
@@ -381,6 +396,7 @@ int main(int argc, char* argv[]) {
         }
 
         if(currentDocument->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
+            // parse only html and xhtml files
             if(strstr(currentDocument->content_type, "text/html") != NULL || strstr(currentDocument->content_type, "application/xhtml+xml") != NULL) {
                 bundleWalk.document = currentDocument;
                 pthread_mutex_lock(&mutex);
@@ -432,6 +448,11 @@ int main(int argc, char* argv[]) {
                 }
                 if(isStillValid) {
                     if(!isAllowedExtension(path, args_info.allowed_extensions_arg, args_info.allowed_extensions_given)) {
+                        isStillValid = 0;
+                    }
+                }
+                if(isStillValid) {
+                    if(args_info.max_depth_given && pathDepth(path) > args_info.max_depth_given) {
                         isStillValid = 0;
                     }
                 }

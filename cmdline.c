@@ -41,6 +41,7 @@ const char *gengetopt_args_info_help[] = {
   "  -m, --timeout=INT             Timeout in seconds.  (default=`3')",
   "  -r, --retries=INT             Maximum retries.  (default=`2')",
   "  -z, --max-document-size=LONG  Maximum size of a document in bytes. If a\n                                  document is larger, it won't be parsed.\n                                  (default=`128000')",
+  "  -D, --max-depth=INT           Maximum depth of paths.",
   "  -s, --allow-subdomains        Allow the crawler to go to URLs found on a\n                                  sub-domain.  (default=off)",
   "  -a, --allowed-domains=STRING  Allow the crawler to go to URLs found on other\n                                  domains.",
   "  -d, --disallowed-paths=STRING Disallow the crawler to go to these\n                                  directories.",
@@ -93,6 +94,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->timeout_given = 0 ;
   args_info->retries_given = 0 ;
   args_info->max_document_size_given = 0 ;
+  args_info->max_depth_given = 0 ;
   args_info->allow_subdomains_given = 0 ;
   args_info->allowed_domains_given = 0 ;
   args_info->disallowed_paths_given = 0 ;
@@ -126,6 +128,7 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->retries_orig = NULL;
   args_info->max_document_size_arg = 128000;
   args_info->max_document_size_orig = NULL;
+  args_info->max_depth_orig = NULL;
   args_info->allow_subdomains_flag = 0;
   args_info->allowed_domains_arg = NULL;
   args_info->allowed_domains_orig = NULL;
@@ -154,26 +157,27 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->timeout_help = gengetopt_args_info_help[4] ;
   args_info->retries_help = gengetopt_args_info_help[5] ;
   args_info->max_document_size_help = gengetopt_args_info_help[6] ;
-  args_info->allow_subdomains_help = gengetopt_args_info_help[7] ;
-  args_info->allowed_domains_help = gengetopt_args_info_help[8] ;
+  args_info->max_depth_help = gengetopt_args_info_help[7] ;
+  args_info->allow_subdomains_help = gengetopt_args_info_help[8] ;
+  args_info->allowed_domains_help = gengetopt_args_info_help[9] ;
   args_info->allowed_domains_min = 0;
   args_info->allowed_domains_max = 0;
-  args_info->disallowed_paths_help = gengetopt_args_info_help[9] ;
+  args_info->disallowed_paths_help = gengetopt_args_info_help[10] ;
   args_info->disallowed_paths_min = 0;
   args_info->disallowed_paths_max = 0;
-  args_info->allowed_extensions_help = gengetopt_args_info_help[10] ;
+  args_info->allowed_extensions_help = gengetopt_args_info_help[11] ;
   args_info->allowed_extensions_min = 0;
   args_info->allowed_extensions_max = 0;
-  args_info->keep_query_help = gengetopt_args_info_help[11] ;
-  args_info->no_color_help = gengetopt_args_info_help[12] ;
-  args_info->user_agent_help = gengetopt_args_info_help[13] ;
-  args_info->sitemap_help = gengetopt_args_info_help[14] ;
-  args_info->http_only_help = gengetopt_args_info_help[16] ;
-  args_info->https_only_help = gengetopt_args_info_help[17] ;
-  args_info->only_body_help = gengetopt_args_info_help[19] ;
-  args_info->only_head_help = gengetopt_args_info_help[20] ;
-  args_info->IPv6_help = gengetopt_args_info_help[22] ;
-  args_info->IPv4_help = gengetopt_args_info_help[23] ;
+  args_info->keep_query_help = gengetopt_args_info_help[12] ;
+  args_info->no_color_help = gengetopt_args_info_help[13] ;
+  args_info->user_agent_help = gengetopt_args_info_help[14] ;
+  args_info->sitemap_help = gengetopt_args_info_help[15] ;
+  args_info->http_only_help = gengetopt_args_info_help[17] ;
+  args_info->https_only_help = gengetopt_args_info_help[18] ;
+  args_info->only_body_help = gengetopt_args_info_help[20] ;
+  args_info->only_head_help = gengetopt_args_info_help[21] ;
+  args_info->IPv6_help = gengetopt_args_info_help[23] ;
+  args_info->IPv4_help = gengetopt_args_info_help[24] ;
   
 }
 
@@ -315,6 +319,7 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->timeout_orig));
   free_string_field (&(args_info->retries_orig));
   free_string_field (&(args_info->max_document_size_orig));
+  free_string_field (&(args_info->max_depth_orig));
   free_multiple_string_field (args_info->allowed_domains_given, &(args_info->allowed_domains_arg), &(args_info->allowed_domains_orig));
   free_multiple_string_field (args_info->disallowed_paths_given, &(args_info->disallowed_paths_arg), &(args_info->disallowed_paths_orig));
   free_multiple_string_field (args_info->allowed_extensions_given, &(args_info->allowed_extensions_arg), &(args_info->allowed_extensions_orig));
@@ -374,6 +379,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "retries", args_info->retries_orig, 0);
   if (args_info->max_document_size_given)
     write_into_file(outfile, "max-document-size", args_info->max_document_size_orig, 0);
+  if (args_info->max_depth_given)
+    write_into_file(outfile, "max-depth", args_info->max_depth_orig, 0);
   if (args_info->allow_subdomains_given)
     write_into_file(outfile, "allow-subdomains", 0, 0 );
   write_multiple_into_file(outfile, args_info->allowed_domains_given, "allowed-domains", args_info->allowed_domains_orig, 0);
@@ -1022,6 +1029,7 @@ cmdline_parser_internal (
         { "timeout",	1, NULL, 'm' },
         { "retries",	1, NULL, 'r' },
         { "max-document-size",	1, NULL, 'z' },
+        { "max-depth",	1, NULL, 'D' },
         { "allow-subdomains",	0, NULL, 's' },
         { "allowed-domains",	1, NULL, 'a' },
         { "disallowed-paths",	1, NULL, 'd' },
@@ -1039,7 +1047,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:r:z:sa:d:x:kcU:S:pPBH64", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:r:z:D:sa:d:x:kcU:S:pPBH64", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1111,6 +1119,18 @@ cmdline_parser_internal (
               &(local_args_info.max_document_size_given), optarg, 0, "128000", ARG_LONG,
               check_ambiguity, override, 0, 0,
               "max-document-size", 'z',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'D':	/* Maximum depth of paths..  */
+        
+        
+          if (update_arg( (void *)&(args_info->max_depth_arg), 
+               &(args_info->max_depth_orig), &(args_info->max_depth_given),
+              &(local_args_info.max_depth_given), optarg, 0, 0, ARG_INT,
+              check_ambiguity, override, 0, 0,
+              "max-depth", 'D',
               additional_error))
             goto failure;
         

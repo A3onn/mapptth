@@ -163,3 +163,21 @@ int isAllowedExtension(char* path, char** allowedExtensions, int countAllowedExt
     }
     return 0;
 }
+
+int pathDepth(char* path) {
+    if(path == NULL) {
+        return 0;
+    }
+
+    int count = 0;
+
+    char* copy = strdup(path);
+    char* token;
+    while((token = strsep(&copy, "/")) != NULL) {
+        if(*token != '\0') {
+            count++;
+        }
+    }
+    free(copy);
+    return count;
+}
