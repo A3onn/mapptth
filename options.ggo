@@ -14,6 +14,7 @@ option "allowed-extensions" x "The crawler will only fetch documents with these 
 option "keep-query" k "Keep the query part in the URL." flag off
 option "no-color" c "Don't use color when outputing on the console." flag off
 option "user-agent" U "Set the user-agent string. You can not send the user-agent header by giving an empty string." string optional  # the default value will be "MapPTTH/VERSION"
+option "title" T "Print title if there is one." flag off
 option "sitemap" S "URL of the sitemap." string optional
 
 defgroup "scheme"

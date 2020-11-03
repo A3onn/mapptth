@@ -81,6 +81,8 @@ struct gengetopt_args_info
   char * user_agent_arg;	/**< @brief Set the user-agent string. You can not send the user-agent header by giving an empty string..  */
   char * user_agent_orig;	/**< @brief Set the user-agent string. You can not send the user-agent header by giving an empty string. original value given at command line.  */
   const char *user_agent_help; /**< @brief Set the user-agent string. You can not send the user-agent header by giving an empty string. help description.  */
+  int title_flag;	/**< @brief Print title if there is one. (default=off).  */
+  const char *title_help; /**< @brief Print title if there is one. help description.  */
   char * sitemap_arg;	/**< @brief URL of the sitemap..  */
   char * sitemap_orig;	/**< @brief URL of the sitemap. original value given at command line.  */
   const char *sitemap_help; /**< @brief URL of the sitemap. help description.  */
@@ -106,6 +108,7 @@ struct gengetopt_args_info
   unsigned int keep_query_given ;	/**< @brief Whether keep-query was given.  */
   unsigned int no_color_given ;	/**< @brief Whether no-color was given.  */
   unsigned int user_agent_given ;	/**< @brief Whether user-agent was given.  */
+  unsigned int title_given ;	/**< @brief Whether title was given.  */
   unsigned int sitemap_given ;	/**< @brief Whether sitemap was given.  */
   unsigned int http_only_given ;	/**< @brief Whether http-only was given.  */
   unsigned int https_only_given ;	/**< @brief Whether https-only was given.  */

@@ -374,26 +374,34 @@ int main(int argc, char* argv[]) {
                 break;
             }
             if(httpStatusCat == 3) {
-                printf("[%s%lu%s] %s -> %s [%s] [%zu]\n", color,
+                printf("[%s%lu%s] %s -> %s [%s] [%zu]", color,
                     currentDocument->status_code_http, RESET, currentDocument->url,
                     currentDocument->redirect_location,
                     currentDocument->content_type, currentDocument->size);
             } else {
-                printf("[%s%lu%s] %s [%s] [%zu]\n", color,
+                printf("[%s%lu%s] %s [%s] [%zu]", color,
                     currentDocument->status_code_http, RESET, currentDocument->url,
                     currentDocument->content_type, currentDocument->size);
             }
         } else {
             if(httpStatusCat == 3) {
-                printf("[%lu] %s -> %s [%s] [%zu]\n", currentDocument->status_code_http,
+                printf("[%lu] %s -> %s [%s] [%zu]", currentDocument->status_code_http,
                     currentDocument->url, currentDocument->redirect_location,
                     currentDocument->content_type, currentDocument->size);
             } else {
-                printf("[%lu] %s [%s] [%zu]\n", currentDocument->status_code_http,
+                printf("[%lu] %s [%s] [%zu]", currentDocument->status_code_http,
                     currentDocument->url, currentDocument->content_type,
                     currentDocument->size);
             }
         }
+
+        if(args_info.title_flag) { // print title
+            const char* title = (const char*) lxb_html_document_title(currentDocument->document, NULL);
+            if(title != NULL) {
+                printf(" [%s]", title);
+            }
+        }
+        printf("\n");
 
         if(currentDocument->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
             // parse only html and xhtml files
