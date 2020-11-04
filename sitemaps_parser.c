@@ -6,13 +6,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-static size_t sitemapXMLFetchCallback(const char *content, size_t size, size_t nmemb, void *userp) {
+static size_t __sitemap_fetch_callback(const char *content, size_t size, size_t nmemb, void *userp) {
     xmlParseChunk(*((xmlParserCtxtPtr*) userp), content, size*nmemb, 0);
     return size * nmemb;
 }
 
 
-char* _GetLocationSitemap(xmlNode* sitemap_root) {
+char* __sitemap_get_location(xmlNode* sitemap_root) {
     xmlNode *cur_node = NULL;
 
     for (cur_node = sitemap_root; cur_node; cur_node = cur_node->next) {
@@ -25,20 +25,20 @@ char* _GetLocationSitemap(xmlNode* sitemap_root) {
     return ""; // should not happen
 }
 
-void _GetLocationURLs(xmlNode* sitemap_root, URLNode_t** urls_found) {
+void __sitemap_location_get_urls(xmlNode* sitemap_root, URLNode_t** urls_found) {
     xmlNode *cur_node = NULL;
 
     for (cur_node = sitemap_root; cur_node; cur_node = cur_node->next) {
         if (cur_node->type == XML_ELEMENT_NODE) {
             if(strcmp((const char*)cur_node->name, "loc") == 0) {
-                if(!findURLStack(*urls_found, (char*)xmlNodeGetContent(cur_node))) {
-                    pushURLStack(urls_found, (char*)xmlNodeGetContent(cur_node));
+                if(!stack_url_contains(*urls_found, (char*)xmlNodeGetContent(cur_node))) {
+                    stack_url_push(urls_found, (char*)xmlNodeGetContent(cur_node));
                 }
             } else if(strcmp((const char*)cur_node->name, "link") == 0) {
                 for(xmlAttrPtr attr = cur_node->properties; NULL != attr; attr = attr->next) {
                     if(strcmp((const char*)attr->name, "href") == 0) {
-                        if(!findURLStack(*urls_found, (char*)attr->children->content)) {
-                            pushURLStack(urls_found, (char*)attr->children->content);
+                        if(!stack_url_contains(*urls_found, (char*)attr->children->content)) {
+                            stack_url_push(urls_found, (char*)attr->children->content);
                         }
                     }
                 }
@@ -47,62 +47,62 @@ void _GetLocationURLs(xmlNode* sitemap_root, URLNode_t** urls_found) {
     }
 }
 
-void addURLsFromSitemap(xmlNode* root, URLNode_t** urls_sitemaps, URLNode_t** urls_found, int noColor) {
+void __sitemap_get_content(xmlNode* root, URLNode_t** urls_sitemaps, URLNode_t** urls_found, int no_color) {
     xmlNode *cur_node = NULL;
 
     for (cur_node = root; cur_node; cur_node = cur_node->next) {
         if (cur_node->type == XML_ELEMENT_NODE) {
             if(strcmp((const char*)cur_node->name, "sitemap") == 0) {
-                if(!findURLStack(*urls_found, (char*)xmlNodeGetContent(cur_node))) {
-                    char* newSitemapURL = _GetLocationSitemap(cur_node->children);
-                    pushURLStack(urls_sitemaps, newSitemapURL);
-                    if(noColor) {
-                        printf("Found new sitemap: %s\n", newSitemapURL);
+                if(!stack_url_contains(*urls_found, (char*)xmlNodeGetContent(cur_node))) {
+                    char* found_url = __sitemap_get_location(cur_node->children);
+                    stack_url_push(urls_sitemaps, found_url);
+                    if(no_color) {
+                        printf("Found new sitemap: %s\n", found_url);
                     } else {
-                        printf("%sFound new sitemap: %s%s\n", GREEN, newSitemapURL, RESET);
+                        printf("%sFound new sitemap: %s%s\n", GREEN, found_url, RESET);
                     }
                 }
             } else if(strcmp((const char*)cur_node->name, "url") == 0) {
-                _GetLocationURLs(cur_node->children, urls_found);
+                __sitemap_location_get_urls(cur_node->children, urls_found);
             }
         }
 
-        addURLsFromSitemap(cur_node->children, urls_sitemaps, urls_found, noColor);
+        __sitemap_get_content(cur_node->children, urls_sitemaps, urls_found, no_color);
     }
 }
 
-void XMLParsingErrorCallback(void * ctx, const char * msg, ...) {
+void __sitemap_error_callback(void * ctx, const char * msg, ...) {
     // silent libXML errors
 }
 
-URLNode_t* getSitemap(char *url, int noColor) {
+URLNode_t* get_sitemap_urls(char *url, int no_color) {
 
     LIBXML_TEST_VERSION // tests for libxml2
 
-    xmlSetGenericErrorFunc(NULL, XMLParsingErrorCallback); // disable errors
+    xmlSetGenericErrorFunc(NULL, __sitemap_error_callback); // disable errors
 
     xmlParserCtxtPtr ctxt; // used for chunk parsing
     xmlDocPtr doc;
 
     URLNode_t* list_sitemaps = NULL;
     URLNode_t* list_urls_found = NULL;
-    pushURLStack(&list_sitemaps, url);
+    stack_url_push(&list_sitemaps, url);
 
     CURL* curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS | CURLPROTO_HTTP);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, sitemapXMLFetchCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __sitemap_fetch_callback);
 
-    while(!isURLStackEmpty(list_sitemaps)) {
-        char* currentSitemapURL = popURLStack(&list_sitemaps);
-        if(noColor) {
-            fprintf(stderr, "Fetching sitemap: %s...\n", currentSitemapURL);
+    while(!stack_url_isempty(list_sitemaps)) {
+        char* current_sitemap_url = stack_url_pop(&list_sitemaps);
+        if(no_color) {
+            fprintf(stderr, "Fetching sitemap: %s...\n", current_sitemap_url);
         } else {
-            fprintf(stderr, "%sFetching sitemap: %s...%s\n", BLUE, currentSitemapURL, RESET);
+            fprintf(stderr, "%sFetching sitemap: %s...%s\n", BLUE, current_sitemap_url, RESET);
         }
 
         ctxt = xmlCreatePushParserCtxt(NULL, NULL, NULL, 0, NULL);
         if(!ctxt) {
-            if(noColor) {
+            if(no_color) {
                 fprintf(stderr, "Failed to create parser context while doing %s\n", url);
             } else {
                 fprintf(stderr, "%sFailed to create parser context while doing %s%s\n", RED, url, RESET);
@@ -110,14 +110,14 @@ URLNode_t* getSitemap(char *url, int noColor) {
             return NULL;
         }
 
-        curl_easy_setopt(curl, CURLOPT_URL, currentSitemapURL);
+        curl_easy_setopt(curl, CURLOPT_URL, current_sitemap_url);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*) &ctxt);
         CURLcode status = curl_easy_perform(curl);
         if(status != CURLE_OK) {
-            if(noColor) {
-                fprintf(stderr, "Failed to fetch sitemap: %s\n", currentSitemapURL);
+            if(no_color) {
+                fprintf(stderr, "Failed to fetch sitemap: %s\n", current_sitemap_url);
             } else {
-                fprintf(stderr, "%sFailed to fetch sitemap: %s%s\n", RED, currentSitemapURL, RESET);
+                fprintf(stderr, "%sFailed to fetch sitemap: %s%s\n", RED, current_sitemap_url, RESET);
             }
             xmlFreeParserCtxt(ctxt);
             continue;
@@ -125,10 +125,10 @@ URLNode_t* getSitemap(char *url, int noColor) {
         long status_code;
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
         if(status_code != 200) {
-            if(noColor) {
-                fprintf(stderr, "%s doesn't exist.\n", currentSitemapURL);
+            if(no_color) {
+                fprintf(stderr, "%s doesn't exist.\n", current_sitemap_url);
             } else {
-                fprintf(stderr, "%s%s doesn't exist.%s\n", RED, currentSitemapURL, RESET);
+                fprintf(stderr, "%s%s doesn't exist.%s\n", RED, current_sitemap_url, RESET);
             }
             xmlFreeParserCtxt(ctxt);
             continue;
@@ -141,7 +141,7 @@ URLNode_t* getSitemap(char *url, int noColor) {
         xmlFreeParserCtxt(ctxt);
 
         if (!res) {
-            if(noColor) {
+            if(no_color) {
                 fprintf(stderr, "Failed to parse sitemap %s\n", url);
             } else {
                 fprintf(stderr, "%sFailed to parse sitemap %s%s\n", RED, url, RESET);
@@ -151,7 +151,7 @@ URLNode_t* getSitemap(char *url, int noColor) {
 
         xmlNode* root_element = xmlDocGetRootElement(doc);
 
-        addURLsFromSitemap(root_element, &list_sitemaps, &list_urls_found, noColor);
+        __sitemap_get_content(root_element, &list_sitemaps, &list_urls_found, no_color);
 
         xmlFreeDoc(doc);
     }

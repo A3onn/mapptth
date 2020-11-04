@@ -19,19 +19,19 @@
 
 struct WalkBundle {  // used with walk_cb.
     struct Document* document;
-    URLNode_t** urls_todo;
-    URLNode_t** urls_done;
-    int allowSubdomains;
-    char** allowedDomains;
-    int countAllowedDomains;
-    char** allowedExtensions;
-    int countAllowedExtensions;
-    char** disallowedPaths;
-    int countDisallowedPaths;
-    int httpOnly;
-    int httpsOnly;
-    int keepQuery;
-    int maxDepth;
+    URLNode_t** urls_stack_todo;
+    URLNode_t** urls_stack_done;
+    int allow_subdomains;
+    char** allowed_domains;
+    int count_allowed_domains;
+    char** allowed_extensions;
+    int count_allowed_extensions;
+    char** disallowed_paths;
+    int count_disallowed_paths;
+    int http_only;
+    int https_only;
+    int keep_query;
+    int max_path_depth;
 };
 
 lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
@@ -50,80 +50,80 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     // try to get the 'href' attribute if it has one, 'src' attribute if it
     // doesn't have an 'href' attribute instead note that the element has to have
     // either one as it has been checked just before
-    char* foundURL;
-    foundURL = (char*) lxb_dom_element_get_attribute(element, (lxb_char_t*) "href", 4, NULL);
-    if(foundURL == NULL) {  // if this element has a src attribute instead
-        foundURL = (char*) lxb_dom_element_get_attribute(element, (lxb_char_t*) "src", 3, NULL);
-        if(foundURL == NULL) {  // should not happen
+    char* found_url;
+    found_url = (char*) lxb_dom_element_get_attribute(element, (lxb_char_t*) "href", 4, NULL);
+    if(found_url == NULL) {  // if this element has a src attribute instead
+        found_url = (char*) lxb_dom_element_get_attribute(element, (lxb_char_t*) "src", 3, NULL);
+        if(found_url == NULL) {  // should not happen
             return LEXBOR_ACTION_OK;
         }
     }
 
-    char hasBeenAdded = 0;  // used to check if the URL has been added, if not it will be freed
+    char has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
 
     // used when checking for valid domain
-    char* documentDomain;
-    char* foundURLDomain;
+    char* document_domain;
+    char* found_url_domain;
 
     // URL that will be added to the stack of URLs to fetch
-    char* finalURL;
+    char* final_url;
 
-    char* scheme;
+    char* url_scheme;
 
-    if(isValidLink((char*) foundURL)) {
-        CURLU* curl_u = curl_url();
-        curl_url_set(curl_u, CURLUPART_URL, bundle->document->url, 0);
-        curl_url_get(curl_u, CURLUPART_HOST, &documentDomain, 0);
+    if(is_valid_link((char*) found_url)) {
+        CURLU* curl_url_handler = curl_url();
+        curl_url_set(curl_url_handler, CURLUPART_URL, bundle->document->url, 0);
+        curl_url_get(curl_url_handler, CURLUPART_HOST, &document_domain, 0);
 
-        curl_url_set(curl_u, CURLUPART_URL, (char*) foundURL, 0);  // curl will change the url by himself based on the document's URL
-        curl_url_set(curl_u, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
+        curl_url_set(curl_url_handler, CURLUPART_URL, (char*) found_url, 0);  // curl will change the url by himself based on the document's URL
+        curl_url_set(curl_url_handler, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
 
         // check scheme
-        curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
-        if((bundle->httpOnly && strcmp("http", scheme) != 0) || (bundle->httpsOnly && strcmp("https", scheme) != 0)) {
-            free(scheme);
+        curl_url_get(curl_url_handler, CURLUPART_SCHEME, &url_scheme, 0);
+        if((bundle->http_only && strcmp("http", url_scheme) != 0) || (bundle->https_only && strcmp("https", url_scheme) != 0)) {
+            free(url_scheme);
             return LEXBOR_ACTION_OK;
         }
-        free(scheme);
+        free(url_scheme);
 
-        if(!bundle->keepQuery) {
-            curl_url_set(curl_u, CURLUPART_QUERY, NULL, 0);
+        if(!bundle->keep_query) {
+            curl_url_set(curl_url_handler, CURLUPART_QUERY, NULL, 0);
         }
 
         char* path;
-        curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
+        curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
 
         // check disallowed paths
-        if(isDisallowedPath(path, bundle->disallowedPaths, bundle->countDisallowedPaths)) {
+        if(is_disallowed_path(path, bundle->disallowed_paths, bundle->count_disallowed_paths)) {
             free(path);
             return LEXBOR_ACTION_OK;
         }
         // check allowed extensions
-        if(!isAllowedExtension(path, bundle->allowedExtensions, bundle->countAllowedExtensions)) {
+        if(!is_allowed_extension(path, bundle->allowed_extensions, bundle->count_allowed_extensions)) {
             free(path);
             return LEXBOR_ACTION_OK;
         }
-        if(bundle->maxDepth > 0 && pathDepth(path) > bundle->maxDepth) {
+        if(bundle->max_path_depth > 0 && get_path_depth(path) > bundle->max_path_depth) {
             free(path);
             return LEXBOR_ACTION_OK;
         }
         free(path);
 
-        curl_url_get(curl_u, CURLUPART_URL, &finalURL, 0);  // get final url
-        if(canBeAdded(finalURL, *(bundle->urls_done), *(bundle->urls_todo))) {
-            curl_url_get(curl_u, CURLUPART_HOST, &foundURLDomain, 0);  // get the domain of the URL found
+        curl_url_get(curl_url_handler, CURLUPART_URL, &final_url, 0);  // get final url
+        if(url_not_seen(final_url, *(bundle->urls_stack_done), *(bundle->urls_stack_todo))) {
+            curl_url_get(curl_url_handler, CURLUPART_HOST, &found_url_domain, 0);  // get the domain of the URL found
 
-            if(isValidDomain(foundURLDomain, documentDomain, bundle->allowSubdomains) || isInValidDomains(foundURLDomain, bundle->allowedDomains, bundle->countAllowedDomains, bundle->allowSubdomains)) {
-                pushURLStack(bundle->urls_todo, finalURL);
-                hasBeenAdded = 1;
+            if(is_valid_domain(found_url_domain, document_domain, bundle->allow_subdomains) || is_in_valid_domains(found_url_domain, bundle->allowed_domains, bundle->count_allowed_domains, bundle->allow_subdomains)) {
+                stack_url_push(bundle->urls_stack_todo, final_url);
+                has_been_added = 1;
             }
-            free(foundURLDomain);
+            free(found_url_domain);
         }
-        if(!hasBeenAdded) {
-            free(finalURL);
+        if(!has_been_added) {
+            free(final_url);
         }
-        free(documentDomain);
-        curl_url_cleanup(curl_u);
+        free(document_domain);
+        curl_url_cleanup(curl_url_handler);
     }
     return LEXBOR_ACTION_OK;
 }
@@ -146,128 +146,127 @@ int main(int argc, char* argv[]) {
            "              |_|                                   \n"
            "Version %s\n\n",
         CMDLINE_PARSER_VERSION);
-    struct gengetopt_args_info args_info;
-    if(cmdline_parser(argc, argv, &args_info) != 0) {
+    struct gengetopt_args_info cli_arguments;
+    if(cmdline_parser(argc, argv, &cli_arguments) != 0) {
         return 1;
     }
-    if((strncmp(args_info.url_arg, "http://", 7) != 0 && strncmp(args_info.url_arg, "https://", 8) != 0) || strchr(args_info.url_arg, ' ') != NULL) {
-        fprintf(stderr, "%s: invalid URL: %s\n", argv[0], args_info.url_arg);
+    if((strncmp(cli_arguments.url_arg, "http://", 7) != 0 && strncmp(cli_arguments.url_arg, "https://", 8) != 0) || strchr(cli_arguments.url_arg, ' ') != NULL) {
+        fprintf(stderr, "%s: invalid URL: %s\n", argv[0], cli_arguments.url_arg);
         return 1;
     }
-    if(args_info.threads_arg <= 0) {
+    if(cli_arguments.threads_arg <= 0) {
         fprintf(stderr, "%s: the number of threads should be positive\n", argv[0]);
         return 1;
     }
-    if(args_info.max_document_size_arg <= 0L) {
+    if(cli_arguments.max_document_size_arg <= 0L) {
         fprintf(stderr, "%s: the max size of a document should be positive\n", argv[0]);
         return 1;
     }
-    if(args_info.retries_arg <= 0) {
+    if(cli_arguments.retries_arg <= 0) {
         fprintf(stderr, "%s: the maximum number of retries should be positive\n", argv[0]);
         return 1;
     }
-    if(args_info.timeout_arg <= 0) {
+    if(cli_arguments.timeout_arg <= 0) {
         fprintf(stderr, "%s: the timeout should be positive\n", argv[0]);
         return 1;
     }
-    if(args_info.max_depth_given && args_info.max_depth_arg <= 0) {
+    if(cli_arguments.max_depth_given && cli_arguments.max_depth_arg <= 0) {
         fprintf(stderr, "%s: max-depth have to be positive\n", argv[0]);
         return 1;
     }
-    for(int i = 0; i < args_info.allowed_extensions_given; i++) {
-        if(args_info.allowed_extensions_arg[i][0] != '.') {
+    for(int i = 0; i < cli_arguments.allowed_extensions_given; i++) {
+        if(cli_arguments.allowed_extensions_arg[i][0] != '.') {
             fprintf(stderr, "%s: extensions have to begin with a '.' (dot)\n", argv[0]);
             return 1;
         }
     }
     // normalize paths given by the user
-    char** disallowed_paths = (char**) malloc(sizeof(char*) * args_info.disallowed_paths_given);
-    for(int i = 0; i < args_info.disallowed_paths_given; i++) {
-        disallowed_paths[i] = normalizePath(args_info.disallowed_paths_arg[i], 1);
+    char** disallowed_paths = (char**) malloc(sizeof(char*) * cli_arguments.disallowed_paths_given);
+    for(int i = 0; i < cli_arguments.disallowed_paths_given; i++) {
+        disallowed_paths[i] = normalize_path(cli_arguments.disallowed_paths_arg[i], 1);
     }
 
     int resolve_ip_version = CURL_IPRESOLVE_WHATEVER;
-    if(args_info.IPv4_given) {
+    if(cli_arguments.IPv4_given) {
         resolve_ip_version = CURL_IPRESOLVE_V4;
-    } else if(args_info.IPv6_given) {
+    } else if(cli_arguments.IPv6_given) {
         resolve_ip_version = CURL_IPRESOLVE_V6;
     }
 
-    pthread_t fetcher_threads[args_info.threads_arg];
+    pthread_t fetcher_threads[cli_arguments.threads_arg];
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-    DocumentNode_t* documents = NULL;
+    DocumentNode_t* documents_stack = NULL;
 
-    URLNode_t* urls_todo = NULL;
-    URLNode_t* urls_done = NULL;
+    URLNode_t* urls_stack_todo = NULL;
+    URLNode_t* urls_stack_done = NULL;
 
     curl_global_init(CURL_GLOBAL_ALL);  // initialize libcurl
 
-    if(args_info.sitemap_given) {
+    if(cli_arguments.sitemap_given) {
         // get the content of the sitemap
-        URLNode_t* urlsFromSitemap = getSitemap(args_info.sitemap_arg, args_info.no_color_flag);
+        URLNode_t* url_stack_sitemap = get_sitemap_urls(cli_arguments.sitemap_arg, cli_arguments.no_color_flag);
 
-        // validate the URLs found in the sitemap, same code as when finding an URL
-        // in a document
-        CURLU* curl_u = curl_url();
+        // validate the URLs found in the sitemap, same code as when finding an URL in a document
+        CURLU* curl_url_handler = curl_url();
         int count = 0;  // keep track of how many validated URLs were added
-        while(!isURLStackEmpty(urlsFromSitemap)) {  // loop over URLs
-            char* url = popURLStack(&urlsFromSitemap);
-            curl_url_set(curl_u, CURLUPART_URL, url, 0);
+        while(!stack_url_isempty(url_stack_sitemap)) {  // loop over URLs
+            char* url = stack_url_pop(&url_stack_sitemap);
+            curl_url_set(curl_url_handler, CURLUPART_URL, url, 0);
 
-            if(isValidLink(url)) {
-                if(!args_info.keep_query_flag) {
-                    curl_url_set(curl_u, CURLUPART_QUERY, NULL, 0);
+            if(is_valid_link(url)) {
+                if(!cli_arguments.keep_query_flag) {
+                    curl_url_set(curl_url_handler, CURLUPART_QUERY, NULL, 0);
                 }
 
                 char* path;
-                curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
+                curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
                 // check disallowed paths
-                if(isDisallowedPath(path, args_info.disallowed_paths_arg, args_info.disallowed_paths_given)) {
+                if(is_disallowed_path(path, cli_arguments.disallowed_paths_arg, cli_arguments.disallowed_paths_given)) {
                     free(url);
                     free(path);
                     continue;
                 }
                 // check allowed extensions
-                if(!isAllowedExtension(path, args_info.allowed_extensions_arg, args_info.allowed_extensions_given)) {
+                if(!is_allowed_extension(path, cli_arguments.allowed_extensions_arg, cli_arguments.allowed_extensions_given)) {
                     free(url);
                     free(path);
                     continue;
                 }
-                if(args_info.max_depth_given && pathDepth(path) > args_info.max_depth_given) {
+                if(cli_arguments.max_depth_given && get_path_depth(path) > cli_arguments.max_depth_given) {
                     free(url);
                     free(path);
                     continue;
                 }
                 free(path);
 
-                if(canBeAdded(url, urls_done, urls_todo)) {
-                    char* domainURLFound;
-                    curl_url_get(curl_u, CURLUPART_HOST, &domainURLFound, 0);  // get the domain of the URL
+                if(url_not_seen(url, urls_stack_done, urls_stack_todo)) {
+                    char* domain_url_found;
+                    curl_url_get(curl_url_handler, CURLUPART_HOST, &domain_url_found, 0);  // get the domain of the URL
 
-                    char* domainInitialURL;  // URL specified by -u
-                    curl_url_set(curl_u, CURLUPART_URL, args_info.url_arg, 0);
-                    curl_url_get(curl_u, CURLUPART_HOST, &domainInitialURL, 0);
+                    char* initial_url_domain;  // URL specified by -u
+                    curl_url_set(curl_url_handler, CURLUPART_URL, cli_arguments.url_arg, 0);
+                    curl_url_get(curl_url_handler, CURLUPART_HOST, &initial_url_domain, 0);
 
                     // check domains
-                    if(isValidDomain(domainURLFound, domainInitialURL, args_info.allow_subdomains_flag) || isInValidDomains(domainURLFound, args_info.allowed_domains_arg, args_info.allowed_domains_given, args_info.allow_subdomains_flag)) {
-                        pushURLStack(&urls_todo, url);
+                    if(is_valid_domain(domain_url_found, initial_url_domain, cli_arguments.allow_subdomains_flag) || is_in_valid_domains(domain_url_found, cli_arguments.allowed_domains_arg, cli_arguments.allowed_domains_given, cli_arguments.allow_subdomains_flag)) {
+                        stack_url_push(&urls_stack_todo, url);
                         count++;
                     } else {
                         free(url);
                     }
-                    free(domainURLFound);
-                    free(domainInitialURL);
+                    free(domain_url_found);
+                    free(initial_url_domain);
                 }
             } else {
                 free(url);
             }
         }
-        curl_url_cleanup(curl_u);
+        curl_url_cleanup(curl_url_handler);
         printf("Added %i new URLs.\n", count);
     }
 
-    pushURLStack(&urls_todo, args_info.url_arg);  // add the URL specified by -u
+    stack_url_push(&urls_stack_todo, cli_arguments.url_arg);  // add the URL specified by -u
 
     // create shared interface
     CURLSH* curl_share = curl_share_init();
@@ -284,64 +283,64 @@ int main(int argc, char* argv[]) {
     pthread_mutex_t mutex_conn = PTHREAD_MUTEX_INITIALIZER;
     curl_share_setopt(curl_share, CURLSHOPT_USERDATA, (void*) &mutex_conn);
 
-    int shouldExit = 0;  // if threads should exit, set to 1 when all threads have isRunning == 1
-    int* isRunningThreadsList = (int*) malloc(sizeof(int) * args_info.threads_arg);  // list containing ints indicating if each thread is fetching
-    struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * args_info.threads_arg);
-    for(int i = 0; i < args_info.threads_arg; i++) {
-        isRunningThreadsList[i] = 1;
+    int should_exit = 0;  // if threads should exit, set to 1 when all threads have is_running == 1
+    int* list_running_thread_status = (int*) malloc(sizeof(int) * cli_arguments.threads_arg);  // list containing ints indicating if each thread is fetching
+    struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * cli_arguments.threads_arg);
+    for(int i = 0; i < cli_arguments.threads_arg; i++) {
+        list_running_thread_status[i] = 1;
 
-        bundles[i].documents = &documents;
-        bundles[i].urls_todo = &urls_todo;
-        bundles[i].urls_done = &urls_done;
+        bundles[i].documents = &documents_stack;
+        bundles[i].urls_stack_todo = &urls_stack_todo;
+        bundles[i].urls_stack_done = &urls_stack_done;
         bundles[i].mutex = &mutex;
-        bundles[i].shouldExit = &shouldExit;
-        bundles[i].isRunning = &(isRunningThreadsList[i]);
-        bundles[i].maxRetries = args_info.retries_arg;
-        bundles[i].timeout = args_info.timeout_arg;
-        bundles[i].maxFileSize = args_info.max_document_size_arg;
+        bundles[i].should_exit = &should_exit;
+        bundles[i].is_running = &(list_running_thread_status[i]);
+        bundles[i].max_retries = cli_arguments.retries_arg;
+        bundles[i].timeout = cli_arguments.timeout_arg;
+        bundles[i].max_file_size = cli_arguments.max_document_size_arg;
         bundles[i].resolve_ip_versions = resolve_ip_version;
-        bundles[i].noColor = args_info.no_color_given;
+        bundles[i].no_color = cli_arguments.no_color_given;
         bundles[i].curl_share = curl_share;
-        if(args_info.user_agent_given) {
-            bundles[i].userAgent = args_info.user_agent_arg;
+        if(cli_arguments.user_agent_given) {
+            bundles[i].user_agent = cli_arguments.user_agent_arg;
         } else {
-            bundles[i].userAgent = "MapPTTH/" CMDLINE_PARSER_VERSION;
+            bundles[i].user_agent = "MapPTTH/" CMDLINE_PARSER_VERSION;
         }
         pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*) &(bundles[i]));
     }
 
-    struct Document* currentDocument;
-    CURLU* curl_u = curl_url();  // used when handling redirections
+    struct Document* current_document ;
+    CURLU* curl_url_handler = curl_url();  // used when handling redirections
 
-    struct WalkBundle bundleWalk;  // in this bundle these elements never change
-    bundleWalk.allowedDomains = args_info.allowed_domains_arg;
-    bundleWalk.countAllowedDomains = args_info.allowed_domains_given;
-    bundleWalk.allowedExtensions = args_info.allowed_extensions_arg;
-    bundleWalk.countAllowedExtensions = args_info.allowed_extensions_given;
-    bundleWalk.allowSubdomains = args_info.allow_subdomains_given;
-    bundleWalk.httpOnly = args_info.http_only_given;
-    bundleWalk.httpsOnly = args_info.https_only_given;
-    bundleWalk.disallowedPaths = disallowed_paths;
-    bundleWalk.countDisallowedPaths = args_info.disallowed_paths_given;
-    bundleWalk.keepQuery = args_info.keep_query_given;
-    bundleWalk.maxDepth = args_info.max_depth_arg;
+    struct WalkBundle bundle_walk;  // in this bundle these elements never change
+    bundle_walk.allowed_domains = cli_arguments.allowed_domains_arg;
+    bundle_walk.count_allowed_domains = cli_arguments.allowed_domains_given;
+    bundle_walk.allowed_extensions = cli_arguments.allowed_extensions_arg;
+    bundle_walk.count_allowed_extensions = cli_arguments.allowed_extensions_given;
+    bundle_walk.allow_subdomains = cli_arguments.allow_subdomains_given;
+    bundle_walk.http_only = cli_arguments.http_only_given;
+    bundle_walk.https_only = cli_arguments.https_only_given;
+    bundle_walk.disallowed_paths = disallowed_paths;
+    bundle_walk.count_disallowed_paths = cli_arguments.disallowed_paths_given;
+    bundle_walk.keep_query = cli_arguments.keep_query_given;
+    bundle_walk.max_path_depth = cli_arguments.max_depth_arg;
 
     while(1) {
         pthread_mutex_lock(&mutex);
-        if(getDocumentStackLength(documents) == 0) {  // no documents to parse
+        if(stack_document_length(documents_stack) == 0) {  // no documents to parse
             // if this thread has no document to parse and all threads are waiting for
             // urls, then it means that everything was discovered and they should
             // quit, otherwise just continue to check for something to do
-            int shouldQuit = 1;
-            for(int i = 0; i < args_info.threads_arg; i++) {  // check if all threads are running
-                if(isRunningThreadsList[i] == 1) {  // if one is running
-                    shouldQuit = 0;  // should not quit
+            int should_quit = 1;
+            for(int i = 0; i < cli_arguments.threads_arg; i++) {  // check if all threads are running
+                if(list_running_thread_status[i] == 1) {  // if one is running
+                    should_quit = 0;  // should not quit
                     break;  // don't need to check other threads
                 }
             }
-            if(shouldQuit == 1 && isURLStackEmpty(urls_todo)) {  // if no threads are running and no urls to fetch left
+            if(should_quit == 1 && stack_url_isempty(urls_stack_todo)) {  // if no threads are running and no urls to fetch left
                 // quit
-                shouldExit = 1;
+                should_exit = 1;
                 pthread_mutex_unlock(&mutex);
                 break;  // quit parsing
             }
@@ -350,13 +349,13 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        currentDocument = popDocumentStack(&documents);
+        current_document = stack_document_pop(&documents_stack);
         pthread_mutex_unlock(&mutex);
 
-        int httpStatusCat = currentDocument->status_code_http / 100;
-        if(!args_info.no_color_given) {
+        int http_status_cat = current_document->status_code_http / 100;
+        if(!cli_arguments.no_color_given) {
             char* color;
-            switch(httpStatusCat) {
+            switch(http_status_cat) {
             case 5:  // 5xx
                 color = RED;
                 break;
@@ -373,142 +372,142 @@ int main(int argc, char* argv[]) {
                 color = CYAN;
                 break;
             }
-            if(httpStatusCat == 3) {
+            if(http_status_cat == 3) {
                 printf("[%s%lu%s] %s -> %s [%s] [%zu]", color,
-                    currentDocument->status_code_http, RESET, currentDocument->url,
-                    currentDocument->redirect_location,
-                    currentDocument->content_type, currentDocument->size);
+                    current_document->status_code_http, RESET, current_document->url,
+                    current_document->redirect_location,
+                    current_document->content_type, current_document->size);
             } else {
                 printf("[%s%lu%s] %s [%s] [%zu]", color,
-                    currentDocument->status_code_http, RESET, currentDocument->url,
-                    currentDocument->content_type, currentDocument->size);
+                    current_document->status_code_http, RESET, current_document->url,
+                    current_document->content_type, current_document->size);
             }
         } else {
-            if(httpStatusCat == 3) {
-                printf("[%lu] %s -> %s [%s] [%zu]", currentDocument->status_code_http,
-                    currentDocument->url, currentDocument->redirect_location,
-                    currentDocument->content_type, currentDocument->size);
+            if(http_status_cat == 3) {
+                printf("[%lu] %s -> %s [%s] [%zu]", current_document->status_code_http,
+                    current_document->url, current_document->redirect_location,
+                    current_document->content_type, current_document->size);
             } else {
-                printf("[%lu] %s [%s] [%zu]", currentDocument->status_code_http,
-                    currentDocument->url, currentDocument->content_type,
-                    currentDocument->size);
+                printf("[%lu] %s [%s] [%zu]", current_document->status_code_http,
+                    current_document->url, current_document->content_type,
+                    current_document->size);
             }
         }
 
-        if(args_info.title_flag) { // print title
-            const char* title = (const char*) lxb_html_document_title(currentDocument->document, NULL);
+        if(cli_arguments.title_flag) { // print title
+            const char* title = (const char*) lxb_html_document_title(current_document->lexbor_document, NULL);
             if(title != NULL) {
                 printf(" [%s]", title);
             }
         }
         printf("\n");
 
-        if(currentDocument->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
+        if(current_document->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
             // parse only html and xhtml files
-            if(strstr(currentDocument->content_type, "text/html") != NULL || strstr(currentDocument->content_type, "application/xhtml+xml") != NULL) {
-                bundleWalk.document = currentDocument;
+            if(strstr(current_document->content_type, "text/html") != NULL || strstr(current_document->content_type, "application/xhtml+xml") != NULL) {
+                bundle_walk.document = current_document ;
                 pthread_mutex_lock(&mutex);
-                bundleWalk.urls_done = &urls_done;
-                bundleWalk.urls_todo = &urls_todo;
-                if(currentDocument->document->head && !args_info.only_body_given) {
-                    lxb_dom_node_simple_walk(lxb_dom_interface_node(currentDocument->document->head), walk_cb, &bundleWalk);
+                bundle_walk.urls_stack_done = &urls_stack_done;
+                bundle_walk.urls_stack_todo = &urls_stack_todo;
+                if(current_document->lexbor_document->head && !cli_arguments.only_body_given) {
+                    lxb_dom_node_simple_walk(lxb_dom_interface_node(current_document->lexbor_document->head), walk_cb, &bundle_walk);
                 }
-                if(currentDocument->document->body && !args_info.only_head_given) {
-                    lxb_dom_node_simple_walk(lxb_dom_interface_node(currentDocument->document->body), walk_cb, &bundleWalk);
+                if(current_document->lexbor_document->body && !cli_arguments.only_head_given) {
+                    lxb_dom_node_simple_walk(lxb_dom_interface_node(current_document->lexbor_document->body), walk_cb, &bundle_walk);
                 }
                 pthread_mutex_unlock(&mutex);
             }
-            free(currentDocument->content_type);  // allocated by strdup
+            free(current_document->content_type);  // allocated by strdup
         }  // maybe check using libmagick if this is a html file if the server didn't specified it
 
-        if(currentDocument->redirect_location != NULL) {
+        if(current_document->redirect_location != NULL) {
             // get the domain of the current document and the domain of the redirect URL
-            char* currentDocumentURLDomain;
-            char* redirectLocationDomain;
-            char* scheme;
+            char* cur_doc_url_domain;
+            char* redirect_location_domain;
+            char* url_scheme;
 
-            curl_url_set(curl_u, CURLUPART_URL, currentDocument->redirect_location, 0);
-            curl_url_get(curl_u, CURLUPART_HOST, &redirectLocationDomain, 0);
+            curl_url_set(curl_url_handler, CURLUPART_URL, current_document->redirect_location, 0);
+            curl_url_get(curl_url_handler, CURLUPART_HOST, &redirect_location_domain, 0);
 
-            curl_url_set(curl_u, CURLUPART_URL, currentDocument->url, 0);
-            curl_url_get(curl_u, CURLUPART_HOST, &currentDocumentURLDomain, 0);
+            curl_url_set(curl_url_handler, CURLUPART_URL, current_document->url, 0);
+            curl_url_get(curl_url_handler, CURLUPART_HOST, &cur_doc_url_domain, 0);
 
             pthread_mutex_lock(&mutex);
-            if(isValidLink((char*) currentDocument->redirect_location)) {
-                curl_url_set(curl_u, CURLUPART_URL, currentDocument->redirect_location, 0);  // curl will change the url by himself based on the document's URL
-                curl_url_set(curl_u, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
+            if(is_valid_link((char*) current_document->redirect_location)) {
+                curl_url_set(curl_url_handler, CURLUPART_URL, current_document->redirect_location, 0);  // curl will change the url by himself based on the document's URL
+                curl_url_set(curl_url_handler, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
 
-                curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
+                curl_url_get(curl_url_handler, CURLUPART_SCHEME, &url_scheme, 0);
 
-                int isStillValid = 1;  // indicates if it is a valid URL through the checks, if not then it is useless to do checks anymore
+                int is_still_valid = 1;  // indicates if it is a valid URL through the checks, if not then it is useless to do checks anymore
 
-                if((args_info.http_only_given && strcmp("http", scheme) != 0) || (args_info.https_only_given && strcmp("https", scheme) != 0)) {
-                    isStillValid = 0;
+                if((cli_arguments.http_only_given && strcmp("http", url_scheme) != 0) || (cli_arguments.https_only_given && strcmp("https", url_scheme) != 0)) {
+                    is_still_valid = 0;
                 }
-                free(scheme);
+                free(url_scheme);
 
                 char* path;
-                curl_url_get(curl_u, CURLUPART_PATH, &path, 0);
-                if(isStillValid) {
-                    if(isDisallowedPath(path, args_info.disallowed_paths_arg, args_info.disallowed_paths_given)) {
-                        isStillValid = 0;
+                curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
+                if(is_still_valid) {
+                    if(is_disallowed_path(path, cli_arguments.disallowed_paths_arg, cli_arguments.disallowed_paths_given)) {
+                        is_still_valid = 0;
                     }
                 }
-                if(isStillValid) {
-                    if(!isAllowedExtension(path, args_info.allowed_extensions_arg, args_info.allowed_extensions_given)) {
-                        isStillValid = 0;
+                if(is_still_valid) {
+                    if(!is_allowed_extension(path, cli_arguments.allowed_extensions_arg, cli_arguments.allowed_extensions_given)) {
+                        is_still_valid = 0;
                     }
                 }
-                if(isStillValid) {
-                    if(args_info.max_depth_given && pathDepth(path) > args_info.max_depth_given) {
-                        isStillValid = 0;
+                if(is_still_valid) {
+                    if(cli_arguments.max_depth_given && get_path_depth(path) > cli_arguments.max_depth_given) {
+                        is_still_valid = 0;
                     }
                 }
                 free(path);
 
-                int hasBeenAdded = 0;  // used to check if the URL has been added, if not it will be freed
-                if(isStillValid) {
-                    if(canBeAdded(currentDocument->redirect_location, urls_done, urls_todo)) {
-                        if(isValidDomain(redirectLocationDomain, currentDocumentURLDomain, args_info.allow_subdomains_flag) ||
-                                isInValidDomains(redirectLocationDomain, args_info.allowed_domains_arg, args_info.allowed_domains_given, args_info.allow_subdomains_flag)) {
-                            pushURLStack(&urls_todo, currentDocument->redirect_location);
-                            hasBeenAdded = 1;
+                int has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
+                if(is_still_valid) {
+                    if(url_not_seen(current_document->redirect_location, urls_stack_done, urls_stack_todo)) {
+                        if(is_valid_domain(redirect_location_domain, cur_doc_url_domain, cli_arguments.allow_subdomains_flag) ||
+                                is_in_valid_domains(redirect_location_domain, cli_arguments.allowed_domains_arg, cli_arguments.allowed_domains_given, cli_arguments.allow_subdomains_flag)) {
+                            stack_url_push(&urls_stack_todo, current_document->redirect_location);
+                            has_been_added = 1;
                         }
                     }
                 }
-                if(!hasBeenAdded) {
-                    free(currentDocument->redirect_location);
+                if(!has_been_added) {
+                    free(current_document->redirect_location);
                 }
             }
             pthread_mutex_unlock(&mutex);
 
-            free(currentDocumentURLDomain);
-            free(redirectLocationDomain);
+            free(cur_doc_url_domain);
+            free(redirect_location_domain);
         }
 
-        lxb_html_document_destroy(currentDocument->document);
-        free(currentDocument);
+        lxb_html_document_destroy(current_document->lexbor_document);
+        free(current_document);
     }
-    for(int i = 0; i < args_info.threads_arg; i++) {
+    for(int i = 0; i < cli_arguments.threads_arg; i++) {
         pthread_join(fetcher_threads[i], NULL);
     }
 
-    curl_url_cleanup(curl_u);
+    curl_url_cleanup(curl_url_handler);
 
     // CLEANUP
     free(bundles);
-    free(isRunningThreadsList);
+    free(list_running_thread_status);
 
-    while(getURLStackLength(urls_done) != 1) {  // all urls are allocated by curl when parsing url, except the initial url
-        char* url_done = popURLStack(&urls_done);
+    while(stack_url_length(urls_stack_done) != 1) {  // all urls are allocated by curl when parsing url, except the initial url
+        char* url_done = stack_url_pop(&urls_stack_done);
         free(url_done);
     }
 
-    for(int i = 0; i < args_info.disallowed_paths_given; i++) {
+    for(int i = 0; i < cli_arguments.disallowed_paths_given; i++) {
         free(disallowed_paths[i]);
     }
 
-    cmdline_parser_free(&args_info);
+    cmdline_parser_free(&cli_arguments);
     curl_share_cleanup(curl_share);
     curl_global_cleanup();
     return EXIT_SUCCESS;

@@ -1,31 +1,31 @@
 #include "stack_documents.h"
 
-void pushDocumentStack(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code_http, size_t size, char* content_type, char* redirect_location) {
-    DocumentNode_t* newNode = (DocumentNode_t*) malloc(sizeof(DocumentNode_t));
-    newNode->next = *head;
-    newNode->document.document = document;
-    newNode->document.url = url;
-    newNode->document.size = size;
-    newNode->document.status_code_http = status_code_http;
+void stack_document_push(DocumentNode_t** head, lxb_html_document_t* lexbor_document, char* url, long status_code_http, size_t size, char* content_type, char* redirect_location) {
+    DocumentNode_t* new_node = (DocumentNode_t*) malloc(sizeof(DocumentNode_t));
+    new_node->next = *head;
+    new_node->document.lexbor_document = lexbor_document;
+    new_node->document.url = url;
+    new_node->document.size = size;
+    new_node->document.status_code_http = status_code_http;
     if(content_type != NULL) {
-        newNode->document.content_type = content_type;
+        new_node->document.content_type = content_type;
     } else {
-        char* defaultContentType = (char*) calloc(2, sizeof (char));
-        strcat(defaultContentType, " ");
-        newNode->document.content_type = defaultContentType;
+        char* default_content_type = (char*) calloc(2, sizeof (char));
+        strcat(default_content_type, " ");
+        new_node->document.content_type = default_content_type;
     }
-    newNode->document.redirect_location = redirect_location;
-    *head = newNode;
+    new_node->document.redirect_location = redirect_location;
+    *head = new_node;
 }
 
-struct Document* popDocumentStack(DocumentNode_t** head) {
+struct Document* stack_document_pop(DocumentNode_t** head) {
     DocumentNode_t* tmp = *head;
     if(tmp == NULL) {
         return NULL;
     }
     *head = tmp->next;
     struct Document* res = (struct Document*) malloc(sizeof(struct Document));
-    res->document = tmp->document.document;
+    res->lexbor_document = tmp->document.lexbor_document;
     res->url = tmp->document.url;
     res->status_code_http = tmp->document.status_code_http;
     res->size = tmp->document.size;
@@ -36,7 +36,7 @@ struct Document* popDocumentStack(DocumentNode_t** head) {
     return res;
 }
 
-int getDocumentStackLength(DocumentNode_t* head) {
+int stack_document_length(DocumentNode_t* head) {
     DocumentNode_t* tmp = head;
     if(tmp == NULL) {
         return 0;

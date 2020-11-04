@@ -14,7 +14,7 @@
 #endif
 
 struct Document {
-    lxb_html_document_t* document;
+    lxb_html_document_t* lexbor_document;
     char* url;
     long status_code_http;
     size_t size;
@@ -28,10 +28,10 @@ struct DocumentNode {
 };
 typedef struct DocumentNode DocumentNode_t;
 
-void pushDocumentStack(DocumentNode_t** head, lxb_html_document_t* document, char* url, long status_code, size_t size, char* content_type, char* redirect_location);
+void stack_document_push(DocumentNode_t** head, lxb_html_document_t* lexbor_document, char* url, long status_code, size_t size, char* content_type, char* redirect_location);
 
-struct Document* popDocumentStack(DocumentNode_t** head);
+struct Document* stack_document_pop(DocumentNode_t** head);
 
-int getDocumentStackLength(DocumentNode_t* head);
+int stack_document_length(DocumentNode_t* head);
 
 #endif

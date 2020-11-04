@@ -3,6 +3,6 @@
 
 #include "stack_urls.h"
 
-URLNode_t* getSitemap(char* url, int noColor);
+URLNode_t* get_sitemap_urls(char* url, int no_color);
 
 #endif

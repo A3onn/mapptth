@@ -13,25 +13,25 @@
 
 struct BundleVarsThread {  // used to needed variables to the thread
     DocumentNode_t** documents;  // stack of documents to populate
-    URLNode_t** urls_todo;  // stack of URLS to fetch
-    URLNode_t** urls_done;  // stack of URLS fetched
+    URLNode_t** urls_stack_todo;  // stack of URLS to fetch
+    URLNode_t** urls_stack_done;  // stack of URLS fetched
     CURLSH* curl_share;
     pthread_mutex_t* mutex;
 
-    int* isRunning;  // let know the main thread if the thread is fetching something
-    int* shouldExit;  // if thread should exit; set by the main thread
+    int* is_running;  // let know the main thread if the thread is fetching something
+    int* should_exit;  // if thread should exit; set by the main thread
 
-    int maxRetries;
+    int max_retries;
     int timeout;
-    long maxFileSize;
+    long max_file_size;
     int resolve_ip_versions;
-    int noColor;
+    int no_color;
 
-    char* userAgent;
+    char* user_agent;
 };
 
 void* fetcher_thread_func(void* bundle_arg);
 
-static size_t processContent(const char* content, size_t size, size_t nmemb, void* userp);
+static size_t __fetcher_content_callback(const char* content, size_t size, size_t nmemb, void* userp);
 
 #endif

@@ -1,52 +1,51 @@
 #include "utils.h"
 #include <string.h>
 
-int canBeAdded(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
+int url_not_seen(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
     // Just check if a given url has already been seen.
     // Could just be:
-    //  return !findURLStack(*urls_done, urlFinal) && !findURLStack(*urls_done, urlFinal)
-    // but it would be longer as both findURLStack are called every time
-    if(findURLStack(urls_done, url)) {
+    //  return !stack_url_contains(*urls_done, url) && !stack_url_contains(*urls_done, url)
+    // but it would be longer as both stack_url_contains are called every time
+    if(stack_url_contains(urls_done, url)) {
         return 0;
     }
-    if(findURLStack(urls_todo, url)) {
+    if(stack_url_contains(urls_todo, url)) {
         return 0;
     }
     return 1;
 }
 
-int isValidDomain(char* domainToCompare, char* domain, int canBeSubDomain) {
-    int strlen_domainToCompare = strlen(domainToCompare), strlen_domain = strlen(domain);
+int is_valid_domain(char* domain_to_compare, char* domain, int allow_subdomain) {
+    int len_domain_to_compare = strlen(domain_to_compare), len_domain = strlen(domain);
 
-    if(strlen_domain == strlen_domainToCompare) {
-        return strcmp(domainToCompare, domain) == 0;
-    } else if(strlen_domain < strlen_domainToCompare && canBeSubDomain == 1) {
-        char* foundPos = strstr(domainToCompare, domain);
-        if(foundPos != NULL) {
+    if(len_domain == len_domain_to_compare) {
+        return strcmp(domain_to_compare, domain) == 0;
+    } else if(len_domain < len_domain_to_compare && allow_subdomain == 1) {
+        char* found_position = strstr(domain_to_compare, domain);
+        if(found_position != NULL) {
             // need to check if the char before is a '.' (dot) because for exemple:
-            // domainToCompare = "xyzb.a" and domain = "b.a" would result in true because
+            // domain_to_compare = "xyzb.a" and domain = "b.a" would result in true because
             // "b.a" is in both strings
-            return strcmp(foundPos, domain) == 0 && *(foundPos - 1) == '.';
+            return strcmp(found_position, domain) == 0 && *(found_position - 1) == '.';
         }
     }
     return 0;
 }
 
-int isInValidDomains(char* domain, char** allowedDomains, int countAllowedDomains, int canBeSubDomain) {
-    for(int i = 0; i < countAllowedDomains; i++) {
-        if(isValidDomain(domain, allowedDomains[i], canBeSubDomain)) {
+int is_in_valid_domains(char* domain, char** allowed_domains, int count_allowed_domains, int allow_subdomain) {
+    for(int i = 0; i < count_allowed_domains; i++) {
+        if(is_valid_domain(domain, allowed_domains[i], allow_subdomain)) {
             return 1;
         }
     }
     return 0;
 }
 
-int isValidLink(const char* url) {
+int is_valid_link(const char* url) {
     if(url == NULL) {
         return 0;
     }
 
-    // libcurl thinks they are path and not schemes, so it's necessary to make checks
     if(strncmp("mailto:", url, 7) == 0 || strncmp("javascript:", url, 11) == 0 || strncmp("tel:", url, 4) == 0) {
         return 0;
     }
@@ -70,7 +69,7 @@ int isValidLink(const char* url) {
     return 0;
 }
 
-char* normalizePath(char* path, int isDirectory) {
+char* normalize_path(char* path, int is_directory) {
     // remove './' and '../' from a given path
     if(path == NULL) {
         return NULL;
@@ -114,7 +113,7 @@ char* normalizePath(char* path, int isDirectory) {
         free(tmp);
     }
 
-    if(isDirectory) {
+    if(is_directory) {
         // add '/' at the end
         char* tmp = strdup(result);
         result = (char*) realloc(result, strlen(tmp)+1);
@@ -131,29 +130,29 @@ char* normalizePath(char* path, int isDirectory) {
 }
 
 
-int isDisallowedPath(char* path, char** disallowedPaths, int countDisallowedPaths) {
-    if(countDisallowedPaths == 0) { // if no paths where specified, then it is allowed
+int is_disallowed_path(char* path, char** disallowed_paths, int count_disallowed_paths) {
+    if(count_disallowed_paths == 0) { // if no paths where specified, then it is allowed
         return 0;
     }
 
-    for(int i = 0; i < countDisallowedPaths; i++) {
-        if(strstr(path, disallowedPaths[i]) == path) {
+    for(int i = 0; i < count_disallowed_paths; i++) {
+        if(strstr(path, disallowed_paths[i]) == path) {
             return 1;
         }
     }
     return 0;
 }
 
-int isAllowedExtension(char* path, char** allowedExtensions, int countAllowedExtensions) {
-    if(countAllowedExtensions == 0) { // if no extensions where specified, then it is allowed
+int is_allowed_extension(char* path, char** allowed_extensions, int count_allowed_extensions) {
+    if(count_allowed_extensions == 0) { // if no extensions where specified, then it is allowed
         return 1;
     }
     char* filename = strrchr(path, '/'); // find last '/', this will give the name of the file
     if(filename != NULL) {
         char* ext = strrchr(filename, '.'); // find extension
         if(ext != NULL) { // if there is an extension
-            for(int i = 0; i < countAllowedExtensions; i++) {
-                if(strstr(path, allowedExtensions[i]) == ext) {
+            for(int i = 0; i < count_allowed_extensions; i++) {
+                if(strstr(path, allowed_extensions[i]) == ext) {
                     return 1;
                 }
             }
@@ -164,7 +163,7 @@ int isAllowedExtension(char* path, char** allowedExtensions, int countAllowedExt
     return 0;
 }
 
-int pathDepth(char* path) {
+int get_path_depth(char* path) {
     if(path == NULL) {
         return 0;
     }

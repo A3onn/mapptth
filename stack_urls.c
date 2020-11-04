@@ -1,13 +1,13 @@
 #include "stack_urls.h"
 
-void pushURLStack(URLNode_t** head, char* url) {
-    URLNode_t* newNode = (URLNode_t*) malloc(sizeof(URLNode_t));
-    newNode->next = *head;
-    newNode->url = url;
-    *head = newNode;
+void stack_url_push(URLNode_t** head, char* url) {
+    URLNode_t* new_node = (URLNode_t*) malloc(sizeof(URLNode_t));
+    new_node->next = *head;
+    new_node->url = url;
+    *head = new_node;
 }
 
-char* popURLStack(URLNode_t** head) {
+char* stack_url_pop(URLNode_t** head) {
     URLNode_t* tmp = *head;
     if(tmp == NULL) {
         return NULL;
@@ -19,11 +19,11 @@ char* popURLStack(URLNode_t** head) {
     return res;
 }
 
-int isURLStackEmpty(URLNode_t* head) {
+int stack_url_isempty(URLNode_t* head) {
     return head == 0;
 }
 
-int getURLStackLength(URLNode_t* head) {
+int stack_url_length(URLNode_t* head) {
     URLNode_t* tmp = head;
     if(tmp == NULL) {
         return 0;
@@ -37,7 +37,7 @@ int getURLStackLength(URLNode_t* head) {
     return res;
 }
 
-int findURLStack(URLNode_t* head, char* url) {
+int stack_url_contains(URLNode_t* head, char* url) {
     URLNode_t* tmp = head;
     if(tmp == NULL) {
         return 0;
@@ -52,7 +52,7 @@ int findURLStack(URLNode_t* head, char* url) {
     return 0;
 }
 
-void printURLStack(URLNode_t* head) {
+void stack_url_debug_print(URLNode_t* head) {
     if(head == NULL) {
         puts("<empty>");
         return;

@@ -13,19 +13,19 @@
 #define YELLOW "\033[0;33m"
 #define RESET "\033[0m"
 
-int canBeAdded(char* url, URLNode_t* urls_done, URLNode_t* urls_todo);
+int url_not_seen(char* url, URLNode_t* urls_done, URLNode_t* urls_todo);
 
-int isValidDomain(char* domainToCompare, char* domain, int canBeSubDomain);
+int is_valid_domain(char* domain_to_compare, char* domain, int allow_subdomain);
 
-int isValidLink(const char* url);
+int is_valid_link(const char* url);
 
-char* normalizePath(char* path, int isDirectory);
+char* normalize_path(char* path, int is_directory);
 
-int isDisallowedPath(char* path, char** disallowedPaths, int countDisallowedPaths);
+int is_disallowed_path(char* path, char** disallowed_paths, int count_disallowed_paths);
 
-int isAllowedExtension(char* path, char** allowedExtensions, int countAllowedExtensions);
+int is_allowed_extension(char* path, char** allowed_extensions, int count_allowed_extensions);
 
-int isInValidDomains(char* domain, char** allowedDomains, int countAllowedDomains, int canBeSubDomain);
+int is_in_valid_domains(char* domain, char** allowed_domains, int count_allowed_domains, int allow_subdomain);
 
-int pathDepth(char* path);
+int get_path_depth(char* path);
 #endif
