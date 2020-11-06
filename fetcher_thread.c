@@ -31,7 +31,6 @@ void* fetcher_thread_func(void* bundle_arg) {
     int* should_exit = bundle->should_exit;
     int max_retries = bundle->max_retries;
     int timeout = bundle->timeout;
-    long max_file_size = bundle->max_file_size;
 
     CURLcode status_c;
     CURL* curl = curl_easy_init();
@@ -39,7 +38,6 @@ void* fetcher_thread_func(void* bundle_arg) {
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __fetcher_content_callback);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
     curl_easy_setopt(curl, CURLOPT_IPRESOLVE, bundle->resolve_ip_versions);
-    curl_easy_setopt(curl, CURLOPT_MAXFILESIZE, max_file_size);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, bundle->user_agent);
     curl_easy_setopt(curl, CURLOPT_SHARE, bundle->curl_share);
 
@@ -88,12 +86,22 @@ void* fetcher_thread_func(void* bundle_arg) {
         int count_retries = 0;
         do {
             status_c = curl_easy_perform(curl);
-            if(status_c != CURLE_OK) {
+            if(status_c != CURLE_OK && status_c != CURLE_OPERATION_TIMEDOUT) {
 				current_document->size = 0L;
+				lxb_html_document_clean(current_document->lxb_document);
             }
             count_retries += 1;
-        } while(count_retries < max_retries && status_c != CURLE_FILESIZE_EXCEEDED && status_c != CURLE_OK);
-        if(status_c != CURLE_OK && count_retries == max_retries) {
+        } while(count_retries < max_retries && status_c != CURLE_OK && status_c != CURLE_OPERATION_TIMEDOUT);
+        if(status_c == CURLE_OPERATION_TIMEDOUT && current_document->size > 0) { // if it timed out because the file was too big
+            if(!bundle->no_color) {
+                fprintf(stderr, "%s%s : Timed out, took too long to send.%s\n", BRIGHT_RED, current_url, RESET);
+            } else {
+                fprintf(stderr, "%s : Timed out, took too long to send.\n", current_url);
+            }
+            lxb_html_document_parse_chunk_end(current_document->lxb_document);
+            lxb_html_document_destroy(current_document->lxb_document);
+            continue;
+        } else if(status_c != CURLE_OK && count_retries == max_retries) {
             if(!bundle->no_color) {
                 fprintf(stderr, "%s%s : Max retries exceeded. Last error was: %s.%s\n", BRIGHT_RED, current_url, curl_easy_strerror(status_c), RESET);
             } else {
@@ -102,12 +110,6 @@ void* fetcher_thread_func(void* bundle_arg) {
             lxb_html_document_parse_chunk_end(current_document->lxb_document);
             lxb_html_document_destroy(current_document->lxb_document);
             continue;
-        } else if(status_c == CURLE_FILESIZE_EXCEEDED) {
-            if(!bundle->no_color) {
-                fprintf(stderr, "%s%s : File size limit exceeded.%s\n", BRIGHT_RED, current_url, RESET);
-            } else {
-                fprintf(stderr, "%s : File size limit exceeded.\n", current_url);
-            }
         }
 
         status_l = lxb_html_document_parse_chunk_end(current_document->lxb_document);

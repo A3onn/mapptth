@@ -40,7 +40,6 @@ const char *gengetopt_args_info_help[] = {
   "  -u, --url=STRING              URL of where to start.",
   "  -m, --timeout=INT             Timeout in seconds.  (default=`3')",
   "  -r, --retries=INT             Maximum retries.  (default=`2')",
-  "  -z, --max-document-size=LONG  Maximum size of a document in bytes. If a\n                                  document is larger, it won't be parsed.\n                                  (default=`128000')",
   "  -D, --max-depth=INT           Maximum depth of paths.",
   "  -s, --allow-subdomains        Allow the crawler to go to URLs found on a\n                                  sub-domain.  (default=off)",
   "  -a, --allowed-domains=STRING  Allow the crawler to go to URLs found on other\n                                  domains.",
@@ -67,7 +66,6 @@ typedef enum {ARG_NO
   , ARG_FLAG
   , ARG_STRING
   , ARG_INT
-  , ARG_LONG
 } cmdline_parser_arg_type;
 
 static
@@ -94,7 +92,6 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->url_given = 0 ;
   args_info->timeout_given = 0 ;
   args_info->retries_given = 0 ;
-  args_info->max_document_size_given = 0 ;
   args_info->max_depth_given = 0 ;
   args_info->allow_subdomains_given = 0 ;
   args_info->allowed_domains_given = 0 ;
@@ -128,8 +125,6 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->timeout_orig = NULL;
   args_info->retries_arg = 2;
   args_info->retries_orig = NULL;
-  args_info->max_document_size_arg = 128000;
-  args_info->max_document_size_orig = NULL;
   args_info->max_depth_orig = NULL;
   args_info->allow_subdomains_flag = 0;
   args_info->allowed_domains_arg = NULL;
@@ -159,29 +154,28 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->url_help = gengetopt_args_info_help[3] ;
   args_info->timeout_help = gengetopt_args_info_help[4] ;
   args_info->retries_help = gengetopt_args_info_help[5] ;
-  args_info->max_document_size_help = gengetopt_args_info_help[6] ;
-  args_info->max_depth_help = gengetopt_args_info_help[7] ;
-  args_info->allow_subdomains_help = gengetopt_args_info_help[8] ;
-  args_info->allowed_domains_help = gengetopt_args_info_help[9] ;
+  args_info->max_depth_help = gengetopt_args_info_help[6] ;
+  args_info->allow_subdomains_help = gengetopt_args_info_help[7] ;
+  args_info->allowed_domains_help = gengetopt_args_info_help[8] ;
   args_info->allowed_domains_min = 0;
   args_info->allowed_domains_max = 0;
-  args_info->disallowed_paths_help = gengetopt_args_info_help[10] ;
+  args_info->disallowed_paths_help = gengetopt_args_info_help[9] ;
   args_info->disallowed_paths_min = 0;
   args_info->disallowed_paths_max = 0;
-  args_info->allowed_extensions_help = gengetopt_args_info_help[11] ;
+  args_info->allowed_extensions_help = gengetopt_args_info_help[10] ;
   args_info->allowed_extensions_min = 0;
   args_info->allowed_extensions_max = 0;
-  args_info->keep_query_help = gengetopt_args_info_help[12] ;
-  args_info->no_color_help = gengetopt_args_info_help[13] ;
-  args_info->user_agent_help = gengetopt_args_info_help[14] ;
-  args_info->title_help = gengetopt_args_info_help[15] ;
-  args_info->sitemap_help = gengetopt_args_info_help[16] ;
-  args_info->http_only_help = gengetopt_args_info_help[18] ;
-  args_info->https_only_help = gengetopt_args_info_help[19] ;
-  args_info->only_body_help = gengetopt_args_info_help[21] ;
-  args_info->only_head_help = gengetopt_args_info_help[22] ;
-  args_info->IPv6_help = gengetopt_args_info_help[24] ;
-  args_info->IPv4_help = gengetopt_args_info_help[25] ;
+  args_info->keep_query_help = gengetopt_args_info_help[11] ;
+  args_info->no_color_help = gengetopt_args_info_help[12] ;
+  args_info->user_agent_help = gengetopt_args_info_help[13] ;
+  args_info->title_help = gengetopt_args_info_help[14] ;
+  args_info->sitemap_help = gengetopt_args_info_help[15] ;
+  args_info->http_only_help = gengetopt_args_info_help[17] ;
+  args_info->https_only_help = gengetopt_args_info_help[18] ;
+  args_info->only_body_help = gengetopt_args_info_help[20] ;
+  args_info->only_head_help = gengetopt_args_info_help[21] ;
+  args_info->IPv6_help = gengetopt_args_info_help[23] ;
+  args_info->IPv4_help = gengetopt_args_info_help[24] ;
   
 }
 
@@ -269,7 +263,6 @@ free_string_field (char **s)
 /** @brief generic value variable */
 union generic_value {
     int int_arg;
-    long long_arg;
     char *string_arg;
     const char *default_string_arg;
 };
@@ -322,7 +315,6 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->url_orig));
   free_string_field (&(args_info->timeout_orig));
   free_string_field (&(args_info->retries_orig));
-  free_string_field (&(args_info->max_document_size_orig));
   free_string_field (&(args_info->max_depth_orig));
   free_multiple_string_field (args_info->allowed_domains_given, &(args_info->allowed_domains_arg), &(args_info->allowed_domains_orig));
   free_multiple_string_field (args_info->disallowed_paths_given, &(args_info->disallowed_paths_arg), &(args_info->disallowed_paths_orig));
@@ -381,8 +373,6 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "timeout", args_info->timeout_orig, 0);
   if (args_info->retries_given)
     write_into_file(outfile, "retries", args_info->retries_orig, 0);
-  if (args_info->max_document_size_given)
-    write_into_file(outfile, "max-document-size", args_info->max_document_size_orig, 0);
   if (args_info->max_depth_given)
     write_into_file(outfile, "max-depth", args_info->max_depth_orig, 0);
   if (args_info->allow_subdomains_given)
@@ -792,9 +782,6 @@ int update_arg(void *field, char **orig_field,
   case ARG_INT:
     if (val) *((int *)field) = strtol (val, &stop_char, 0);
     break;
-  case ARG_LONG:
-    if (val) *((long *)field) = (long)strtol (val, &stop_char, 0);
-    break;
   case ARG_STRING:
     if (val) {
       string_field = (char **)field;
@@ -810,7 +797,6 @@ int update_arg(void *field, char **orig_field,
   /* check numeric conversion */
   switch(arg_type) {
   case ARG_INT:
-  case ARG_LONG:
     if (val && !(stop_char && *stop_char == '\0')) {
       fprintf(stderr, "%s: invalid numeric value: %s\n", package_name, val);
       return 1; /* failure */
@@ -925,8 +911,6 @@ void update_multiple_arg(void *field, char ***orig_field,
     switch(arg_type) {
     case ARG_INT:
       *((int **)field) = (int *)realloc (*((int **)field), (field_given + prev_given) * sizeof (int)); break;
-    case ARG_LONG:
-      *((long **)field) = (long *)realloc (*((long **)field), (field_given + prev_given) * sizeof (long)); break;
     case ARG_STRING:
       *((char ***)field) = (char **)realloc (*((char ***)field), (field_given + prev_given) * sizeof (char *)); break;
     default:
@@ -940,8 +924,6 @@ void update_multiple_arg(void *field, char ***orig_field,
         switch(arg_type) {
         case ARG_INT:
           (*((int **)field))[i + field_given] = tmp->arg.int_arg; break;
-        case ARG_LONG:
-          (*((long **)field))[i + field_given] = tmp->arg.long_arg; break;
         case ARG_STRING:
           (*((char ***)field))[i + field_given] = tmp->arg.string_arg; break;
         default:
@@ -958,12 +940,6 @@ void update_multiple_arg(void *field, char ***orig_field,
         if (! *((int **)field)) {
           *((int **)field) = (int *)malloc (sizeof (int));
           (*((int **)field))[0] = default_value->int_arg; 
-        }
-        break;
-      case ARG_LONG:
-        if (! *((long **)field)) {
-          *((long **)field) = (long *)malloc (sizeof (long));
-          (*((long **)field))[0] = default_value->long_arg;
         }
         break;
       case ARG_STRING:
@@ -1034,7 +1010,6 @@ cmdline_parser_internal (
         { "url",	1, NULL, 'u' },
         { "timeout",	1, NULL, 'm' },
         { "retries",	1, NULL, 'r' },
-        { "max-document-size",	1, NULL, 'z' },
         { "max-depth",	1, NULL, 'D' },
         { "allow-subdomains",	0, NULL, 's' },
         { "allowed-domains",	1, NULL, 'a' },
@@ -1054,7 +1029,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:r:z:D:sa:d:x:kcU:TS:pPBH64", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:r:D:sa:d:x:kcU:TS:pPBH64", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1114,18 +1089,6 @@ cmdline_parser_internal (
               &(local_args_info.retries_given), optarg, 0, "2", ARG_INT,
               check_ambiguity, override, 0, 0,
               "retries", 'r',
-              additional_error))
-            goto failure;
-        
-          break;
-        case 'z':	/* Maximum size of a document in bytes. If a document is larger, it won't be parsed..  */
-        
-        
-          if (update_arg( (void *)&(args_info->max_document_size_arg), 
-               &(args_info->max_document_size_orig), &(args_info->max_document_size_given),
-              &(local_args_info.max_document_size_given), optarg, 0, "128000", ARG_LONG,
-              check_ambiguity, override, 0, 0,
-              "max-document-size", 'z',
               additional_error))
             goto failure;
         

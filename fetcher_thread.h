@@ -23,7 +23,6 @@ struct BundleVarsThread {  // used to needed variables to the thread
 
     int max_retries;
     int timeout;
-    long max_file_size;
     int resolve_ip_versions;
     int no_color;
 

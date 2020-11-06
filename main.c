@@ -158,10 +158,6 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "%s: the number of threads should be positive\n", argv[0]);
         return 1;
     }
-    if(cli_arguments.max_document_size_arg <= 0L) {
-        fprintf(stderr, "%s: the max size of a document should be positive\n", argv[0]);
-        return 1;
-    }
     if(cli_arguments.retries_arg <= 0) {
         fprintf(stderr, "%s: the maximum number of retries should be positive\n", argv[0]);
         return 1;
@@ -297,7 +293,6 @@ int main(int argc, char* argv[]) {
         bundles[i].is_running = &(list_running_thread_status[i]);
         bundles[i].max_retries = cli_arguments.retries_arg;
         bundles[i].timeout = cli_arguments.timeout_arg;
-        bundles[i].max_file_size = cli_arguments.max_document_size_arg;
         bundles[i].resolve_ip_versions = resolve_ip_version;
         bundles[i].no_color = cli_arguments.no_color_given;
         bundles[i].curl_share = curl_share;
