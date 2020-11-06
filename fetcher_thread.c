@@ -1,7 +1,7 @@
 #include "fetcher_thread.h"
 
 struct ProcessContentBundle {
-    lxb_html_document_t* document;
+    lxb_html_document_t* lxb_document;
     size_t size;  // size of the document without the headers
     // using this variable to have the size of the document
     // even if the server doesn't send it
@@ -11,7 +11,7 @@ static size_t __fetcher_content_callback(const char* content, size_t size, size_
     // called when getting data
     // passing the data received to the document using chunk parsing
     struct ProcessContentBundle* doc = (struct ProcessContentBundle*) userp;
-    lxb_status_t status = lxb_html_document_parse_chunk(doc->document, (lxb_char_t*) content, size * nmemb);
+    lxb_status_t status = lxb_html_document_parse_chunk(doc->lxb_document, (lxb_char_t*) content, size * nmemb);
     if(status != LXB_STATUS_OK) {
         fprintf(stderr, "An error occured while parsing...\n");
         return 0; // indicate libcurl that we didn't parse anything, meaning an error occurred
@@ -62,9 +62,9 @@ void* fetcher_thread_func(void* bundle_arg) {
         stack_url_push(urls_stack_done, current_url);
         pthread_mutex_unlock(mutex);
 
-        current_document->document = lxb_html_document_create();
+        current_document->lxb_document = lxb_html_document_create();
         current_document->size = 0L;
-        if(current_document->document == NULL) {
+        if(current_document->lxb_document == NULL) {
             fprintf(stderr, "lxb_html_document_create failed for %s. Not doing it.\n", current_url);
             continue;
         }
@@ -72,22 +72,25 @@ void* fetcher_thread_func(void* bundle_arg) {
         status_c = curl_easy_setopt(curl, CURLOPT_URL, current_url);
         if(status_c != CURLE_OK) {
             fprintf(stderr, "curl_easy_setopt for URL failed for %s. Not doing it. Error: %s.\n", current_url, curl_easy_strerror(status_c));
-            lxb_html_document_destroy(current_document->document);
+            lxb_html_document_destroy(current_document->lxb_document);
             continue;
         }
         status_c = curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*) current_document);
         if(status_c != CURLE_OK) {
             fprintf(stderr, "curl_easy_setopt for setting the document to write in failed for %s. Not doing it. Error: %s.\n", current_url, curl_easy_strerror(status_c));
-            lxb_html_document_destroy(current_document->document);
+            lxb_html_document_destroy(current_document->lxb_document);
             continue;
         }
 
         // fetch
-        lxb_html_document_parse_chunk_begin(current_document->document);
+        lxb_html_document_parse_chunk_begin(current_document->lxb_document);
 
         int count_retries = 0;
         do {
             status_c = curl_easy_perform(curl);
+            if(status_c != CURLE_OK) {
+				current_document->size = 0L;
+            }
             count_retries += 1;
         } while(count_retries < max_retries && status_c != CURLE_FILESIZE_EXCEEDED && status_c != CURLE_OK);
         if(status_c != CURLE_OK && count_retries == max_retries) {
@@ -96,8 +99,8 @@ void* fetcher_thread_func(void* bundle_arg) {
             } else {
                 fprintf(stderr, "%s : Max retries exceeded. Last error was: %s.\n", current_url, curl_easy_strerror(status_c));
             }
-            lxb_html_document_parse_chunk_end(current_document->document);
-            lxb_html_document_destroy(current_document->document);
+            lxb_html_document_parse_chunk_end(current_document->lxb_document);
+            lxb_html_document_destroy(current_document->lxb_document);
             continue;
         } else if(status_c == CURLE_FILESIZE_EXCEEDED) {
             if(!bundle->no_color) {
@@ -107,7 +110,7 @@ void* fetcher_thread_func(void* bundle_arg) {
             }
         }
 
-        status_l = lxb_html_document_parse_chunk_end(current_document->document);
+        status_l = lxb_html_document_parse_chunk_end(current_document->lxb_document);
 
         status_c = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code_http);
         if(status_c != CURLE_OK) {
@@ -133,7 +136,7 @@ void* fetcher_thread_func(void* bundle_arg) {
         }
 
         pthread_mutex_lock(mutex);
-        stack_document_push(documents, current_document->document, current_url, status_code_http, current_document->size, content_type, redirect_location);
+        stack_document_push(documents, current_document->lxb_document, current_url, status_code_http, current_document->size, content_type, redirect_location);
         pthread_mutex_unlock(mutex);
     }
     curl_easy_cleanup(curl);
