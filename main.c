@@ -81,7 +81,6 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
         // check scheme
         curl_url_get(curl_url_handler, CURLUPART_SCHEME, &url_scheme, 0);
         if((bundle->http_only && strcmp("http", url_scheme) != 0) || (bundle->https_only && strcmp("https", url_scheme) != 0)) {
-            free(document_domain);
             free(url_scheme);
             return LEXBOR_ACTION_OK;
         }
@@ -96,18 +95,15 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
 
         // check disallowed paths
         if(is_disallowed_path(path, bundle->disallowed_paths, bundle->count_disallowed_paths)) {
-            free(document_domain);
             free(path);
             return LEXBOR_ACTION_OK;
         }
         // check allowed extensions
         if(!is_allowed_extension(path, bundle->allowed_extensions, bundle->count_allowed_extensions)) {
-            free(document_domain);
             free(path);
             return LEXBOR_ACTION_OK;
         }
         if(bundle->max_path_depth > 0 && get_path_depth(path) > bundle->max_path_depth) {
-            free(document_domain);
             free(path);
             return LEXBOR_ACTION_OK;
         }

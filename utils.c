@@ -50,24 +50,21 @@ int is_valid_link(const char* url) {
         return 0;
     }
 
-    // check scheme
+    // check scheme    
     char* scheme;
     CURLU* curl_u = curl_url();
     curl_url_set(curl_u, CURLUPART_URL, url, 0);
     curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
 
     if(scheme == NULL) {
-        free(scheme);
         curl_url_cleanup(curl_u);
         return 1;
     } else {
         if(strcmp(scheme, "http") == 0 || strcmp(scheme, "https") == 0) {
-            free(scheme);
             curl_url_cleanup(curl_u);
             return 1;
         }
     }
-    free(scheme);
     curl_url_cleanup(curl_u);
     return 0;
 }
