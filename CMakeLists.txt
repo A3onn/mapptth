@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.1.0)
 project(mapptth VERSION 0.1.0 LANGUAGES C)
 
-include(CTest)
-enable_testing()
-
 set(SRCS main.c fetcher_thread.c stack_documents.c stack_urls.c cmdline.c utils.c sitemaps_parser.c)
 set(HEADERS fetcher_thread.h stack_documents.h stack_urls.h cmdline.h utils.h sitemaps_parser.h)
 
@@ -58,3 +55,32 @@ else()
     target_link_libraries(mapptth ${LIBXML2_LIBRARY})
     add_definitions(${LIBXML2_DEFINITIONS})
 endif()
+
+# tests
+find_library(CHECK_LIBRARY NAMES libcheck libCheck check Check)
+if(CHECK_LIBRARY)
+    message(STATUS "Making tests...")
+    add_executable(tests_mapptth tests_mapptth.c stack_documents.c stack_urls.c utils.c sitemaps_parser.c stack_documents.h stack_urls.h utils.h sitemaps_parser.h)
+
+    # libcheck
+    target_link_libraries(tests_mapptth ${CHECK_LIBRARY})
+
+    # libxml2
+    include_directories(tests_mapptth ${LIBXML2_INCLUDE_DIRS})
+    target_link_libraries(tests_mapptth ${LIBXML2_LIBRARY})
+
+    # lexbor
+    if(LEXBOR_LIBRARY)
+        target_link_libraries(tests_mapptth ${LEXBOR_LIBRARY})
+    else()
+        target_include_directories(tests_mapptth PRIVATE ${LEXBOR_DIR_HEADER})
+        target_link_libraries(tests_mapptth lexbor)
+    endif()
+
+    # libcurl
+    link_directories(tests_mapptth ${CURL_INCLUDE_DIRS})
+    target_link_libraries(tests_mapptth ${CURL_LIBRARY})
+else()
+    message(STATUS "Couldn't find Check library for testing, disable tests")
+endif()
+
