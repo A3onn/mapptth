@@ -54,14 +54,15 @@ END_TEST
 
 START_TEST(get_differents_correct_value_length_five_stack_urls) {
     struct URLNode* urls = NULL;
-    char str[35];
     for(int i = 0; i < 5; i++) {
-        sprintf(str, "test%d", i*i);
+        char* str = (char*) malloc(sizeof (char)*6);
+        sprintf(str, "test%d", i);
         stack_url_push(&urls, str);
     }
-    for(int i = 0; i < 5; i++) {
-        sprintf(str, "test%d", i*i);
-        ck_assert_str_eq(stack_url_pop(&urls), str);
+    for(int i = 4; i >= 0; i--) {
+        char* str = (char*) malloc(sizeof (char)*6);
+        sprintf(str, "test%d", i);
+        ck_assert_pstr_eq(stack_url_pop(&urls), str);
     }
 }
 END_TEST
@@ -128,22 +129,29 @@ START_TEST(get_differents_correct_value_length_five_stack_documents) {
     struct DocumentNode* docs = NULL;
     lxb_html_document_t* lxb_doc = lxb_html_document_create();
     struct Document* doc;
-
-    char url_buf[50];
-    char content_type_buf[50];
-    char redirect_location_buf[50];
+     char *url_buf, *content_type_buf, *redirect_location_buf;
 
     for(int i = 0; i < 5; i++) {
+        url_buf = (char*) malloc(sizeof (char)*5);
+        content_type_buf = (char*) malloc(sizeof (char)*14);
+        redirect_location_buf = (char*) malloc(sizeof (char)*10);
+
         sprintf(url_buf, "url%d", i);
         sprintf(content_type_buf, "content_type%d", i);
         sprintf(redirect_location_buf, "redirect%d", i);
+
         stack_document_push(&docs, lxb_doc, url_buf, i, i*i, content_type_buf, redirect_location_buf);
     }
 
     for(int i = 4; i >= 0; i--) {
+        url_buf = (char*) malloc(sizeof (char)*5);
+        content_type_buf = (char*) malloc(sizeof (char)*14);
+        redirect_location_buf = (char*) malloc(sizeof (char)*10);
+
         sprintf(url_buf, "url%d", i);
         sprintf(content_type_buf, "content_type%d", i);
         sprintf(redirect_location_buf, "redirect%d", i);
+
         doc = stack_document_pop(&docs);
         ck_assert_ptr_eq(doc->lexbor_document, lxb_doc);
         ck_assert_str_eq(doc->url, url_buf);
