@@ -15,7 +15,7 @@
 
 int url_not_seen(char* url, URLNode_t* urls_done, URLNode_t* urls_todo);
 
-int is_valid_domain(char* domain_to_compare, char* domain, int allow_subdomain);
+int is_same_domain(char* domain_to_compare, char* domain, int allow_subdomain);
 
 int is_valid_link(const char* url);
 

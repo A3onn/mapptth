@@ -15,7 +15,7 @@ int url_not_seen(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
     return 1;
 }
 
-int is_valid_domain(char* domain_to_compare, char* domain, int allow_subdomain) {
+int is_same_domain(char* domain_to_compare, char* domain, int allow_subdomain) {
     int len_domain_to_compare = strlen(domain_to_compare), len_domain = strlen(domain);
 
     if(len_domain == len_domain_to_compare) {
@@ -34,7 +34,7 @@ int is_valid_domain(char* domain_to_compare, char* domain, int allow_subdomain) 
 
 int is_in_valid_domains(char* domain, char** allowed_domains, int count_allowed_domains, int allow_subdomain) {
     for(int i = 0; i < count_allowed_domains; i++) {
-        if(is_valid_domain(domain, allowed_domains[i], allow_subdomain)) {
+        if(is_same_domain(domain, allowed_domains[i], allow_subdomain)) {
             return 1;
         }
     }
