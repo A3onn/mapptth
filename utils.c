@@ -171,9 +171,14 @@ int get_path_depth(char* path) {
         return 0;
     }
 
-    int count = 0;
+    char* copy = normalize_path(path, 0);
 
-    char* copy = strdup(path);
+    if(strcmp(copy, "/") == 0) {
+        free(copy);
+        return 1;
+    }
+
+    int count = 0;
     char* token;
     while((token = strsep(&copy, "/")) != NULL) {
         if(*token != '\0') {
