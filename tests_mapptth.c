@@ -421,7 +421,7 @@ END_TEST
 
 START_TEST(empty_path_is_disallowed_path) {
     char* dis_paths[] = {"/images", "/js"};
-    ck_assert_int_eq(is_disallowed_path("", dis_paths, 3), 0);
+    ck_assert_int_eq(is_disallowed_path("", dis_paths, 2), 0);
 }
 END_TEST
 
@@ -465,7 +465,7 @@ END_TEST
 
 START_TEST(empty_path_is_allowed_extension) {
     char* allowed_exts[] = {".ext", ".png", ".mp4"};
-    ck_assert_int_eq(is_allowed_extension("", allowed_exts, 3), 1);
+    ck_assert_int_eq(is_allowed_extension("", allowed_exts, 3), 0);
 }
 END_TEST
 
@@ -483,7 +483,8 @@ END_TEST
 
 START_TEST(empty_list_extensions_is_allowed_extension) {
     char* allowed_exts[] = {};
-    ck_assert_int_eq(is_allowed_extension("/file.ext", allowed_exts, 0), 0);
+    // SPECIAL CASE: if no extensions, then everything is allowed
+    ck_assert_int_eq(is_allowed_extension("/file.ext", allowed_exts, 0), 1);
 }
 END_TEST
 
@@ -520,7 +521,7 @@ END_TEST
 
 START_TEST(empty_allowed_domains_domain_is_in_valid_domains) {
     char* domains[] = {};
-    ck_assert_int_eq(is_in_valid_domains("google.com", domains, 1, 1), 0);
+    ck_assert_int_eq(is_in_valid_domains("google.com", domains, 0, 1), 0);
 }
 END_TEST
 
