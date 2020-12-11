@@ -92,15 +92,27 @@ void* fetcher_thread_func(void* bundle_arg) {
             }
             count_retries += 1;
         } while(count_retries < max_retries && status_c != CURLE_OK && status_c != CURLE_OPERATION_TIMEDOUT);
-        if(status_c == CURLE_OPERATION_TIMEDOUT && current_document->size > 0) { // if it timed out because the file was too big
-            if(!bundle->no_color) {
-                fprintf(stderr, "%s%s : Timed out, took too long to send.%s\n", BRIGHT_RED, current_url, RESET);
-            } else {
-                fprintf(stderr, "%s : Timed out, took too long to send.\n", current_url);
+
+        if(status_c == CURLE_OPERATION_TIMEDOUT) {
+            if(current_document->size > 0) { // if it timed out because the file took too much time to send
+                if(!bundle->no_color) {
+                    fprintf(stderr, "%s%s : Timed out, took too long to send.%s\n", BRIGHT_RED, current_url, RESET);
+                } else {
+                    fprintf(stderr, "%s : Timed out, took too long to send.\n", current_url);
+                }
+                lxb_html_document_parse_chunk_end(current_document->lxb_document);
+                lxb_html_document_destroy(current_document->lxb_document);
+                continue;
+            } else { // timed out without sending anything
+                if(!bundle->no_color) {
+                    fprintf(stderr, "%s%s : Timed out.%s\n", BRIGHT_RED, current_url, RESET);
+                } else {
+                    fprintf(stderr, "%s : Timed out.\n", current_url);
+                }
+                lxb_html_document_parse_chunk_end(current_document->lxb_document);
+                lxb_html_document_destroy(current_document->lxb_document);
+                continue;
             }
-            lxb_html_document_parse_chunk_end(current_document->lxb_document);
-            lxb_html_document_destroy(current_document->lxb_document);
-            continue;
         } else if(status_c != CURLE_OK && count_retries == max_retries) {
             if(!bundle->no_color) {
                 fprintf(stderr, "%s%s : Max retries exceeded. Last error was: %s.%s\n", BRIGHT_RED, current_url, curl_easy_strerror(status_c), RESET);
