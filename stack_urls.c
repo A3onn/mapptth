@@ -1,4 +1,8 @@
 #include "stack_urls.h"
+#include <curl/curl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 void stack_url_push(URLNode_t** head, char* url) {
     URLNode_t* new_node = (URLNode_t*) malloc(sizeof(URLNode_t));
@@ -50,18 +54,4 @@ int stack_url_contains(URLNode_t* head, char* url) {
     }
 
     return 0;
-}
-
-void stack_url_debug_print(URLNode_t* head) {
-    if(head == NULL) {
-        puts("<empty>");
-        return;
-    }
-    URLNode_t* tmp = head;
-
-    while(tmp != NULL) {
-        printf("%s - ", tmp->url);
-        tmp = tmp->next;
-    }
-    printf("\n");
 }

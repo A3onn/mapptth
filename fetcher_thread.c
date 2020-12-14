@@ -1,4 +1,12 @@
+#include <pthread.h>
+#include <stdlib.h>
+#include <curl/curl.h>
+#include <lexbor/html/html.h>
 #include "fetcher_thread.h"
+#include "stack_documents.h"
+#include "stack_urls.h"
+#include "utils.h"
+
 
 struct ProcessContentBundle {
     lxb_html_document_t* lxb_document;

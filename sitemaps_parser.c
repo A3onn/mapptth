@@ -4,7 +4,6 @@
 #include <curl/curl.h>
 #include <libxml/parser.h>
 #include <string.h>
-#include <stdlib.h>
 
 static size_t __sitemap_fetch_callback(const char *content, size_t size, size_t nmemb, void *userp) {
     xmlParseChunk(*((xmlParserCtxtPtr*) userp), content, size*nmemb, 0);
@@ -51,7 +50,7 @@ void __sitemap_location_get_urls(xmlNode* sitemap_root, URLNode_t** urls_found) 
 void __sitemap_get_content(xmlNode* root, URLNode_t** urls_sitemaps, URLNode_t** urls_found, int no_color) {
     xmlNode *cur_node = NULL;
 
-    for (cur_node = root; cur_node; cur_node = cur_node->next) { 
+    for (cur_node = root; cur_node; cur_node = cur_node->next) {
         if (cur_node->type == XML_ELEMENT_NODE) {
             if(strcmp((const char*)cur_node->name, "sitemap") == 0) { // if node is <sitemap>
                 if(!stack_url_contains(*urls_found, (char*)xmlNodeGetContent(cur_node))) {
@@ -63,7 +62,7 @@ void __sitemap_get_content(xmlNode* root, URLNode_t** urls_sitemaps, URLNode_t**
                         printf("%sFound new sitemap: %s%s\n", GREEN, found_url, RESET);
                     }
                 }
-            } else if(strcmp((const char*)cur_node->name, "url") == 0) { // found an url
+            } else if(strcmp((const char*)cur_node->name, "url") == 0) { // found an <url>
                 __sitemap_location_get_urls(cur_node->children, urls_found);
             }
         }

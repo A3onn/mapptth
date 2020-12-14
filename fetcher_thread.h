@@ -3,13 +3,8 @@
 
 #include "stack_documents.h"
 #include "stack_urls.h"
-#include "utils.h"
 #include <curl/curl.h>
-#include <lexbor/html/html.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+
 
 struct BundleVarsThread {  // used to needed variables to the thread
     DocumentNode_t** documents;  // stack of documents to populate

@@ -1,4 +1,7 @@
 #include "stack_documents.h"
+#include <lexbor/html/html.h>
+#include <stdlib.h>
+#include <string.h>
 
 void stack_document_push(DocumentNode_t** head, lxb_html_document_t* lexbor_document, char* url, long status_code_http, size_t size, char* content_type, char* redirect_location) {
     DocumentNode_t* new_node = (DocumentNode_t*) malloc(sizeof(DocumentNode_t));
@@ -10,6 +13,7 @@ void stack_document_push(DocumentNode_t** head, lxb_html_document_t* lexbor_docu
     if(content_type != NULL) {
         new_node->document.content_type = content_type;
     } else {
+        // content_type will be freed by the main thread, so it has to be in the heap
         char* default_content_type = (char*) calloc(2, sizeof (char));
         strcat(default_content_type, " ");
         new_node->document.content_type = default_content_type;

@@ -1,12 +1,7 @@
 #ifndef LINKED_LIST_URLS_H
 #define LINKED_LIST_URLS_H
 
-// FIFO
-
-#include <curl/curl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+// FIFO linked list
 
 struct URLNode {
     struct URLNode* next;
@@ -17,8 +12,6 @@ typedef struct URLNode URLNode_t;
 void stack_url_push(URLNode_t** head, char* url);
 
 char* stack_url_pop(URLNode_t** head);
-
-void stack_url_debug_print(URLNode_t* head);
 
 int stack_url_length(URLNode_t* head);
 

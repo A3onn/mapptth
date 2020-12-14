@@ -1,5 +1,8 @@
 #include "utils.h"
+#include "stack_urls.h"
+#include <curl/curl.h>
 #include <string.h>
+#include <stdlib.h>
 
 int url_not_seen(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
     // Just check if a given url has already been seen.
