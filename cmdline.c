@@ -39,7 +39,6 @@ const char *gengetopt_args_info_help[] = {
   "  -t, --threads=INT             Number of threads.  (default=`5')",
   "  -u, --url=STRING              URL of where to start.",
   "  -m, --timeout=INT             Timeout in seconds.  (default=`3')",
-  "  -r, --retries=INT             Maximum retries.  (default=`2')",
   "  -D, --max-depth=INT           Maximum depth of paths.",
   "  -s, --allow-subdomains        Allow the crawler to go to URLs found on a\n                                  sub-domain.  (default=off)",
   "  -a, --allowed-domains=STRING  Allow the crawler to go to URLs found on other\n                                  domains.",
@@ -91,7 +90,6 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->threads_given = 0 ;
   args_info->url_given = 0 ;
   args_info->timeout_given = 0 ;
-  args_info->retries_given = 0 ;
   args_info->max_depth_given = 0 ;
   args_info->allow_subdomains_given = 0 ;
   args_info->allowed_domains_given = 0 ;
@@ -123,8 +121,6 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->url_orig = NULL;
   args_info->timeout_arg = 3;
   args_info->timeout_orig = NULL;
-  args_info->retries_arg = 2;
-  args_info->retries_orig = NULL;
   args_info->max_depth_orig = NULL;
   args_info->allow_subdomains_flag = 0;
   args_info->allowed_domains_arg = NULL;
@@ -153,29 +149,28 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->threads_help = gengetopt_args_info_help[2] ;
   args_info->url_help = gengetopt_args_info_help[3] ;
   args_info->timeout_help = gengetopt_args_info_help[4] ;
-  args_info->retries_help = gengetopt_args_info_help[5] ;
-  args_info->max_depth_help = gengetopt_args_info_help[6] ;
-  args_info->allow_subdomains_help = gengetopt_args_info_help[7] ;
-  args_info->allowed_domains_help = gengetopt_args_info_help[8] ;
+  args_info->max_depth_help = gengetopt_args_info_help[5] ;
+  args_info->allow_subdomains_help = gengetopt_args_info_help[6] ;
+  args_info->allowed_domains_help = gengetopt_args_info_help[7] ;
   args_info->allowed_domains_min = 0;
   args_info->allowed_domains_max = 0;
-  args_info->disallowed_paths_help = gengetopt_args_info_help[9] ;
+  args_info->disallowed_paths_help = gengetopt_args_info_help[8] ;
   args_info->disallowed_paths_min = 0;
   args_info->disallowed_paths_max = 0;
-  args_info->allowed_extensions_help = gengetopt_args_info_help[10] ;
+  args_info->allowed_extensions_help = gengetopt_args_info_help[9] ;
   args_info->allowed_extensions_min = 0;
   args_info->allowed_extensions_max = 0;
-  args_info->keep_query_help = gengetopt_args_info_help[11] ;
-  args_info->no_color_help = gengetopt_args_info_help[12] ;
-  args_info->user_agent_help = gengetopt_args_info_help[13] ;
-  args_info->title_help = gengetopt_args_info_help[14] ;
-  args_info->sitemap_help = gengetopt_args_info_help[15] ;
-  args_info->http_only_help = gengetopt_args_info_help[17] ;
-  args_info->https_only_help = gengetopt_args_info_help[18] ;
-  args_info->only_body_help = gengetopt_args_info_help[20] ;
-  args_info->only_head_help = gengetopt_args_info_help[21] ;
-  args_info->IPv6_help = gengetopt_args_info_help[23] ;
-  args_info->IPv4_help = gengetopt_args_info_help[24] ;
+  args_info->keep_query_help = gengetopt_args_info_help[10] ;
+  args_info->no_color_help = gengetopt_args_info_help[11] ;
+  args_info->user_agent_help = gengetopt_args_info_help[12] ;
+  args_info->title_help = gengetopt_args_info_help[13] ;
+  args_info->sitemap_help = gengetopt_args_info_help[14] ;
+  args_info->http_only_help = gengetopt_args_info_help[16] ;
+  args_info->https_only_help = gengetopt_args_info_help[17] ;
+  args_info->only_body_help = gengetopt_args_info_help[19] ;
+  args_info->only_head_help = gengetopt_args_info_help[20] ;
+  args_info->IPv6_help = gengetopt_args_info_help[22] ;
+  args_info->IPv4_help = gengetopt_args_info_help[23] ;
   
 }
 
@@ -314,7 +309,6 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->url_arg));
   free_string_field (&(args_info->url_orig));
   free_string_field (&(args_info->timeout_orig));
-  free_string_field (&(args_info->retries_orig));
   free_string_field (&(args_info->max_depth_orig));
   free_multiple_string_field (args_info->allowed_domains_given, &(args_info->allowed_domains_arg), &(args_info->allowed_domains_orig));
   free_multiple_string_field (args_info->disallowed_paths_given, &(args_info->disallowed_paths_arg), &(args_info->disallowed_paths_orig));
@@ -371,8 +365,6 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "url", args_info->url_orig, 0);
   if (args_info->timeout_given)
     write_into_file(outfile, "timeout", args_info->timeout_orig, 0);
-  if (args_info->retries_given)
-    write_into_file(outfile, "retries", args_info->retries_orig, 0);
   if (args_info->max_depth_given)
     write_into_file(outfile, "max-depth", args_info->max_depth_orig, 0);
   if (args_info->allow_subdomains_given)
@@ -1009,7 +1001,6 @@ cmdline_parser_internal (
         { "threads",	1, NULL, 't' },
         { "url",	1, NULL, 'u' },
         { "timeout",	1, NULL, 'm' },
-        { "retries",	1, NULL, 'r' },
         { "max-depth",	1, NULL, 'D' },
         { "allow-subdomains",	0, NULL, 's' },
         { "allowed-domains",	1, NULL, 'a' },
@@ -1029,7 +1020,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:r:D:sa:d:x:kcU:TS:pPBH64", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:D:sa:d:x:kcU:TS:pPBH64", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1077,18 +1068,6 @@ cmdline_parser_internal (
               &(local_args_info.timeout_given), optarg, 0, "3", ARG_INT,
               check_ambiguity, override, 0, 0,
               "timeout", 'm',
-              additional_error))
-            goto failure;
-        
-          break;
-        case 'r':	/* Maximum retries..  */
-        
-        
-          if (update_arg( (void *)&(args_info->retries_arg), 
-               &(args_info->retries_orig), &(args_info->retries_given),
-              &(local_args_info.retries_given), optarg, 0, "2", ARG_INT,
-              check_ambiguity, override, 0, 0,
-              "retries", 'r',
               additional_error))
             goto failure;
         

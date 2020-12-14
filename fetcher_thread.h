@@ -21,7 +21,6 @@ struct BundleVarsThread {  // used to needed variables to the thread
     int* is_running;  // let know the main thread if the thread is fetching something
     int* should_exit;  // if thread should exit; set by the main thread
 
-    int max_retries;
     int timeout;
     int resolve_ip_versions;
     int no_color;

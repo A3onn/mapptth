@@ -29,7 +29,6 @@ void* fetcher_thread_func(void* bundle_arg) {
     pthread_mutex_t* mutex = bundle->mutex;
     int* is_running = bundle->is_running;
     int* should_exit = bundle->should_exit;
-    int max_retries = bundle->max_retries;
     int timeout = bundle->timeout;
 
     CURLcode status_c;
@@ -55,7 +54,7 @@ void* fetcher_thread_func(void* bundle_arg) {
             pthread_mutex_unlock(mutex);
             continue;
         }
-        *is_running = 1;
+        *is_running = 1; // indicates the main thread that this thread is fetching
         current_url = stack_url_pop(urls_stack_todo);
         stack_url_push(urls_stack_done, current_url);
         pthread_mutex_unlock(mutex);
@@ -83,15 +82,7 @@ void* fetcher_thread_func(void* bundle_arg) {
         // fetch
         lxb_html_document_parse_chunk_begin(current_document->lxb_document);
 
-        int count_retries = 0;
-        do {
-            status_c = curl_easy_perform(curl);
-            if(status_c != CURLE_OK && status_c != CURLE_OPERATION_TIMEDOUT) {
-				current_document->size = 0L;
-				lxb_html_document_clean(current_document->lxb_document);
-            }
-            count_retries += 1;
-        } while(count_retries < max_retries && status_c != CURLE_OK && status_c != CURLE_OPERATION_TIMEDOUT);
+        status_c = curl_easy_perform(curl);
 
         if(status_c == CURLE_OPERATION_TIMEDOUT) {
             if(current_document->size > 0) { // if it timed out because the file took too much time to send
@@ -113,11 +104,11 @@ void* fetcher_thread_func(void* bundle_arg) {
                 lxb_html_document_destroy(current_document->lxb_document);
                 continue;
             }
-        } else if(status_c != CURLE_OK && count_retries == max_retries) {
+        } else if(status_c != CURLE_OK) {
             if(!bundle->no_color) {
-                fprintf(stderr, "%s%s : Max retries exceeded. Last error was: %s.%s\n", BRIGHT_RED, current_url, curl_easy_strerror(status_c), RESET);
+                fprintf(stderr, "%s%s : %s.%s\n", BRIGHT_RED, current_url, curl_easy_strerror(status_c), RESET);
             } else {
-                fprintf(stderr, "%s : Max retries exceeded. Last error was: %s.\n", current_url, curl_easy_strerror(status_c));
+                fprintf(stderr, "%s : %s.\n", current_url, curl_easy_strerror(status_c));
             }
             lxb_html_document_parse_chunk_end(current_document->lxb_document);
             lxb_html_document_destroy(current_document->lxb_document);

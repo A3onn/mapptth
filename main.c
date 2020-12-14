@@ -162,10 +162,6 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "%s: the number of threads should be positive\n", argv[0]);
         return 1;
     }
-    if(cli_arguments.retries_arg <= 0) {
-        fprintf(stderr, "%s: the maximum number of retries should be positive\n", argv[0]);
-        return 1;
-    }
     if(cli_arguments.timeout_arg <= 0) {
         fprintf(stderr, "%s: the timeout should be positive\n", argv[0]);
         return 1;
@@ -295,7 +291,6 @@ int main(int argc, char* argv[]) {
         bundles[i].mutex = &mutex;
         bundles[i].should_exit = &should_exit;
         bundles[i].is_running = &(list_running_thread_status[i]);
-        bundles[i].max_retries = cli_arguments.retries_arg;
         bundles[i].timeout = cli_arguments.timeout_arg;
         bundles[i].resolve_ip_versions = resolve_ip_version;
         bundles[i].no_color = cli_arguments.no_color_given;

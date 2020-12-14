@@ -48,9 +48,6 @@ struct gengetopt_args_info
   int timeout_arg;	/**< @brief Timeout in seconds. (default='3').  */
   char * timeout_orig;	/**< @brief Timeout in seconds. original value given at command line.  */
   const char *timeout_help; /**< @brief Timeout in seconds. help description.  */
-  int retries_arg;	/**< @brief Maximum retries. (default='2').  */
-  char * retries_orig;	/**< @brief Maximum retries. original value given at command line.  */
-  const char *retries_help; /**< @brief Maximum retries. help description.  */
   int max_depth_arg;	/**< @brief Maximum depth of paths..  */
   char * max_depth_orig;	/**< @brief Maximum depth of paths. original value given at command line.  */
   const char *max_depth_help; /**< @brief Maximum depth of paths. help description.  */
@@ -95,7 +92,6 @@ struct gengetopt_args_info
   unsigned int threads_given ;	/**< @brief Whether threads was given.  */
   unsigned int url_given ;	/**< @brief Whether url was given.  */
   unsigned int timeout_given ;	/**< @brief Whether timeout was given.  */
-  unsigned int retries_given ;	/**< @brief Whether retries was given.  */
   unsigned int max_depth_given ;	/**< @brief Whether max-depth was given.  */
   unsigned int allow_subdomains_given ;	/**< @brief Whether allow-subdomains was given.  */
   unsigned int allowed_domains_given ;	/**< @brief Whether allowed-domains was given.  */
