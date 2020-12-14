@@ -179,7 +179,7 @@ int main(int argc, char* argv[]) {
     // normalize paths given by the user
     char** disallowed_paths = (char**) malloc(sizeof(char*) * cli_arguments.disallowed_paths_given);
     for(int i = 0; i < cli_arguments.disallowed_paths_given; i++) {
-        disallowed_paths[i] = normalize_path(cli_arguments.disallowed_paths_arg[i], 1);
+        disallowed_paths[i] = normalize_path(cli_arguments.disallowed_paths_arg[i], 0);
     }
 
     int resolve_ip_version = CURL_IPRESOLVE_WHATEVER;

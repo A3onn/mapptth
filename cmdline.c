@@ -42,7 +42,7 @@ const char *gengetopt_args_info_help[] = {
   "  -D, --max-depth=INT           Maximum depth of paths.",
   "  -s, --allow-subdomains        Allow the crawler to go to URLs found on a\n                                  sub-domain.  (default=off)",
   "  -a, --allowed-domains=STRING  Allow the crawler to go to URLs found on other\n                                  domains.",
-  "  -d, --disallowed-paths=STRING Disallow the crawler to go to these\n                                  directories.",
+  "  -d, --disallowed-paths=STRING Disallow the crawler to go to these directories\n                                  or fetch these files.",
   "  -x, --allowed-extensions=STRING\n                                The crawler will only fetch documents with\n                                  these extensions, but if no extension is\n                                  found in an URL, this filter won't apply.\n                                  Extensions have to start with a '.' (dot).",
   "  -k, --keep-query              Keep the query part in the URL.  (default=off)",
   "  -c, --no-color                Don't use color when outputing on the console.\n                                  (default=off)",
@@ -1103,7 +1103,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'd':	/* Disallow the crawler to go to these directories..  */
+        case 'd':	/* Disallow the crawler to go to these directories or fetch these files..  */
         
           if (update_multiple_arg_temp(&disallowed_paths_list, 
               &(local_args_info.disallowed_paths_given), optarg, 0, 0, ARG_STRING,

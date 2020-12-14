@@ -58,11 +58,11 @@ struct gengetopt_args_info
   unsigned int allowed_domains_min; /**< @brief Allow the crawler to go to URLs found on other domains.'s minimum occurreces */
   unsigned int allowed_domains_max; /**< @brief Allow the crawler to go to URLs found on other domains.'s maximum occurreces */
   const char *allowed_domains_help; /**< @brief Allow the crawler to go to URLs found on other domains. help description.  */
-  char ** disallowed_paths_arg;	/**< @brief Disallow the crawler to go to these directories..  */
-  char ** disallowed_paths_orig;	/**< @brief Disallow the crawler to go to these directories. original value given at command line.  */
-  unsigned int disallowed_paths_min; /**< @brief Disallow the crawler to go to these directories.'s minimum occurreces */
-  unsigned int disallowed_paths_max; /**< @brief Disallow the crawler to go to these directories.'s maximum occurreces */
-  const char *disallowed_paths_help; /**< @brief Disallow the crawler to go to these directories. help description.  */
+  char ** disallowed_paths_arg;	/**< @brief Disallow the crawler to go to these directories or fetch these files..  */
+  char ** disallowed_paths_orig;	/**< @brief Disallow the crawler to go to these directories or fetch these files. original value given at command line.  */
+  unsigned int disallowed_paths_min; /**< @brief Disallow the crawler to go to these directories or fetch these files.'s minimum occurreces */
+  unsigned int disallowed_paths_max; /**< @brief Disallow the crawler to go to these directories or fetch these files.'s maximum occurreces */
+  const char *disallowed_paths_help; /**< @brief Disallow the crawler to go to these directories or fetch these files. help description.  */
   char ** allowed_extensions_arg;	/**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot)..  */
   char ** allowed_extensions_orig;	/**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot). original value given at command line.  */
   unsigned int allowed_extensions_min; /**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot).'s minimum occurreces */
