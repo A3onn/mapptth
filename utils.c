@@ -141,8 +141,13 @@ int is_disallowed_path(char* path, char** disallowed_paths, int count_disallowed
         return 0;
     }
 
+
     for(int i = 0; i < count_disallowed_paths; i++) {
-        if(strstr(path, disallowed_paths[i]) == path) {
+        int found_length = strlen(disallowed_paths[i]);
+        if(strstr(path, disallowed_paths[i]) == path && (*(path+found_length) == '/' || *(path+found_length) == '\0')) {
+            // check if the path found is at the begining of the path, and need to check if the following char is '\' or the
+            // end of the string to avoid wrong errors like:
+            // is_disallowed_path("/path_of_file", {"/path"}, 1) would return 1
             return 1;
         }
     }
@@ -158,7 +163,8 @@ int is_allowed_extension(char* path, char** allowed_extensions, int count_allowe
         char* ext = strrchr(filename, '.'); // find extension
         if(ext != NULL) { // if there is an extension
             for(int i = 0; i < count_allowed_extensions; i++) {
-                if(strstr(path, allowed_extensions[i]) == ext) {
+                char* found_ext = strstr(path, allowed_extensions[i]);
+                if(found_ext == ext && strcmp(allowed_extensions[i], found_ext) == 0) {
                     return 1;
                 }
             }
