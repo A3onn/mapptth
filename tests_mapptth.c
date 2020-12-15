@@ -53,6 +53,27 @@ START_TEST(get_correct_value_length_one_stack_urls) {
 }
 END_TEST
 
+START_TEST(false_contains_stack_urls) {
+    struct URLNode* urls = NULL;
+    stack_url_push(&urls, "test");
+    ck_assert_int_eq(stack_url_contains(urls, "nope"), 0);
+}
+END_TEST
+
+START_TEST(false_substr_contains_stack_urls) {
+    struct URLNode* urls = NULL;
+    stack_url_push(&urls, "tests");
+    ck_assert_int_eq(stack_url_contains(urls, "tes"), 0);
+}
+END_TEST
+
+START_TEST(true_contains_stack_urls) {
+    struct URLNode* urls = NULL;
+    stack_url_push(&urls, "test");
+    ck_assert_int_eq(stack_url_contains(urls, "test"), 1);
+}
+END_TEST
+
 START_TEST(get_differents_correct_value_length_five_stack_urls) {
     struct URLNode* urls = NULL;
     for(int i = 0; i < 5; i++) {
@@ -298,6 +319,14 @@ START_TEST(true_3_is_valid_link) {
 }
 END_TEST
 
+START_TEST(false_not_http_scheme_is_valid_link) {
+    ck_assert_int_eq(is_valid_link("gopher://google.com/"), 0);
+    ck_assert_int_eq(is_valid_link("ftp://google.com/"), 0);
+    ck_assert_int_eq(is_valid_link("ftps://google.com/"), 0);
+    ck_assert_int_eq(is_valid_link("smtp://google.com/"), 0);
+}
+END_TEST
+
 START_TEST(false_mailto_is_valid_link) {
     ck_assert_int_eq(is_valid_link("mailto:"), 0);
     ck_assert_int_eq(is_valid_link("mailto:test@gmail.com"), 0);
@@ -431,12 +460,17 @@ START_TEST(empty_list_is_disallowed_path) {
 }
 END_TEST
 
-START_TEST(extension_substr_disallowed_is_disallowed_path) {
+START_TEST(checked_path_substr_disallowed_is_disallowed_path) {
     char* dis_paths[] = {"/files_images", "/images_files"};
     ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 2), 0);
 }
 END_TEST
 
+START_TEST(disallowed_paths_substr_disallowed_is_disallowed_path) {
+    char* dis_paths[] = {"/file"};
+    ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 1), 0);
+}
+END_TEST
 
 
 START_TEST(true_one_allowed_is_allowed_extension) {
@@ -491,6 +525,7 @@ END_TEST
 START_TEST(extension_substr_allowed_is_allowed_extension) {
     char* allowed_exts[] = {".ext", ".png", ".mp4", ".gz"};
     ck_assert_int_eq(is_allowed_extension("/file.anext", allowed_exts, 4), 0);
+    ck_assert_int_eq(is_allowed_extension("/file.exta", allowed_exts, 4), 0);
     ck_assert_int_eq(is_allowed_extension("/file.tar.gz", allowed_exts, 4), 1);
 }
 END_TEST
@@ -565,6 +600,9 @@ Suite* stack_urls_suite(void) {
     tcase_add_test(tc, length_five_stack_urls);
     tcase_add_test(tc, pop_null_stack_urls);
     tcase_add_test(tc, get_correct_value_length_one_stack_urls);
+    tcase_add_test(tc, false_contains_stack_urls);
+    tcase_add_test(tc, false_substr_contains_stack_urls);
+    tcase_add_test(tc, true_contains_stack_urls);
     tcase_add_test(tc, get_differents_correct_value_length_five_stack_urls);
     tcase_add_test(tc, get_same_correct_values_length_five_stack_urls);
 
@@ -622,6 +660,7 @@ Suite* utils_suite(void) {
     tcase_add_test(tc, true_is_valid_link);
     tcase_add_test(tc, true_2_is_valid_link);
     tcase_add_test(tc, true_3_is_valid_link);
+    tcase_add_test(tc, false_not_http_scheme_is_valid_link);
     tcase_add_test(tc, false_mailto_is_valid_link);
     tcase_add_test(tc, false_javascript_is_valid_link);
     tcase_add_test(tc, false_tel_is_valid_link);
@@ -651,8 +690,10 @@ Suite* utils_suite(void) {
     tcase_add_test(tc, false_multiple_disallowed_is_disallowed_path);
     tcase_add_test(tc, empty_path_is_disallowed_path);
     tcase_add_test(tc, empty_list_is_disallowed_path);
-    tcase_add_test(tc, extension_substr_disallowed_is_disallowed_path);
+    tcase_add_test(tc, checked_path_substr_disallowed_is_disallowed_path);
+    tcase_add_test(tc, disallowed_paths_substr_disallowed_is_disallowed_path);
     suite_add_tcase(s, tc);
+
 
     tc = tcase_create("is_allowed_extension");
     tcase_add_test(tc, true_one_allowed_is_allowed_extension);
