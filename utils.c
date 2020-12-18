@@ -19,14 +19,14 @@ int url_not_seen(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
 }
 
 int is_same_domain(char* domain_to_compare, char* domain, int allow_subdomain) {
-    int len_domain_to_compare = strlen(domain_to_compare), len_domain = strlen(domain);
+    size_t len_domain_to_compare = strlen(domain_to_compare), len_domain = strlen(domain);
 
     if(len_domain == len_domain_to_compare) {
         return strcmp(domain_to_compare, domain) == 0;
     } else if(len_domain < len_domain_to_compare && allow_subdomain == 1) {
         char* found_position = strstr(domain_to_compare, domain);
         if(found_position != NULL) {
-            // need to check if the char before is a '.' (dot) because for exemple:
+            // need to check if the char before is a '.' (dot) because for example:
             // domain_to_compare = "xyzb.a" and domain = "b.a" would result in true because
             // "b.a" is in both strings
             return strcmp(found_position, domain) == 0 && *(found_position - 1) == '.';
@@ -111,7 +111,7 @@ char* normalize_path(char* path, int is_directory) {
             continue;
         }
         char* tmp = strdup(result);
-        int len = strlen(result) + strlen(elements[i]) + 2;
+        size_t len = strlen(result) + strlen(elements[i]) + 2;
         result = (char*) realloc(result, len);
         strcpy(result, tmp);
         strcat(result, "/");
@@ -143,9 +143,9 @@ int is_disallowed_path(char* path, char** disallowed_paths, int count_disallowed
 
 
     for(int i = 0; i < count_disallowed_paths; i++) {
-        int found_length = strlen(disallowed_paths[i]);
+        size_t found_length = strlen(disallowed_paths[i]);
         if(strstr(path, disallowed_paths[i]) == path && (*(path+found_length) == '/' || *(path+found_length) == '\0')) {
-            // check if the path found is at the begining of the path, and need to check if the following char is '\' or the
+            // check if the path found is at the beginning of the path, and need to check if the following char is '\' or the
             // end of the string to avoid wrong errors like:
             // is_disallowed_path("/path_of_file", {"/path"}, 1) would return 1
             return 1;
