@@ -1,27 +1,27 @@
 package "mapptth"
 version "0.1.0"
 
-option "threads" t "Number of threads." int default="5" optional
-option "url" u "URL of where to start." string required
-option "timeout" m "Timeout in seconds." int default="3" optional
-option "max-depth" D "Maximum depth of paths." int optional
-option "allow-subdomains" s "Allow the crawler to go to URLs found on a sub-domain." flag off
-option "allowed-domains" a "Allow the crawler to go to URLs found on other domains." string multiple optional
-option "disallowed-paths" d "Disallow the crawler to go to these directories or fetch these files." string multiple optional
-option "allowed-extensions" x "The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot)." string multiple optional
-option "keep-query" k "Keep the query part in the URL." flag off
-option "no-color" c "Don't use color when outputing on the console." flag off
-option "user-agent" U "Set the user-agent string. You can not send the user-agent header by giving an empty string." string optional  # the default value will be "MapPTTH/VERSION"
-option "title" T "Print title if there is one." flag off
-option "sitemap" S "URL of the sitemap." string optional
+option "threads" t "Number of threads that will fetch URLs." int default="5" optional
+option "url" u "URL where to start crawling." string required
+option "timeout" m "Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL." int default="3" optional
+option "max-depth" D "Maximum depth of paths. If a path has a longer depth, it won't be fetched." int optional
+option "allow-subdomains" s "Allow the crawler to go into subdomains of the initial URL and allowed domains." flag off
+option "allowed-domains" a "Allow the crawler to go to these domains." string multiple optional
+option "disallowed-paths" d "Disallow the crawler to fetch URL starting with these paths." string multiple optional
+option "allowed-extensions" x "Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot)." string multiple optional
+option "keep-query" k "Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched." flag off
+option "no-color" c "Don't print with colors." flag off
+option "user-agent" U "String that will be used as user-agent. You can disable sending the user-agent header by giving an empty string." string optional  # the default value will be "MapPTTH/VERSION"
+option "title" T "Print the title of the page if there is one when displaying an URL." flag off
+option "sitemap" S "Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap." string optional
 
 defgroup "scheme"
 groupoption "http-only" p "Only fetch URLs with HTTP as scheme." group="scheme"
 groupoption "https-only" P "Only fetch URLs with HTTPS as scheme." group="scheme"
 
 defgroup "parsing-part"
-groupoption "only-body" B "Only parse the <body>." group="parsing-part"
-groupoption "only-head" H "Only parse the <head>." group="parsing-part"
+groupoption "only-body" B "Only parse the <body> part." group="parsing-part"
+groupoption "only-head" H "Only parse the <head> part." group="parsing-part"
 
 defgroup "resolving-ip-version"
 groupoption "IPv6" 6 "Only resolve to IPv6 addresses." group="resolving-ip-version"

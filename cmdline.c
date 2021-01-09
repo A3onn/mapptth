@@ -36,25 +36,25 @@ const char *gengetopt_args_info_description = "";
 const char *gengetopt_args_info_help[] = {
   "  -h, --help                    Print help and exit",
   "  -V, --version                 Print version and exit",
-  "  -t, --threads=INT             Number of threads.  (default=`5')",
-  "  -u, --url=STRING              URL of where to start.",
-  "  -m, --timeout=INT             Timeout in seconds.  (default=`3')",
-  "  -D, --max-depth=INT           Maximum depth of paths.",
-  "  -s, --allow-subdomains        Allow the crawler to go to URLs found on a\n                                  sub-domain.  (default=off)",
-  "  -a, --allowed-domains=STRING  Allow the crawler to go to URLs found on other\n                                  domains.",
-  "  -d, --disallowed-paths=STRING Disallow the crawler to go to these directories\n                                  or fetch these files.",
-  "  -x, --allowed-extensions=STRING\n                                The crawler will only fetch documents with\n                                  these extensions, but if no extension is\n                                  found in an URL, this filter won't apply.\n                                  Extensions have to start with a '.' (dot).",
-  "  -k, --keep-query              Keep the query part in the URL.  (default=off)",
-  "  -c, --no-color                Don't use color when outputing on the console.\n                                  (default=off)",
-  "  -U, --user-agent=STRING       Set the user-agent string. You can not send the\n                                  user-agent header by giving an empty string.",
-  "  -T, --title                   Print title if there is one.  (default=off)",
-  "  -S, --sitemap=STRING          URL of the sitemap.",
+  "  -t, --threads=INT             Number of threads that will fetch URLs.\n                                  (default=`5')",
+  "  -u, --url=STRING              URL where to start crawling.",
+  "  -m, --timeout=INT             Timeout in seconds for each connection. If a\n                                  connection timeout, an error will be printed\n                                  to standard error but no informations about\n                                  the URL.  (default=`3')",
+  "  -D, --max-depth=INT           Maximum depth of paths. If a path has a longer\n                                  depth, it won't be fetched.",
+  "  -s, --allow-subdomains        Allow the crawler to go into subdomains of the\n                                  initial URL and allowed domains.\n                                  (default=off)",
+  "  -a, --allowed-domains=STRING  Allow the crawler to go to these domains.",
+  "  -d, --disallowed-paths=STRING Disallow the crawler to fetch URL starting with\n                                  these paths.",
+  "  -x, --allowed-extensions=STRING\n                                Allow the crawler to only fetch files with\n                                  these extensions. If no extension is found\n                                  then this filter won't apply. Extensions have\n                                  to start with a '.' (dot).",
+  "  -k, --keep-query              Keep the query part of the URL. Note that if\n                                  two same URLs with a different query is\n                                  found, both will be fetched.  (default=off)",
+  "  -c, --no-color                Don't print with colors.  (default=off)",
+  "  -U, --user-agent=STRING       String that will be used as user-agent. You can\n                                  disable sending the user-agent header by\n                                  giving an empty string.",
+  "  -T, --title                   Print the title of the page if there is one\n                                  when displaying an URL.  (default=off)",
+  "  -S, --sitemap=STRING          Parse the sitemap of the site, this should\n                                  speeds up the crawler and will maybe provide\n                                  URLs that couldn't be found without the\n                                  sitemap.",
   "\n Group: scheme",
   "  -p, --http-only               Only fetch URLs with HTTP as scheme.",
   "  -P, --https-only              Only fetch URLs with HTTPS as scheme.",
   "\n Group: parsing-part",
-  "  -B, --only-body               Only parse the <body>.",
-  "  -H, --only-head               Only parse the <head>.",
+  "  -B, --only-body               Only parse the <body> part.",
+  "  -H, --only-head               Only parse the <head> part.",
   "\n Group: resolving-ip-version",
   "  -6, --IPv6                    Only resolve to IPv6 addresses.",
   "  -4, --IPv4                    Only resolve to IPv4 addresses.",
@@ -1036,7 +1036,7 @@ cmdline_parser_internal (
           cmdline_parser_free (&local_args_info);
           exit (EXIT_SUCCESS);
 
-        case 't':	/* Number of threads..  */
+        case 't':	/* Number of threads that will fetch URLs..  */
         
         
           if (update_arg( (void *)&(args_info->threads_arg), 
@@ -1048,7 +1048,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'u':	/* URL of where to start..  */
+        case 'u':	/* URL where to start crawling..  */
         
         
           if (update_arg( (void *)&(args_info->url_arg), 
@@ -1060,7 +1060,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'm':	/* Timeout in seconds..  */
+        case 'm':	/* Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL..  */
         
         
           if (update_arg( (void *)&(args_info->timeout_arg), 
@@ -1072,7 +1072,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'D':	/* Maximum depth of paths..  */
+        case 'D':	/* Maximum depth of paths. If a path has a longer depth, it won't be fetched..  */
         
         
           if (update_arg( (void *)&(args_info->max_depth_arg), 
@@ -1084,7 +1084,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 's':	/* Allow the crawler to go to URLs found on a sub-domain..  */
+        case 's':	/* Allow the crawler to go into subdomains of the initial URL and allowed domains..  */
         
         
           if (update_arg((void *)&(args_info->allow_subdomains_flag), 0, &(args_info->allow_subdomains_given),
@@ -1094,7 +1094,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'a':	/* Allow the crawler to go to URLs found on other domains..  */
+        case 'a':	/* Allow the crawler to go to these domains..  */
         
           if (update_multiple_arg_temp(&allowed_domains_list, 
               &(local_args_info.allowed_domains_given), optarg, 0, 0, ARG_STRING,
@@ -1103,7 +1103,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'd':	/* Disallow the crawler to go to these directories or fetch these files..  */
+        case 'd':	/* Disallow the crawler to fetch URL starting with these paths..  */
         
           if (update_multiple_arg_temp(&disallowed_paths_list, 
               &(local_args_info.disallowed_paths_given), optarg, 0, 0, ARG_STRING,
@@ -1112,7 +1112,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'x':	/* The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot)..  */
+        case 'x':	/* Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot)..  */
         
           if (update_multiple_arg_temp(&allowed_extensions_list, 
               &(local_args_info.allowed_extensions_given), optarg, 0, 0, ARG_STRING,
@@ -1121,7 +1121,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'k':	/* Keep the query part in the URL..  */
+        case 'k':	/* Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched..  */
         
         
           if (update_arg((void *)&(args_info->keep_query_flag), 0, &(args_info->keep_query_given),
@@ -1131,7 +1131,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'c':	/* Don't use color when outputing on the console..  */
+        case 'c':	/* Don't print with colors..  */
         
         
           if (update_arg((void *)&(args_info->no_color_flag), 0, &(args_info->no_color_given),
@@ -1141,7 +1141,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'U':	/* Set the user-agent string. You can not send the user-agent header by giving an empty string..  */
+        case 'U':	/* String that will be used as user-agent. You can disable sending the user-agent header by giving an empty string..  */
         
         
           if (update_arg( (void *)&(args_info->user_agent_arg), 
@@ -1153,7 +1153,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'T':	/* Print title if there is one..  */
+        case 'T':	/* Print the title of the page if there is one when displaying an URL..  */
         
         
           if (update_arg((void *)&(args_info->title_flag), 0, &(args_info->title_given),
@@ -1163,7 +1163,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'S':	/* URL of the sitemap..  */
+        case 'S':	/* Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap..  */
         
         
           if (update_arg( (void *)&(args_info->sitemap_arg), 
@@ -1205,7 +1205,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'B':	/* Only parse the <body>..  */
+        case 'B':	/* Only parse the <body> part..  */
         
           if (args_info->parsing_part_group_counter && override)
             reset_group_parsing_part (args_info);
@@ -1220,7 +1220,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'H':	/* Only parse the <head>..  */
+        case 'H':	/* Only parse the <head> part..  */
         
           if (args_info->parsing_part_group_counter && override)
             reset_group_parsing_part (args_info);

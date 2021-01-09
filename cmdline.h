@@ -39,51 +39,51 @@ struct gengetopt_args_info
 {
   const char *help_help; /**< @brief Print help and exit help description.  */
   const char *version_help; /**< @brief Print version and exit help description.  */
-  int threads_arg;	/**< @brief Number of threads. (default='5').  */
-  char * threads_orig;	/**< @brief Number of threads. original value given at command line.  */
-  const char *threads_help; /**< @brief Number of threads. help description.  */
-  char * url_arg;	/**< @brief URL of where to start..  */
-  char * url_orig;	/**< @brief URL of where to start. original value given at command line.  */
-  const char *url_help; /**< @brief URL of where to start. help description.  */
-  int timeout_arg;	/**< @brief Timeout in seconds. (default='3').  */
-  char * timeout_orig;	/**< @brief Timeout in seconds. original value given at command line.  */
-  const char *timeout_help; /**< @brief Timeout in seconds. help description.  */
-  int max_depth_arg;	/**< @brief Maximum depth of paths..  */
-  char * max_depth_orig;	/**< @brief Maximum depth of paths. original value given at command line.  */
-  const char *max_depth_help; /**< @brief Maximum depth of paths. help description.  */
-  int allow_subdomains_flag;	/**< @brief Allow the crawler to go to URLs found on a sub-domain. (default=off).  */
-  const char *allow_subdomains_help; /**< @brief Allow the crawler to go to URLs found on a sub-domain. help description.  */
-  char ** allowed_domains_arg;	/**< @brief Allow the crawler to go to URLs found on other domains..  */
-  char ** allowed_domains_orig;	/**< @brief Allow the crawler to go to URLs found on other domains. original value given at command line.  */
-  unsigned int allowed_domains_min; /**< @brief Allow the crawler to go to URLs found on other domains.'s minimum occurreces */
-  unsigned int allowed_domains_max; /**< @brief Allow the crawler to go to URLs found on other domains.'s maximum occurreces */
-  const char *allowed_domains_help; /**< @brief Allow the crawler to go to URLs found on other domains. help description.  */
-  char ** disallowed_paths_arg;	/**< @brief Disallow the crawler to go to these directories or fetch these files..  */
-  char ** disallowed_paths_orig;	/**< @brief Disallow the crawler to go to these directories or fetch these files. original value given at command line.  */
-  unsigned int disallowed_paths_min; /**< @brief Disallow the crawler to go to these directories or fetch these files.'s minimum occurreces */
-  unsigned int disallowed_paths_max; /**< @brief Disallow the crawler to go to these directories or fetch these files.'s maximum occurreces */
-  const char *disallowed_paths_help; /**< @brief Disallow the crawler to go to these directories or fetch these files. help description.  */
-  char ** allowed_extensions_arg;	/**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot)..  */
-  char ** allowed_extensions_orig;	/**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot). original value given at command line.  */
-  unsigned int allowed_extensions_min; /**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot).'s minimum occurreces */
-  unsigned int allowed_extensions_max; /**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot).'s maximum occurreces */
-  const char *allowed_extensions_help; /**< @brief The crawler will only fetch documents with these extensions, but if no extension is found in an URL, this filter won't apply. Extensions have to start with a '.' (dot). help description.  */
-  int keep_query_flag;	/**< @brief Keep the query part in the URL. (default=off).  */
-  const char *keep_query_help; /**< @brief Keep the query part in the URL. help description.  */
-  int no_color_flag;	/**< @brief Don't use color when outputing on the console. (default=off).  */
-  const char *no_color_help; /**< @brief Don't use color when outputing on the console. help description.  */
-  char * user_agent_arg;	/**< @brief Set the user-agent string. You can not send the user-agent header by giving an empty string..  */
-  char * user_agent_orig;	/**< @brief Set the user-agent string. You can not send the user-agent header by giving an empty string. original value given at command line.  */
-  const char *user_agent_help; /**< @brief Set the user-agent string. You can not send the user-agent header by giving an empty string. help description.  */
-  int title_flag;	/**< @brief Print title if there is one. (default=off).  */
-  const char *title_help; /**< @brief Print title if there is one. help description.  */
-  char * sitemap_arg;	/**< @brief URL of the sitemap..  */
-  char * sitemap_orig;	/**< @brief URL of the sitemap. original value given at command line.  */
-  const char *sitemap_help; /**< @brief URL of the sitemap. help description.  */
+  int threads_arg;	/**< @brief Number of threads that will fetch URLs. (default='5').  */
+  char * threads_orig;	/**< @brief Number of threads that will fetch URLs. original value given at command line.  */
+  const char *threads_help; /**< @brief Number of threads that will fetch URLs. help description.  */
+  char * url_arg;	/**< @brief URL where to start crawling..  */
+  char * url_orig;	/**< @brief URL where to start crawling. original value given at command line.  */
+  const char *url_help; /**< @brief URL where to start crawling. help description.  */
+  int timeout_arg;	/**< @brief Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL. (default='3').  */
+  char * timeout_orig;	/**< @brief Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL. original value given at command line.  */
+  const char *timeout_help; /**< @brief Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL. help description.  */
+  int max_depth_arg;	/**< @brief Maximum depth of paths. If a path has a longer depth, it won't be fetched..  */
+  char * max_depth_orig;	/**< @brief Maximum depth of paths. If a path has a longer depth, it won't be fetched. original value given at command line.  */
+  const char *max_depth_help; /**< @brief Maximum depth of paths. If a path has a longer depth, it won't be fetched. help description.  */
+  int allow_subdomains_flag;	/**< @brief Allow the crawler to go into subdomains of the initial URL and allowed domains. (default=off).  */
+  const char *allow_subdomains_help; /**< @brief Allow the crawler to go into subdomains of the initial URL and allowed domains. help description.  */
+  char ** allowed_domains_arg;	/**< @brief Allow the crawler to go to these domains..  */
+  char ** allowed_domains_orig;	/**< @brief Allow the crawler to go to these domains. original value given at command line.  */
+  unsigned int allowed_domains_min; /**< @brief Allow the crawler to go to these domains.'s minimum occurreces */
+  unsigned int allowed_domains_max; /**< @brief Allow the crawler to go to these domains.'s maximum occurreces */
+  const char *allowed_domains_help; /**< @brief Allow the crawler to go to these domains. help description.  */
+  char ** disallowed_paths_arg;	/**< @brief Disallow the crawler to fetch URL starting with these paths..  */
+  char ** disallowed_paths_orig;	/**< @brief Disallow the crawler to fetch URL starting with these paths. original value given at command line.  */
+  unsigned int disallowed_paths_min; /**< @brief Disallow the crawler to fetch URL starting with these paths.'s minimum occurreces */
+  unsigned int disallowed_paths_max; /**< @brief Disallow the crawler to fetch URL starting with these paths.'s maximum occurreces */
+  const char *disallowed_paths_help; /**< @brief Disallow the crawler to fetch URL starting with these paths. help description.  */
+  char ** allowed_extensions_arg;	/**< @brief Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot)..  */
+  char ** allowed_extensions_orig;	/**< @brief Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot). original value given at command line.  */
+  unsigned int allowed_extensions_min; /**< @brief Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot).'s minimum occurreces */
+  unsigned int allowed_extensions_max; /**< @brief Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot).'s maximum occurreces */
+  const char *allowed_extensions_help; /**< @brief Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot). help description.  */
+  int keep_query_flag;	/**< @brief Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched. (default=off).  */
+  const char *keep_query_help; /**< @brief Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched. help description.  */
+  int no_color_flag;	/**< @brief Don't print with colors. (default=off).  */
+  const char *no_color_help; /**< @brief Don't print with colors. help description.  */
+  char * user_agent_arg;	/**< @brief String that will be used as user-agent. You can disable sending the user-agent header by giving an empty string..  */
+  char * user_agent_orig;	/**< @brief String that will be used as user-agent. You can disable sending the user-agent header by giving an empty string. original value given at command line.  */
+  const char *user_agent_help; /**< @brief String that will be used as user-agent. You can disable sending the user-agent header by giving an empty string. help description.  */
+  int title_flag;	/**< @brief Print the title of the page if there is one when displaying an URL. (default=off).  */
+  const char *title_help; /**< @brief Print the title of the page if there is one when displaying an URL. help description.  */
+  char * sitemap_arg;	/**< @brief Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap..  */
+  char * sitemap_orig;	/**< @brief Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap. original value given at command line.  */
+  const char *sitemap_help; /**< @brief Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap. help description.  */
   const char *http_only_help; /**< @brief Only fetch URLs with HTTP as scheme. help description.  */
   const char *https_only_help; /**< @brief Only fetch URLs with HTTPS as scheme. help description.  */
-  const char *only_body_help; /**< @brief Only parse the <body>. help description.  */
-  const char *only_head_help; /**< @brief Only parse the <head>. help description.  */
+  const char *only_body_help; /**< @brief Only parse the <body> part. help description.  */
+  const char *only_head_help; /**< @brief Only parse the <head> part. help description.  */
   const char *IPv6_help; /**< @brief Only resolve to IPv6 addresses. help description.  */
   const char *IPv4_help; /**< @brief Only resolve to IPv4 addresses. help description.  */
   

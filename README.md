@@ -48,9 +48,10 @@ Here is the list of available parameters grouped by category:
 | Name | Argument |
 | --- | --- |
 | URL where to start crawling. __(REQUIRED)__ | -u \<URL> |
-| String that will be used as user-agent. | -U \<user-agent> |
-| Only resolve using IPv4. | -4 |
-| Only resolve using IPv6. | -6 |
+| String that will be used as user-agent. You can disable sending the user-agent header by giving an empty string. | -U \<user-agent> |
+| Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL. | -m \<timeout> |
+| Only resolve to IPv4 addresses. | -4 |
+| Only resolve to IPv6 addresses. | -6 |
 
 
 ### Controling where the crawler goes
