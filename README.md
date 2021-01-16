@@ -1,7 +1,7 @@
 [MapPTTH](https://gitlab.com/Aeonn/mapptth/ "MapPTTH gitlab")
 ====
 
-A simple to use multi-threaded webcrawler written in C with libcURL and Lexbor.
+A simple to use multi-threaded web-crawler written in C with libcURL and Lexbor.
 ---
 
 ## Dependencies
@@ -54,7 +54,7 @@ Here is the list of available parameters grouped by category:
 | Only resolve to IPv6 addresses. | -6 |
 
 
-### Controling where the crawler goes
+### Controlling where the crawler goes
 
 | Name | Argument |
 | --- | --- |
