@@ -58,11 +58,6 @@ struct gengetopt_args_info
   unsigned int allowed_domains_min; /**< @brief Allow the crawler to go to these domains.'s minimum occurreces */
   unsigned int allowed_domains_max; /**< @brief Allow the crawler to go to these domains.'s maximum occurreces */
   const char *allowed_domains_help; /**< @brief Allow the crawler to go to these domains. help description.  */
-  char ** disallowed_paths_arg;	/**< @brief Disallow the crawler to fetch URL starting with these paths..  */
-  char ** disallowed_paths_orig;	/**< @brief Disallow the crawler to fetch URL starting with these paths. original value given at command line.  */
-  unsigned int disallowed_paths_min; /**< @brief Disallow the crawler to fetch URL starting with these paths.'s minimum occurreces */
-  unsigned int disallowed_paths_max; /**< @brief Disallow the crawler to fetch URL starting with these paths.'s maximum occurreces */
-  const char *disallowed_paths_help; /**< @brief Disallow the crawler to fetch URL starting with these paths. help description.  */
   char ** allowed_extensions_arg;	/**< @brief Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot)..  */
   char ** allowed_extensions_orig;	/**< @brief Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot). original value given at command line.  */
   unsigned int allowed_extensions_min; /**< @brief Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot).'s minimum occurreces */
@@ -86,6 +81,16 @@ struct gengetopt_args_info
   const char *only_head_help; /**< @brief Only parse the <head> part. help description.  */
   const char *IPv6_help; /**< @brief Only resolve to IPv6 addresses. help description.  */
   const char *IPv4_help; /**< @brief Only resolve to IPv4 addresses. help description.  */
+  char ** disallowed_paths_arg;	/**< @brief Disallow the crawler to fetch URL starting with these paths..  */
+  char ** disallowed_paths_orig;	/**< @brief Disallow the crawler to fetch URL starting with these paths. original value given at command line.  */
+  unsigned int disallowed_paths_min; /**< @brief Disallow the crawler to fetch URL starting with these paths.'s minimum occurreces */
+  unsigned int disallowed_paths_max; /**< @brief Disallow the crawler to fetch URL starting with these paths.'s maximum occurreces */
+  const char *disallowed_paths_help; /**< @brief Disallow the crawler to fetch URL starting with these paths. help description.  */
+  char ** allowed_paths_arg;	/**< @brief Allow the crawler to only fetch URL starting with these paths..  */
+  char ** allowed_paths_orig;	/**< @brief Allow the crawler to only fetch URL starting with these paths. original value given at command line.  */
+  unsigned int allowed_paths_min; /**< @brief Allow the crawler to only fetch URL starting with these paths.'s minimum occurreces */
+  unsigned int allowed_paths_max; /**< @brief Allow the crawler to only fetch URL starting with these paths.'s maximum occurreces */
+  const char *allowed_paths_help; /**< @brief Allow the crawler to only fetch URL starting with these paths. help description.  */
   
   unsigned int help_given ;	/**< @brief Whether help was given.  */
   unsigned int version_given ;	/**< @brief Whether version was given.  */
@@ -95,7 +100,6 @@ struct gengetopt_args_info
   unsigned int max_depth_given ;	/**< @brief Whether max-depth was given.  */
   unsigned int allow_subdomains_given ;	/**< @brief Whether allow-subdomains was given.  */
   unsigned int allowed_domains_given ;	/**< @brief Whether allowed-domains was given.  */
-  unsigned int disallowed_paths_given ;	/**< @brief Whether disallowed-paths was given.  */
   unsigned int allowed_extensions_given ;	/**< @brief Whether allowed-extensions was given.  */
   unsigned int keep_query_given ;	/**< @brief Whether keep-query was given.  */
   unsigned int no_color_given ;	/**< @brief Whether no-color was given.  */
@@ -108,8 +112,13 @@ struct gengetopt_args_info
   unsigned int only_head_given ;	/**< @brief Whether only-head was given.  */
   unsigned int IPv6_given ;	/**< @brief Whether IPv6 was given.  */
   unsigned int IPv4_given ;	/**< @brief Whether IPv4 was given.  */
+  unsigned int disallowed_paths_given ;	/**< @brief Whether disallowed-paths was given.  */
+  int disallowed_paths_group ; /**< @brief Whether disallowed-paths's was updated.  */
+  unsigned int allowed_paths_given ;	/**< @brief Whether allowed-paths was given.  */
+  int allowed_paths_group ; /**< @brief Whether allowed-paths's was updated.  */
 
   int parsing_part_group_counter; /**< @brief Counter for group parsing_part */
+  int paths_group_counter; /**< @brief Counter for group paths */
   int resolving_ip_version_group_counter; /**< @brief Counter for group resolving_ip_version */
   int scheme_group_counter; /**< @brief Counter for group scheme */
 } ;

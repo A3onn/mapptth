@@ -61,6 +61,7 @@ Here is the list of available parameters grouped by category:
 | Allow the crawler to go into subdomains of the initial URL and allowed domains. | -s |
 | Allow the crawler to go to these domains. | -a \<domain> |
 | Disallow the crawler to fetch URL starting with these paths. | -d \<path> |
+| Allow the crawler to only fetch URL starting with these paths. | -d \<path> |
 | Maximum depth of paths. If a path has a longer depth, it won't be fetched. | -D \<depth> |
 | Only fetch URLs with HTTP as scheme. | -p |
 | Only fetch URLs with HTTPS as scheme. | -P |

@@ -22,6 +22,8 @@ char* normalize_path(char* path, int is_directory);
 
 int is_disallowed_path(char* path, char** disallowed_paths, int count_disallowed_paths);
 
+int is_allowed_path(char* path, char** allowed_paths, int count_allowed_paths);
+
 int is_allowed_extension(char* path, char** allowed_extensions, int count_allowed_extensions);
 
 int is_in_valid_domains(char* domain, char** allowed_domains, int count_allowed_domains, int allow_subdomain);

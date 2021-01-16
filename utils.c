@@ -141,7 +141,7 @@ int is_disallowed_path(char* path, char** disallowed_paths, int count_disallowed
         return 0;
     }
 
-
+    // will search through all paths and it will try to find one mathching with the path to check
     for(int i = 0; i < count_disallowed_paths; i++) {
         size_t found_length = strlen(disallowed_paths[i]);
         if(strstr(path, disallowed_paths[i]) == path && (*(path+found_length) == '/' || *(path+found_length) == '\0')) {
@@ -152,6 +152,18 @@ int is_disallowed_path(char* path, char** disallowed_paths, int count_disallowed
         }
     }
     return 0;
+}
+
+int is_allowed_path(char* path, char** allowed_paths, int count_allowed_paths) {
+  // if no paths where specified, then it is allowed, this check is
+  // needed here because in is_disallowed_path, it would return 0 instead
+  // of 1
+  if(count_allowed_paths == 0) {
+      return 1;
+  }
+  // as is_disallowed_path will search for a matching path in the list of paths,
+  // we only need to call it with the list of allowed paths instead
+  return is_disallowed_path(path, allowed_paths, count_allowed_paths);
 }
 
 int is_allowed_extension(char* path, char** allowed_extensions, int count_allowed_extensions) {

@@ -28,6 +28,8 @@ struct WalkBundle {  // used with walk_cb.
     int count_allowed_extensions;
     char** disallowed_paths;
     int count_disallowed_paths;
+    char** allowed_paths;
+    int count_allowed_paths;
     int http_only;
     int https_only;
     int keep_query;
@@ -94,12 +96,18 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
         char* path;
         curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
 
-        // check disallowed paths
+        // check path
         if(is_disallowed_path(path, bundle->disallowed_paths, bundle->count_disallowed_paths)) {
             free(document_domain);
             free(path);
             return LEXBOR_ACTION_OK;
         }
+        if(!is_allowed_path(path, bundle->allowed_paths, bundle->count_allowed_paths)) {
+            free(document_domain);
+            free(path);
+            return LEXBOR_ACTION_OK;
+        }
+
         // check allowed extensions
         if(!is_allowed_extension(path, bundle->allowed_extensions, bundle->count_allowed_extensions)) {
             free(document_domain);
@@ -181,6 +189,10 @@ int main(int argc, char* argv[]) {
     for(int i = 0; i < cli_arguments.disallowed_paths_given; i++) {
         disallowed_paths[i] = normalize_path(cli_arguments.disallowed_paths_arg[i], 0);
     }
+    char** allowed_paths = (char**) malloc(sizeof(char*) * cli_arguments.allowed_paths_given);
+    for(int i = 0; i < cli_arguments.allowed_paths_given; i++) {
+        allowed_paths[i] = normalize_path(cli_arguments.allowed_paths_arg[i], 0);
+    }
 
     int resolve_ip_version = CURL_IPRESOLVE_WHATEVER;
     if(cli_arguments.IPv4_given) {
@@ -219,6 +231,11 @@ int main(int argc, char* argv[]) {
                 curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
                 // check disallowed paths
                 if(is_disallowed_path(path, cli_arguments.disallowed_paths_arg, cli_arguments.disallowed_paths_given)) {
+                    free(url);
+                    free(path);
+                    continue;
+                }
+                if(!is_allowed_path(path, cli_arguments.allowed_paths_arg, cli_arguments.allowed_paths_given)) {
                     free(url);
                     free(path);
                     continue;
@@ -316,6 +333,8 @@ int main(int argc, char* argv[]) {
     bundle_walk.https_only = cli_arguments.https_only_given;
     bundle_walk.disallowed_paths = disallowed_paths;
     bundle_walk.count_disallowed_paths = cli_arguments.disallowed_paths_given;
+    bundle_walk.allowed_paths = allowed_paths;
+    bundle_walk.count_allowed_paths = cli_arguments.allowed_paths_given;
     bundle_walk.keep_query = cli_arguments.keep_query_given;
     bundle_walk.max_path_depth = cli_arguments.max_depth_arg;
 
@@ -444,6 +463,11 @@ int main(int argc, char* argv[]) {
                 curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
                 if(is_still_valid) {
                     if(is_disallowed_path(path, cli_arguments.disallowed_paths_arg, cli_arguments.disallowed_paths_given)) {
+                        is_still_valid = 0;
+                    }
+                }
+                if(is_still_valid) {
+                    if(!is_allowed_path(path, cli_arguments.allowed_paths_arg, cli_arguments.allowed_paths_given)) {
                         is_still_valid = 0;
                     }
                 }
