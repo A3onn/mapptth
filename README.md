@@ -61,11 +61,12 @@ Here is the list of available parameters grouped by category:
 | Allow the crawler to go into subdomains of the initial URL and allowed domains. | -s |
 | Allow the crawler to go to these domains. | -a \<domain> |
 | Disallow the crawler to fetch URL starting with these paths. | -d \<path> |
-| Allow the crawler to only fetch URL starting with these paths. | -d \<path> |
+| Allow the crawler to only fetch URL starting with these paths. | -A \<path> |
 | Maximum depth of paths. If a path has a longer depth, it won't be fetched. | -D \<depth> |
 | Only fetch URLs with HTTP as scheme. | -p |
 | Only fetch URLs with HTTPS as scheme. | -P |
 | Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. | -x .\<extension> |
+| Disallow the crawler to fetch files with these extensions. If no extension is found then this filter won't apply. | -X .\<extension> |
 | Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched. | -k |
 
 
