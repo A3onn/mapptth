@@ -42,7 +42,6 @@ const char *gengetopt_args_info_help[] = {
   "  -D, --max-depth=INT           Maximum depth of paths. If a path has a longer\n                                  depth, it won't be fetched.",
   "  -s, --allow-subdomains        Allow the crawler to go into subdomains of the\n                                  initial URL and allowed domains.\n                                  (default=off)",
   "  -a, --allowed-domains=STRING  Allow the crawler to go to these domains.",
-  "  -x, --allowed-extensions=STRING\n                                Allow the crawler to only fetch files with\n                                  these extensions. If no extension is found\n                                  then this filter won't apply. Extensions have\n                                  to start with a '.' (dot).",
   "  -k, --keep-query              Keep the query part of the URL. Note that if\n                                  two same URLs with a different query is\n                                  found, both will be fetched.  (default=off)",
   "  -c, --no-color                Don't print with colors.  (default=off)",
   "  -U, --user-agent=STRING       String that will be used as user-agent. You can\n                                  disable sending the user-agent header by\n                                  giving an empty string.",
@@ -60,6 +59,9 @@ const char *gengetopt_args_info_help[] = {
   "\n Group: paths",
   "  -d, --disallowed-paths=STRING Disallow the crawler to fetch URL starting with\n                                  these paths.",
   "  -A, --allowed-paths=STRING    Allow the crawler to only fetch URL starting\n                                  with these paths.",
+  "\n Group: extensions",
+  "  -x, --allowed-extensions=STRING\n                                Allow the crawler to only fetch files with\n                                  these extensions. If no extension is found\n                                  then this filter won't apply. Extensions have\n                                  to start with a '.' (dot).",
+  "  -X, --disallowed-extensions=STRING\n                                Disallow the crawler to fetch files with these\n                                  extensions. If no extension is found then\n                                  this filter won't apply. Extensions have to\n                                  start with a '.' (dot).",
     0
 };
 
@@ -95,7 +97,6 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->max_depth_given = 0 ;
   args_info->allow_subdomains_given = 0 ;
   args_info->allowed_domains_given = 0 ;
-  args_info->allowed_extensions_given = 0 ;
   args_info->keep_query_given = 0 ;
   args_info->no_color_given = 0 ;
   args_info->user_agent_given = 0 ;
@@ -109,6 +110,9 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->IPv4_given = 0 ;
   args_info->disallowed_paths_given = 0 ; args_info->disallowed_paths_group = 0 ;
   args_info->allowed_paths_given = 0 ; args_info->allowed_paths_group = 0 ;
+  args_info->allowed_extensions_given = 0 ; args_info->allowed_extensions_group = 0 ;
+  args_info->disallowed_extensions_given = 0 ; args_info->disallowed_extensions_group = 0 ;
+  args_info->extensions_group_counter = 0 ;
   args_info->parsing_part_group_counter = 0 ;
   args_info->paths_group_counter = 0 ;
   args_info->resolving_ip_version_group_counter = 0 ;
@@ -129,8 +133,6 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->allow_subdomains_flag = 0;
   args_info->allowed_domains_arg = NULL;
   args_info->allowed_domains_orig = NULL;
-  args_info->allowed_extensions_arg = NULL;
-  args_info->allowed_extensions_orig = NULL;
   args_info->keep_query_flag = 0;
   args_info->no_color_flag = 0;
   args_info->user_agent_arg = NULL;
@@ -142,6 +144,10 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->disallowed_paths_orig = NULL;
   args_info->allowed_paths_arg = NULL;
   args_info->allowed_paths_orig = NULL;
+  args_info->allowed_extensions_arg = NULL;
+  args_info->allowed_extensions_orig = NULL;
+  args_info->disallowed_extensions_arg = NULL;
+  args_info->disallowed_extensions_orig = NULL;
   
 }
 
@@ -160,26 +166,29 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->allowed_domains_help = gengetopt_args_info_help[7] ;
   args_info->allowed_domains_min = 0;
   args_info->allowed_domains_max = 0;
-  args_info->allowed_extensions_help = gengetopt_args_info_help[8] ;
-  args_info->allowed_extensions_min = 0;
-  args_info->allowed_extensions_max = 0;
-  args_info->keep_query_help = gengetopt_args_info_help[9] ;
-  args_info->no_color_help = gengetopt_args_info_help[10] ;
-  args_info->user_agent_help = gengetopt_args_info_help[11] ;
-  args_info->title_help = gengetopt_args_info_help[12] ;
-  args_info->sitemap_help = gengetopt_args_info_help[13] ;
-  args_info->http_only_help = gengetopt_args_info_help[15] ;
-  args_info->https_only_help = gengetopt_args_info_help[16] ;
-  args_info->only_body_help = gengetopt_args_info_help[18] ;
-  args_info->only_head_help = gengetopt_args_info_help[19] ;
-  args_info->IPv6_help = gengetopt_args_info_help[21] ;
-  args_info->IPv4_help = gengetopt_args_info_help[22] ;
-  args_info->disallowed_paths_help = gengetopt_args_info_help[24] ;
+  args_info->keep_query_help = gengetopt_args_info_help[8] ;
+  args_info->no_color_help = gengetopt_args_info_help[9] ;
+  args_info->user_agent_help = gengetopt_args_info_help[10] ;
+  args_info->title_help = gengetopt_args_info_help[11] ;
+  args_info->sitemap_help = gengetopt_args_info_help[12] ;
+  args_info->http_only_help = gengetopt_args_info_help[14] ;
+  args_info->https_only_help = gengetopt_args_info_help[15] ;
+  args_info->only_body_help = gengetopt_args_info_help[17] ;
+  args_info->only_head_help = gengetopt_args_info_help[18] ;
+  args_info->IPv6_help = gengetopt_args_info_help[20] ;
+  args_info->IPv4_help = gengetopt_args_info_help[21] ;
+  args_info->disallowed_paths_help = gengetopt_args_info_help[23] ;
   args_info->disallowed_paths_min = 0;
   args_info->disallowed_paths_max = 0;
-  args_info->allowed_paths_help = gengetopt_args_info_help[25] ;
+  args_info->allowed_paths_help = gengetopt_args_info_help[24] ;
   args_info->allowed_paths_min = 0;
   args_info->allowed_paths_max = 0;
+  args_info->allowed_extensions_help = gengetopt_args_info_help[26] ;
+  args_info->allowed_extensions_min = 0;
+  args_info->allowed_extensions_max = 0;
+  args_info->disallowed_extensions_help = gengetopt_args_info_help[27] ;
+  args_info->disallowed_extensions_min = 0;
+  args_info->disallowed_extensions_max = 0;
   
 }
 
@@ -320,13 +329,14 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->timeout_orig));
   free_string_field (&(args_info->max_depth_orig));
   free_multiple_string_field (args_info->allowed_domains_given, &(args_info->allowed_domains_arg), &(args_info->allowed_domains_orig));
-  free_multiple_string_field (args_info->allowed_extensions_given, &(args_info->allowed_extensions_arg), &(args_info->allowed_extensions_orig));
   free_string_field (&(args_info->user_agent_arg));
   free_string_field (&(args_info->user_agent_orig));
   free_string_field (&(args_info->sitemap_arg));
   free_string_field (&(args_info->sitemap_orig));
   free_multiple_string_field (args_info->disallowed_paths_given, &(args_info->disallowed_paths_arg), &(args_info->disallowed_paths_orig));
   free_multiple_string_field (args_info->allowed_paths_given, &(args_info->allowed_paths_arg), &(args_info->allowed_paths_orig));
+  free_multiple_string_field (args_info->allowed_extensions_given, &(args_info->allowed_extensions_arg), &(args_info->allowed_extensions_orig));
+  free_multiple_string_field (args_info->disallowed_extensions_given, &(args_info->disallowed_extensions_arg), &(args_info->disallowed_extensions_orig));
   
   
 
@@ -380,7 +390,6 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
   if (args_info->allow_subdomains_given)
     write_into_file(outfile, "allow-subdomains", 0, 0 );
   write_multiple_into_file(outfile, args_info->allowed_domains_given, "allowed-domains", args_info->allowed_domains_orig, 0);
-  write_multiple_into_file(outfile, args_info->allowed_extensions_given, "allowed-extensions", args_info->allowed_extensions_orig, 0);
   if (args_info->keep_query_given)
     write_into_file(outfile, "keep-query", 0, 0 );
   if (args_info->no_color_given)
@@ -405,6 +414,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "IPv4", 0, 0 );
   write_multiple_into_file(outfile, args_info->disallowed_paths_given, "disallowed-paths", args_info->disallowed_paths_orig, 0);
   write_multiple_into_file(outfile, args_info->allowed_paths_given, "allowed-paths", args_info->allowed_paths_orig, 0);
+  write_multiple_into_file(outfile, args_info->allowed_extensions_given, "allowed-extensions", args_info->allowed_extensions_orig, 0);
+  write_multiple_into_file(outfile, args_info->disallowed_extensions_given, "disallowed-extensions", args_info->disallowed_extensions_orig, 0);
   
 
   i = EXIT_SUCCESS;
@@ -588,6 +599,20 @@ check_multiple_option_occurrences(const char *prog_name, unsigned int option_giv
   return error_occurred;
 }
 static void
+reset_group_extensions(struct gengetopt_args_info *args_info)
+{
+  if (! args_info->extensions_group_counter)
+    return;
+  
+  args_info->allowed_extensions_given = 0 ; args_info->allowed_extensions_group = 0 ;
+  free_multiple_string_field (args_info->allowed_extensions_given, &(args_info->allowed_extensions_arg), &(args_info->allowed_extensions_orig));
+  args_info->disallowed_extensions_given = 0 ; args_info->disallowed_extensions_group = 0 ;
+  free_multiple_string_field (args_info->disallowed_extensions_given, &(args_info->disallowed_extensions_arg), &(args_info->disallowed_extensions_orig));
+
+  args_info->extensions_group_counter = 0;
+}
+
+static void
 reset_group_parsing_part(struct gengetopt_args_info *args_info)
 {
   if (! args_info->parsing_part_group_counter)
@@ -715,13 +740,16 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
   if (check_multiple_option_occurrences(prog_name, args_info->allowed_domains_given, args_info->allowed_domains_min, args_info->allowed_domains_max, "'--allowed-domains' ('-a')"))
      error_occurred = 1;
   
-  if (check_multiple_option_occurrences(prog_name, args_info->allowed_extensions_given, args_info->allowed_extensions_min, args_info->allowed_extensions_max, "'--allowed-extensions' ('-x')"))
-     error_occurred = 1;
-  
   if (check_multiple_option_occurrences(prog_name, args_info->disallowed_paths_given, args_info->disallowed_paths_min, args_info->disallowed_paths_max, "'--disallowed-paths' ('-d')"))
      error_occurred = 1;
   
   if (check_multiple_option_occurrences(prog_name, args_info->allowed_paths_given, args_info->allowed_paths_min, args_info->allowed_paths_max, "'--allowed-paths' ('-A')"))
+     error_occurred = 1;
+  
+  if (check_multiple_option_occurrences(prog_name, args_info->allowed_extensions_given, args_info->allowed_extensions_min, args_info->allowed_extensions_max, "'--allowed-extensions' ('-x')"))
+     error_occurred = 1;
+  
+  if (check_multiple_option_occurrences(prog_name, args_info->disallowed_extensions_given, args_info->disallowed_extensions_min, args_info->disallowed_extensions_max, "'--disallowed-extensions' ('-X')"))
      error_occurred = 1;
   
   
@@ -986,9 +1014,10 @@ cmdline_parser_internal (
   int c;	/* Character of the parsed option.  */
 
   struct generic_list * allowed_domains_list = NULL;
-  struct generic_list * allowed_extensions_list = NULL;
   struct generic_list * disallowed_paths_list = NULL;
   struct generic_list * allowed_paths_list = NULL;
+  struct generic_list * allowed_extensions_list = NULL;
+  struct generic_list * disallowed_extensions_list = NULL;
   int error_occurred = 0;
   struct gengetopt_args_info local_args_info;
   
@@ -1033,7 +1062,6 @@ cmdline_parser_internal (
         { "max-depth",	1, NULL, 'D' },
         { "allow-subdomains",	0, NULL, 's' },
         { "allowed-domains",	1, NULL, 'a' },
-        { "allowed-extensions",	1, NULL, 'x' },
         { "keep-query",	0, NULL, 'k' },
         { "no-color",	0, NULL, 'c' },
         { "user-agent",	1, NULL, 'U' },
@@ -1047,10 +1075,12 @@ cmdline_parser_internal (
         { "IPv4",	0, NULL, '4' },
         { "disallowed-paths",	1, NULL, 'd' },
         { "allowed-paths",	1, NULL, 'A' },
+        { "allowed-extensions",	1, NULL, 'x' },
+        { "disallowed-extensions",	1, NULL, 'X' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:D:sa:x:kcU:TS:pPBH64d:A:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:D:sa:kcU:TS:pPBH64d:A:x:X:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1129,15 +1159,6 @@ cmdline_parser_internal (
           if (update_multiple_arg_temp(&allowed_domains_list, 
               &(local_args_info.allowed_domains_given), optarg, 0, 0, ARG_STRING,
               "allowed-domains", 'a',
-              additional_error))
-            goto failure;
-        
-          break;
-        case 'x':	/* Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot)..  */
-        
-          if (update_multiple_arg_temp(&allowed_extensions_list, 
-              &(local_args_info.allowed_extensions_given), optarg, 0, 0, ARG_STRING,
-              "allowed-extensions", 'x',
               additional_error))
             goto failure;
         
@@ -1314,6 +1335,34 @@ cmdline_parser_internal (
             }
         
           break;
+        case 'x':	/* Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot)..  */
+        
+          if (update_multiple_arg_temp(&allowed_extensions_list, 
+              &(local_args_info.allowed_extensions_given), optarg, 0, 0, ARG_STRING,
+              "allowed-extensions", 'x',
+              additional_error))
+            goto failure;
+          if (!args_info->allowed_extensions_group)
+            {
+              args_info->allowed_extensions_group = 1;
+              args_info->extensions_group_counter += 1;
+            }
+        
+          break;
+        case 'X':	/* Disallow the crawler to fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot)..  */
+        
+          if (update_multiple_arg_temp(&disallowed_extensions_list, 
+              &(local_args_info.disallowed_extensions_given), optarg, 0, 0, ARG_STRING,
+              "disallowed-extensions", 'X',
+              additional_error))
+            goto failure;
+          if (!args_info->disallowed_extensions_group)
+            {
+              args_info->disallowed_extensions_group = 1;
+              args_info->extensions_group_counter += 1;
+            }
+        
+          break;
 
         case 0:	/* Long option with no short option */
         case '?':	/* Invalid option.  */
@@ -1326,6 +1375,12 @@ cmdline_parser_internal (
         } /* switch */
     } /* while */
 
+  if (args_info->extensions_group_counter > 1)
+    {
+      fprintf (stderr, "%s: %d options of group extensions were given. At most one is required%s.\n", argv[0], args_info->extensions_group_counter, (additional_error ? additional_error : ""));
+      error_occurred = 1;
+    }
+  
   if (args_info->parsing_part_group_counter > 1)
     {
       fprintf (stderr, "%s: %d options of group parsing-part were given. At most one is required%s.\n", argv[0], args_info->parsing_part_group_counter, (additional_error ? additional_error : ""));
@@ -1355,10 +1410,6 @@ cmdline_parser_internal (
     &(args_info->allowed_domains_orig), args_info->allowed_domains_given,
     local_args_info.allowed_domains_given, 0,
     ARG_STRING, allowed_domains_list);
-  update_multiple_arg((void *)&(args_info->allowed_extensions_arg),
-    &(args_info->allowed_extensions_orig), args_info->allowed_extensions_given,
-    local_args_info.allowed_extensions_given, 0,
-    ARG_STRING, allowed_extensions_list);
   update_multiple_arg((void *)&(args_info->disallowed_paths_arg),
     &(args_info->disallowed_paths_orig), args_info->disallowed_paths_given,
     local_args_info.disallowed_paths_given, 0,
@@ -1367,15 +1418,25 @@ cmdline_parser_internal (
     &(args_info->allowed_paths_orig), args_info->allowed_paths_given,
     local_args_info.allowed_paths_given, 0,
     ARG_STRING, allowed_paths_list);
+  update_multiple_arg((void *)&(args_info->allowed_extensions_arg),
+    &(args_info->allowed_extensions_orig), args_info->allowed_extensions_given,
+    local_args_info.allowed_extensions_given, 0,
+    ARG_STRING, allowed_extensions_list);
+  update_multiple_arg((void *)&(args_info->disallowed_extensions_arg),
+    &(args_info->disallowed_extensions_orig), args_info->disallowed_extensions_given,
+    local_args_info.disallowed_extensions_given, 0,
+    ARG_STRING, disallowed_extensions_list);
 
   args_info->allowed_domains_given += local_args_info.allowed_domains_given;
   local_args_info.allowed_domains_given = 0;
-  args_info->allowed_extensions_given += local_args_info.allowed_extensions_given;
-  local_args_info.allowed_extensions_given = 0;
   args_info->disallowed_paths_given += local_args_info.disallowed_paths_given;
   local_args_info.disallowed_paths_given = 0;
   args_info->allowed_paths_given += local_args_info.allowed_paths_given;
   local_args_info.allowed_paths_given = 0;
+  args_info->allowed_extensions_given += local_args_info.allowed_extensions_given;
+  local_args_info.allowed_extensions_given = 0;
+  args_info->disallowed_extensions_given += local_args_info.disallowed_extensions_given;
+  local_args_info.disallowed_extensions_given = 0;
   
   if (check_required)
     {
@@ -1391,9 +1452,10 @@ cmdline_parser_internal (
 
 failure:
   free_list (allowed_domains_list, 1 );
-  free_list (allowed_extensions_list, 1 );
   free_list (disallowed_paths_list, 1 );
   free_list (allowed_paths_list, 1 );
+  free_list (allowed_extensions_list, 1 );
+  free_list (disallowed_extensions_list, 1 );
   
   cmdline_parser_release (&local_args_info);
   return (EXIT_FAILURE);
