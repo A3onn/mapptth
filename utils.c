@@ -187,6 +187,27 @@ int is_allowed_extension(char* path, char** allowed_extensions, int count_allowe
     return 0;
 }
 
+int is_disallowed_extension(char* path, char** disallowed_extensions, int count_disallowed_extensions) {
+  if(count_disallowed_extensions == 0) { // if no extensions where specified, then it is allowed
+      return 0;
+  }
+  char* filename = strrchr(path, '/'); // find last '/', this will give the name of the file
+  if(filename != NULL) {
+      char* ext = strrchr(filename, '.'); // find extension
+      if(ext != NULL) { // if there is an extension
+          for(int i = 0; i < count_disallowed_extensions; i++) {
+              char* found_ext = strstr(path, disallowed_extensions[i]);
+              if(found_ext == ext && strcmp(disallowed_extensions[i], found_ext) == 0) {
+                  return 1;
+              }
+          }
+      } else { // if there isn't any extension, then it is valid
+          return 0;
+      }
+  }
+  return 0;
+}
+
 int get_path_depth(char* path) {
     if(path == NULL) {
         return 0;

@@ -26,6 +26,8 @@ struct WalkBundle {  // used with walk_cb.
     int count_allowed_domains;
     char** allowed_extensions;
     int count_allowed_extensions;
+    char** disallowed_extensions;
+    int count_disallowed_extensions;
     char** disallowed_paths;
     int count_disallowed_paths;
     char** allowed_paths;
@@ -108,12 +110,18 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
             return LEXBOR_ACTION_OK;
         }
 
-        // check allowed extensions
-        if(!is_allowed_extension(path, bundle->allowed_extensions, bundle->count_allowed_extensions)) {
+        // check extensions
+        if(is_disallowed_extension(path, bundle->disallowed_extensions, bundle->count_disallowed_extensions)) {
             free(document_domain);
             free(path);
             return LEXBOR_ACTION_OK;
         }
+        if(!is_allowed_extension(path, bundle->allowed_extensions, bundle->count_allowed_extensions)) {
+          free(document_domain);
+          free(path);
+          return LEXBOR_ACTION_OK;
+        }
+
         if(bundle->max_path_depth > 0 && get_path_depth(path) > bundle->max_path_depth) {
             free(document_domain);
             free(path);
@@ -184,6 +192,12 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
+    for(int i = 0; i < cli_arguments.disallowed_extensions_given; i++) {
+        if(cli_arguments.disallowed_extensions_arg[i][0] != '.') {
+            fprintf(stderr, "%s: extensions have to begin with a '.' (dot)\n", argv[0]);
+            return 1;
+        }
+    }
     // normalize paths given by the user
     char** disallowed_paths = (char**) malloc(sizeof(char*) * cli_arguments.disallowed_paths_given);
     for(int i = 0; i < cli_arguments.disallowed_paths_given; i++) {
@@ -240,11 +254,16 @@ int main(int argc, char* argv[]) {
                     free(path);
                     continue;
                 }
-                // check allowed extensions
-                if(!is_allowed_extension(path, cli_arguments.allowed_extensions_arg, cli_arguments.allowed_extensions_given)) {
+                // check extensions
+                if(is_disallowed_extension(path, cli_arguments.disallowed_extensions_arg, cli_arguments.disallowed_extensions_given)) {
                     free(url);
                     free(path);
                     continue;
+                }
+                if(!is_allowed_extension(path, cli_arguments.allowed_extensions_arg, cli_arguments.allowed_extensions_given)) {
+                  free(url);
+                  free(path);
+                  continue;
                 }
                 if(cli_arguments.max_depth_given && get_path_depth(path) > cli_arguments.max_depth_given) {
                     free(url);
@@ -328,6 +347,8 @@ int main(int argc, char* argv[]) {
     bundle_walk.count_allowed_domains = cli_arguments.allowed_domains_given;
     bundle_walk.allowed_extensions = cli_arguments.allowed_extensions_arg;
     bundle_walk.count_allowed_extensions = cli_arguments.allowed_extensions_given;
+    bundle_walk.disallowed_extensions = cli_arguments.disallowed_extensions_arg;
+    bundle_walk.count_disallowed_extensions = cli_arguments.disallowed_extensions_given;
     bundle_walk.allow_subdomains = cli_arguments.allow_subdomains_given;
     bundle_walk.http_only = cli_arguments.http_only_given;
     bundle_walk.https_only = cli_arguments.https_only_given;
@@ -473,6 +494,11 @@ int main(int argc, char* argv[]) {
                 }
                 if(is_still_valid) {
                     if(!is_allowed_extension(path, cli_arguments.allowed_extensions_arg, cli_arguments.allowed_extensions_given)) {
+                        is_still_valid = 0;
+                    }
+                }
+                if(is_still_valid) {
+                    if(is_disallowed_extension(path, cli_arguments.disallowed_extensions_arg, cli_arguments.disallowed_extensions_given)) {
                         is_still_valid = 0;
                     }
                 }
