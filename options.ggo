@@ -12,6 +12,7 @@ option "no-color" c "Don't print with colors." flag off
 option "user-agent" U "String that will be used as user-agent. You can disable sending the user-agent header by giving an empty string." string optional  # the default value will be "MapPTTH/VERSION"
 option "title" T "Print the title of the page if there is one when displaying an URL." flag off
 option "sitemap" S "Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap." string optional
+option "debug" ? "Print debug information while running. Uses color when printing, --no-color doesn't have any effects on this." flag off
 
 defgroup "scheme"
 groupoption "http-only" p "Only fetch URLs with HTTP as scheme." group="scheme"

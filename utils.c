@@ -3,6 +3,8 @@
 #include <curl/curl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
+
 
 int url_not_seen(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
     // Just check if a given url has already been seen.
@@ -232,4 +234,17 @@ int get_path_depth(char* path) {
     }
     free(copy);
     return count;
+}
+
+int _debug = 0;
+void _debug_print(const char* function_name, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+
+    if(_debug) {
+        printf("%s[debug]%s thread #%lu %s: ", BLUE, RESET, pthread_self(), function_name);
+        vprintf(format, args);
+    }
+
+    va_end(args);
 }

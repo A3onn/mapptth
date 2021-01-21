@@ -170,6 +170,9 @@ int main(int argc, char* argv[]) {
     if(cmdline_parser(argc, argv, &cli_arguments) != 0) {
         return 1;
     }
+    if(cli_arguments.debug_given) {
+        ACTIVATE_DEBUG();
+    }
     if((strncmp(cli_arguments.url_arg, "http://", 7) != 0 && strncmp(cli_arguments.url_arg, "https://", 8) != 0) || strchr(cli_arguments.url_arg, ' ') != NULL) {
         fprintf(stderr, "%s: invalid URL: %s\n", argv[0], cli_arguments.url_arg);
         return 1;

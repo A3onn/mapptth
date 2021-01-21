@@ -10,6 +10,7 @@
 #define YELLOW "\033[0;33m"
 #define RESET "\033[0m"
 
+#include <stdarg.h>
 #include "stack_urls.h"
 
 int url_not_seen(char* url, URLNode_t* urls_done, URLNode_t* urls_todo);
@@ -31,4 +32,14 @@ int is_disallowed_extension(char* path, char** disallowed_extensions, int count_
 int is_in_valid_domains(char* domain, char** allowed_domains, int count_allowed_domains, int allow_subdomain);
 
 int get_path_depth(char* path);
+
+// DEBUG
+
+extern int _debug;
+void _debug_print(const char* function_name, const char* format, ...);
+
+#define DEBUG(...) _debug_print(__func__, __VA_ARGS__)
+
+#define ACTIVATE_DEBUG() _debug = 1;
+
 #endif
