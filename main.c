@@ -244,12 +244,12 @@ int main(int argc, char* argv[]) {
                 char* path;
                 curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
                 // check disallowed paths
-                if(is_disallowed_path(path, cli_arguments.disallowed_paths_arg, cli_arguments.disallowed_paths_given)) {
+                if(is_disallowed_path(path, disallowed_paths, cli_arguments.disallowed_paths_given)) {
                     free(url);
                     free(path);
                     continue;
                 }
-                if(!is_allowed_path(path, cli_arguments.allowed_paths_arg, cli_arguments.allowed_paths_given)) {
+                if(!is_allowed_path(path, allowed_paths, cli_arguments.allowed_paths_given)) {
                     free(url);
                     free(path);
                     continue;
@@ -483,12 +483,12 @@ int main(int argc, char* argv[]) {
                 char* path;
                 curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
                 if(is_still_valid) {
-                    if(is_disallowed_path(path, cli_arguments.disallowed_paths_arg, cli_arguments.disallowed_paths_given)) {
+                    if(is_disallowed_path(path, disallowed_paths, cli_arguments.disallowed_paths_given)) {
                         is_still_valid = 0;
                     }
                 }
                 if(is_still_valid) {
-                    if(!is_allowed_path(path, cli_arguments.allowed_paths_arg, cli_arguments.allowed_paths_given)) {
+                    if(!is_allowed_path(path, allowed_paths, cli_arguments.allowed_paths_given)) {
                         is_still_valid = 0;
                     }
                 }
@@ -549,6 +549,9 @@ int main(int argc, char* argv[]) {
 
     for(int i = 0; i < cli_arguments.disallowed_paths_given; i++) {
         free(disallowed_paths[i]);
+    }
+    for(int i = 0; i < cli_arguments.allowed_paths_given; i++) {
+        free(allowed_paths[i]);
     }
 
     cmdline_parser_free(&cli_arguments);
