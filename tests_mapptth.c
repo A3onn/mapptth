@@ -430,6 +430,12 @@ START_TEST(true_one_disallowed_is_disallowed_path) {
 }
 END_TEST
 
+START_TEST(true_root_disallowed_is_disallowed_path) {
+    char* dis_paths[] = {"/"};
+    ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 1), 1);
+}
+END_TEST
+
 START_TEST(false_one_disallowed_is_disallowed_path) {
     char* dis_paths[] = {"/images"};
     ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 1), 0);
@@ -685,6 +691,7 @@ Suite* utils_suite(void) {
 
     tc = tcase_create("is_disallowed_path");
     tcase_add_test(tc, true_one_disallowed_is_disallowed_path);
+    tcase_add_test(tc, true_root_disallowed_is_disallowed_path);
     tcase_add_test(tc, false_one_disallowed_is_disallowed_path);
     tcase_add_test(tc, true_multiple_disallowed_is_disallowed_path);
     tcase_add_test(tc, false_multiple_disallowed_is_disallowed_path);

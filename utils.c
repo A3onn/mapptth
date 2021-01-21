@@ -143,6 +143,9 @@ int is_disallowed_path(char* path, char** disallowed_paths, int count_disallowed
 
     // will search through all paths and it will try to find one mathching with the path to check
     for(int i = 0; i < count_disallowed_paths; i++) {
+	if(strncmp(disallowed_paths[i], "/", 2) == 0) {
+		return 1;
+	}
         size_t found_length = strlen(disallowed_paths[i]);
         if(strstr(path, disallowed_paths[i]) == path && (*(path+found_length) == '/' || *(path+found_length) == '\0')) {
             // check if the path found is at the beginning of the path, and need to check if the following char is '\' or the
