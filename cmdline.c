@@ -47,6 +47,7 @@ const char *gengetopt_args_info_help[] = {
   "  -U, --user-agent=STRING       String that will be used as user-agent. You can\n                                  disable sending the user-agent header by\n                                  giving an empty string.",
   "  -T, --title                   Print the title of the page if there is one\n                                  when displaying an URL.  (default=off)",
   "  -S, --sitemap=STRING          Parse the sitemap of the site, this should\n                                  speeds up the crawler and will maybe provide\n                                  URLs that couldn't be found without the\n                                  sitemap.",
+  "  -o, --output=STRING           File to write output into (without colors).",
   "  -?, --debug                   Print debug information while running. Uses\n                                  color when printing, --no-color doesn't have\n                                  any effects on this.  (default=off)",
   "\n Group: scheme",
   "  -p, --http-only               Only fetch URLs with HTTP as scheme.",
@@ -103,6 +104,7 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->user_agent_given = 0 ;
   args_info->title_given = 0 ;
   args_info->sitemap_given = 0 ;
+  args_info->output_given = 0 ;
   args_info->debug_given = 0 ;
   args_info->http_only_given = 0 ;
   args_info->https_only_given = 0 ;
@@ -142,6 +144,8 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->title_flag = 0;
   args_info->sitemap_arg = NULL;
   args_info->sitemap_orig = NULL;
+  args_info->output_arg = NULL;
+  args_info->output_orig = NULL;
   args_info->debug_flag = 0;
   args_info->disallowed_paths_arg = NULL;
   args_info->disallowed_paths_orig = NULL;
@@ -174,23 +178,24 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->user_agent_help = gengetopt_args_info_help[10] ;
   args_info->title_help = gengetopt_args_info_help[11] ;
   args_info->sitemap_help = gengetopt_args_info_help[12] ;
-  args_info->debug_help = gengetopt_args_info_help[13] ;
-  args_info->http_only_help = gengetopt_args_info_help[15] ;
-  args_info->https_only_help = gengetopt_args_info_help[16] ;
-  args_info->only_body_help = gengetopt_args_info_help[18] ;
-  args_info->only_head_help = gengetopt_args_info_help[19] ;
-  args_info->IPv6_help = gengetopt_args_info_help[21] ;
-  args_info->IPv4_help = gengetopt_args_info_help[22] ;
-  args_info->disallowed_paths_help = gengetopt_args_info_help[24] ;
+  args_info->output_help = gengetopt_args_info_help[13] ;
+  args_info->debug_help = gengetopt_args_info_help[14] ;
+  args_info->http_only_help = gengetopt_args_info_help[16] ;
+  args_info->https_only_help = gengetopt_args_info_help[17] ;
+  args_info->only_body_help = gengetopt_args_info_help[19] ;
+  args_info->only_head_help = gengetopt_args_info_help[20] ;
+  args_info->IPv6_help = gengetopt_args_info_help[22] ;
+  args_info->IPv4_help = gengetopt_args_info_help[23] ;
+  args_info->disallowed_paths_help = gengetopt_args_info_help[25] ;
   args_info->disallowed_paths_min = 0;
   args_info->disallowed_paths_max = 0;
-  args_info->allowed_paths_help = gengetopt_args_info_help[25] ;
+  args_info->allowed_paths_help = gengetopt_args_info_help[26] ;
   args_info->allowed_paths_min = 0;
   args_info->allowed_paths_max = 0;
-  args_info->allowed_extensions_help = gengetopt_args_info_help[27] ;
+  args_info->allowed_extensions_help = gengetopt_args_info_help[28] ;
   args_info->allowed_extensions_min = 0;
   args_info->allowed_extensions_max = 0;
-  args_info->disallowed_extensions_help = gengetopt_args_info_help[28] ;
+  args_info->disallowed_extensions_help = gengetopt_args_info_help[29] ;
   args_info->disallowed_extensions_min = 0;
   args_info->disallowed_extensions_max = 0;
   
@@ -337,6 +342,8 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->user_agent_orig));
   free_string_field (&(args_info->sitemap_arg));
   free_string_field (&(args_info->sitemap_orig));
+  free_string_field (&(args_info->output_arg));
+  free_string_field (&(args_info->output_orig));
   free_multiple_string_field (args_info->disallowed_paths_given, &(args_info->disallowed_paths_arg), &(args_info->disallowed_paths_orig));
   free_multiple_string_field (args_info->allowed_paths_given, &(args_info->allowed_paths_arg), &(args_info->allowed_paths_orig));
   free_multiple_string_field (args_info->allowed_extensions_given, &(args_info->allowed_extensions_arg), &(args_info->allowed_extensions_orig));
@@ -404,6 +411,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "title", 0, 0 );
   if (args_info->sitemap_given)
     write_into_file(outfile, "sitemap", args_info->sitemap_orig, 0);
+  if (args_info->output_given)
+    write_into_file(outfile, "output", args_info->output_orig, 0);
   if (args_info->debug_given)
     write_into_file(outfile, "debug", 0, 0 );
   if (args_info->http_only_given)
@@ -1073,6 +1082,7 @@ cmdline_parser_internal (
         { "user-agent",	1, NULL, 'U' },
         { "title",	0, NULL, 'T' },
         { "sitemap",	1, NULL, 'S' },
+        { "output",	1, NULL, 'o' },
         { "debug",	0, NULL, '?' },
         { "http-only",	0, NULL, 'p' },
         { "https-only",	0, NULL, 'P' },
@@ -1087,7 +1097,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:D:sa:kcU:TS:?pPBH64d:A:x:X:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:D:sa:kcU:TS:o:?pPBH64d:A:x:X:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1220,6 +1230,18 @@ cmdline_parser_internal (
               &(local_args_info.sitemap_given), optarg, 0, 0, ARG_STRING,
               check_ambiguity, override, 0, 0,
               "sitemap", 'S',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'o':	/* File to write output into (without colors)..  */
+        
+        
+          if (update_arg( (void *)&(args_info->output_arg), 
+               &(args_info->output_orig), &(args_info->output_given),
+              &(local_args_info.output_given), optarg, 0, 0, ARG_STRING,
+              check_ambiguity, override, 0, 0,
+              "output", 'o',
               additional_error))
             goto failure;
         

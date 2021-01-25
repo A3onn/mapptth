@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include "fetcher_thread.h"
 #include "sitemaps_parser.h"
@@ -201,6 +202,16 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
+
+    FILE* output_file = NULL;
+    if(cli_arguments.output_given) {
+        output_file = fopen(cli_arguments.output_arg, "w");
+        if(output_file == NULL) {
+            fprintf(stderr, "%s: failed to open %s: %s.\n", argv[0], cli_arguments.output_arg, strerror(errno));
+            return 1;
+        }
+    }
+
     // normalize paths given by the user
     char** disallowed_paths = (char**) malloc(sizeof(char*) * cli_arguments.disallowed_paths_given);
     for(int i = 0; i < cli_arguments.disallowed_paths_given; i++) {
@@ -438,6 +449,28 @@ int main(int argc, char* argv[]) {
             }
         }
         printf("\n");
+        if(cli_arguments.output_given) {
+            if(http_status_cat == 3) {
+                if(cli_arguments.output_given) {
+                    fprintf(output_file, "[%lu] %s -> %s [%s] [%zu]", current_document->status_code_http,
+                            current_document->url, current_document->redirect_location,
+                            current_document->content_type, current_document->size);
+                }
+            } else {
+                if(cli_arguments.output_given) {
+                    fprintf(output_file, "[%lu] %s [%s] [%zu]", current_document->status_code_http,
+                            current_document->url, current_document->content_type,
+                            current_document->size);
+                }
+            }
+            if(cli_arguments.title_flag) {
+                const char* title = (const char*) lxb_html_document_title(current_document->lexbor_document, NULL);
+                if(title != NULL) {
+                    fprintf(output_file, " [%s]", title);
+                }
+            }
+            fprintf(output_file, "\n");
+        }
 
         if(current_document->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
             // parse only html and xhtml files
@@ -537,6 +570,10 @@ int main(int argc, char* argv[]) {
     }
     for(int i = 0; i < cli_arguments.threads_arg; i++) {
         pthread_join(fetcher_threads[i], NULL);
+    }
+
+    if(cli_arguments.output_given) {
+        fclose(output_file);
     }
 
     curl_url_cleanup(curl_url_handler);
