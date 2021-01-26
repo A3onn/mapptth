@@ -111,4 +111,4 @@ Without any priority :
 
 - [ ] Add parameters to control: disallowed domains, only allowed paths and disallowed extensions
 
-- [ ] Output to file
+- [X] Output to file
