@@ -86,7 +86,7 @@ _Only works for HTML files._
 | --- | --- |
 | Don't print with colors. | -c |
 | Print the title of the page if there is one when displaying an URL. | -T |
-| File to write output into (without colors). | -o <file name> |
+| File to write output into (without colors). | -o \<file name> |
 
 
 ### Other
