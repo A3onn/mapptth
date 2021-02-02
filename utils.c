@@ -82,7 +82,8 @@ char* normalize_path(char* path, int is_directory) {
     if(path == NULL) {
         return NULL;
     }
-    char* copy = strdup(path);
+    char* copy, *copy_origin;
+    copy = copy_origin = strdup(path);
 
     char* elements[25] = { 0 };
     int index = 0;
@@ -105,20 +106,21 @@ char* normalize_path(char* path, int is_directory) {
             }
         }
     }
-    free(copy);
+    free(copy_origin);
 
     char* result = calloc(1, 1);
-    for(int i = 0; i < index; i++) {
+    for(int i = 0; i < index; i++) { // go through the path
         if(elements[i] == NULL) {
             continue;
         }
         char* tmp = strdup(result);
-        size_t len = strlen(result) + strlen(elements[i]) + 2;
+        size_t len = strlen(result) + strlen(elements[i]) + 2; // len current path + len element + '/' + '\0'
         result = (char*) realloc(result, len);
-        strcpy(result, tmp);
-        strcat(result, "/");
-        strcat(result, elements[i]);
+        strcpy(result, tmp); // copy path from before
+        strcat(result, "/"); // add '/' at the end of the path
+        strcat(result, elements[i]); // add directory/file name
         free(tmp);
+        free(elements[i]);
     }
 
     if(is_directory) {
@@ -218,7 +220,8 @@ int get_path_depth(char* path) {
         return 0;
     }
 
-    char* copy = normalize_path(path, 0);
+    char* copy, *copy_origin;
+    copy = copy_origin = normalize_path(path, 0);
 
     if(strcmp(copy, "/") == 0) {
         free(copy);
@@ -232,7 +235,7 @@ int get_path_depth(char* path) {
             count++;
         }
     }
-    free(copy);
+    free(copy_origin);
     return count;
 }
 
@@ -248,3 +251,4 @@ void _debug_print(const char* function_name, const char* format, ...) {
 
     va_end(args);
 }
+
