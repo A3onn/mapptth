@@ -64,7 +64,6 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
         }
     }
 
-    char has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
 
     // used when checking for valid domain
     char* document_domain;
@@ -130,6 +129,7 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
         }
         free(path);
 
+		char has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
         curl_url_get(curl_url_handler, CURLUPART_URL, &final_url, 0);  // get final url
         if(url_not_seen(final_url, *(bundle->urls_stack_done), *(bundle->urls_stack_todo))) {
             curl_url_get(curl_url_handler, CURLUPART_HOST, &found_url_domain, 0);  // get the domain of the URL found
@@ -421,22 +421,22 @@ int main(int argc, char* argv[]) {
                 break;
             }
             if(http_status_cat == 3) {
-                printf("[%s%lu%s] %s -> %s [%s] [%zu]", color,
+                printf("[%s%ld%s] %s -> %s [%s] [%zu]", color,
                     current_document->status_code_http, RESET, current_document->url,
                     current_document->redirect_location,
                     current_document->content_type, current_document->size);
             } else {
-                printf("[%s%lu%s] %s [%s] [%zu]", color,
+                printf("[%s%ld%s] %s [%s] [%zu]", color,
                     current_document->status_code_http, RESET, current_document->url,
                     current_document->content_type, current_document->size);
             }
         } else {
             if(http_status_cat == 3) {
-                printf("[%lu] %s -> %s [%s] [%zu]", current_document->status_code_http,
+                printf("[%ld] %s -> %s [%s] [%zu]", current_document->status_code_http,
                     current_document->url, current_document->redirect_location,
                     current_document->content_type, current_document->size);
             } else {
-                printf("[%lu] %s [%s] [%zu]", current_document->status_code_http,
+                printf("[%ld] %s [%s] [%zu]", current_document->status_code_http,
                     current_document->url, current_document->content_type,
                     current_document->size);
             }
@@ -452,13 +452,13 @@ int main(int argc, char* argv[]) {
         if(cli_arguments.output_given) {
             if(http_status_cat == 3) {
                 if(cli_arguments.output_given) {
-                    fprintf(output_file, "[%lu] %s -> %s [%s] [%zu]", current_document->status_code_http,
+                    fprintf(output_file, "[%ld] %s -> %s [%s] [%zu]", current_document->status_code_http,
                             current_document->url, current_document->redirect_location,
                             current_document->content_type, current_document->size);
                 }
             } else {
                 if(cli_arguments.output_given) {
-                    fprintf(output_file, "[%lu] %s [%s] [%zu]", current_document->status_code_http,
+                    fprintf(output_file, "[%ld] %s [%s] [%zu]", current_document->status_code_http,
                             current_document->url, current_document->content_type,
                             current_document->size);
                 }
