@@ -101,6 +101,11 @@ _Only works for HTML files._
 
 ## TODO
 
+ASAP:
+
+- [ ] Handling the <base> tag
+
+
 Without any priority :
 
 - [ ] More unit tests
@@ -110,5 +115,13 @@ Without any priority :
 - [ ] Add a parameter to control the connection rate
 
 - [ ] Add parameters to control: disallowed domains, only allowed paths and disallowed extensions
+
+- [ ] Add exemples in readme
+
+- [ ] Add robots.txt parser, can choose to follow rules or add URLs specified into starting list of URLs
+
+- [ ] Print when encountering mailto: or tel:
+
+- [ ] Create logo (maybe)
 
 - [X] Output to file
