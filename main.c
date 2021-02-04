@@ -37,9 +37,12 @@ struct WalkBundle {  // used with walk_cb.
     int https_only;
     int keep_query;
     int max_path_depth;
+    char* base_tag_url;
 };
 
 lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
+    // this function will be called for every nodes
+
     if(node->type != LXB_DOM_NODE_TYPE_ELEMENT) {
         return LEXBOR_ACTION_OK;
     }
@@ -49,12 +52,17 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     if(!lxb_dom_element_has_attribute(element, (lxb_char_t*) "href", 4) && !lxb_dom_element_has_attribute(element, (lxb_char_t*) "src", 3)) {
         return LEXBOR_ACTION_OK;
     }
+    
+    // avoid <base> tags because they are treated before this function is called
+    if(strcmp(lxb_dom_element_tag_name(element, NULL), "BASE") == 0) {
+        return LEXBOR_ACTION_OK;
+    }
 
     struct WalkBundle* bundle = (struct WalkBundle*) ctx;
 
     // try to get the 'href' attribute if it has one, 'src' attribute if it
-    // doesn't have an 'href' attribute instead note that the element has to have
-    // either one as it has been checked just before
+    // doesn't have an 'href' attribute instead
+    // note that the element has to have either one as it has been checked just before
     char* found_url;
     found_url = (char*) lxb_dom_element_get_attribute(element, (lxb_char_t*) "href", 4, NULL);
     if(found_url == NULL) {  // if this element has a src attribute instead
@@ -79,7 +87,12 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
         curl_url_set(curl_url_handler, CURLUPART_URL, bundle->document->url, 0);
         curl_url_get(curl_url_handler, CURLUPART_HOST, &document_domain, 0);
 
-        curl_url_set(curl_url_handler, CURLUPART_URL, (char*) found_url, 0);  // curl will change the url by himself based on the document's URL
+        // set final URL
+        // curl will change the url by himself based on the document's URL
+        if(bundle->base_tag_url != NULL) {
+            curl_url_set(curl_url_handler, CURLUPART_URL, bundle->base_tag_url, 0);
+        }
+        curl_url_set(curl_url_handler, CURLUPART_URL, (char*) found_url, 0);
         curl_url_set(curl_url_handler, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
 
         // check scheme
@@ -129,7 +142,7 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
         }
         free(path);
 
-		char has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
+        char has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
         curl_url_get(curl_url_handler, CURLUPART_URL, &final_url, 0);  // get final url
         if(url_not_seen(final_url, *(bundle->urls_stack_done), *(bundle->urls_stack_todo))) {
             curl_url_get(curl_url_handler, CURLUPART_HOST, &found_url_domain, 0);  // get the domain of the URL found
@@ -475,6 +488,7 @@ int main(int argc, char* argv[]) {
         if(current_document->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
             // parse only html and xhtml files
             if(strstr(current_document->content_type, "text/html") != NULL || strstr(current_document->content_type, "application/xhtml+xml") != NULL) {
+                bundle_walk.base_tag_url = get_base_tag_value(current_document->lexbor_document);
                 bundle_walk.document = current_document ;
                 pthread_mutex_lock(&mutex);
                 bundle_walk.urls_stack_done = &urls_stack_done;
@@ -486,6 +500,7 @@ int main(int argc, char* argv[]) {
                     lxb_dom_node_simple_walk(lxb_dom_interface_node(current_document->lexbor_document->body), walk_cb, &bundle_walk);
                 }
                 pthread_mutex_unlock(&mutex);
+                free(bundle_walk.base_tag_url);
             }
             free(current_document->content_type);  // allocated by strdup
         }  // maybe check using libmagick if this is a html file if the server didn't specified it

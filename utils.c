@@ -239,6 +239,48 @@ int get_path_depth(char* path) {
     return count;
 }
 
+
+char* get_base_tag_value(lxb_html_document_t* document) {
+    lxb_dom_collection_t* collection = 	lxb_dom_collection_create(lxb_html_document_original_ref(document));
+
+    // init collection with 1 as len as only one base should be allowed
+    lxb_dom_collection_init(collection, 1);
+
+    char* url = NULL;
+
+    lxb_dom_elements_by_tag_name(lxb_dom_interface_element(document->head), collection, "base", 4);
+
+    // should not happen (by the standard) by just in case
+    lxb_dom_elements_by_tag_name(lxb_dom_interface_element(document->body), collection, "base", 4);
+
+    // will loop through the bases and return the first base tag with a href attribute
+    // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base#multiple_%3Cbase%3E_elements
+    for(int i = 0; i < lxb_dom_collection_length(collection); i++) {
+        lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
+        if(lxb_dom_element_has_attribute(element, (lxb_char_t*) "href", 4)) {
+            // if it has a href, get it and break in order to free the collection
+            url = (char*) lxb_dom_element_get_attribute(element, "href", 4, NULL);
+            break;
+        }
+    }
+
+    lxb_dom_collection_destroy(collection, 1);
+    
+    if(url == NULL) {
+        return NULL;
+    }
+
+    if(is_valid_link(url)) {
+        // return a copy
+        char* result = (char*) malloc(sizeof (char) * strlen(url) + 1); // url + \0
+        strcpy(result, url);
+        return result;
+    } else {
+        return normalize_path(url, 1);
+    }
+}
+
+// DEBUG
 int _debug = 0;
 void _debug_print(const char* function_name, const char* format, ...) {
     va_list args;
