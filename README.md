@@ -103,7 +103,7 @@ _Only works for HTML files._
 
 ASAP:
 
-- [X] Handling the <base> tag
+- [X] Handling the \<base\> tag
 
 
 Without any priority :
