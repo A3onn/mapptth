@@ -54,7 +54,7 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     }
     
     // avoid <base> tags because they are treated before this function is called
-    if(strcmp(lxb_dom_element_tag_name(element, NULL), "BASE") == 0) {
+    if(strcmp((char*) lxb_dom_element_tag_name(element, NULL), "BASE") == 0) {
         return LEXBOR_ACTION_OK;
     }
 
@@ -489,7 +489,7 @@ int main(int argc, char* argv[]) {
             // parse only html and xhtml files
             if(strstr(current_document->content_type, "text/html") != NULL || strstr(current_document->content_type, "application/xhtml+xml") != NULL) {
                 bundle_walk.base_tag_url = get_base_tag_value(current_document->lexbor_document);
-                bundle_walk.document = current_document ;
+                bundle_walk.document = current_document;
                 pthread_mutex_lock(&mutex);
                 bundle_walk.urls_stack_done = &urls_stack_done;
                 bundle_walk.urls_stack_todo = &urls_stack_todo;

@@ -248,10 +248,10 @@ char* get_base_tag_value(lxb_html_document_t* document) {
 
     char* url = NULL;
 
-    lxb_dom_elements_by_tag_name(lxb_dom_interface_element(document->head), collection, "base", 4);
+    lxb_dom_elements_by_tag_name(lxb_dom_interface_element(document->head), collection, (const lxb_char_t*) "base", 4);
 
     // should not happen (by the standard) by just in case
-    lxb_dom_elements_by_tag_name(lxb_dom_interface_element(document->body), collection, "base", 4);
+    lxb_dom_elements_by_tag_name(lxb_dom_interface_element(document->body), collection, (const lxb_char_t*) "base", 4);
 
     // will loop through the bases and return the first base tag with a href attribute
     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base#multiple_%3Cbase%3E_elements
@@ -259,7 +259,7 @@ char* get_base_tag_value(lxb_html_document_t* document) {
         lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
         if(lxb_dom_element_has_attribute(element, (lxb_char_t*) "href", 4)) {
             // if it has a href, get it and break in order to free the collection
-            url = (char*) lxb_dom_element_get_attribute(element, "href", 4, NULL);
+            url = (char*) lxb_dom_element_get_attribute(element, (const lxb_char_t*) "href", 4, NULL);
             break;
         }
     }
