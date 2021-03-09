@@ -6,8 +6,8 @@ option "url" u "URL where to start crawling." string required
 option "timeout" m "Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL." int default="3" optional
 option "max-depth" D "Maximum depth of paths. If a path has a longer depth, it won't be fetched." int optional
 option "allow-subdomains" s "Allow the crawler to go into subdomains of the initial URL and allowed domains." flag off
-option "allowed-domains" a "Allow the crawler to go to these domains." string multiple
-option "disallowed-domains" l "Disallow the crawler to go to these domains." string multiple
+option "allowed-domains" a "Allow the crawler to go to these domains." string multiple optional
+option "disallowed-domains" l "Disallow the crawler to go to these domains." string multiple optional
 option "keep-query" k "Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched." flag off
 option "no-color" c "Don't print with colors." flag off
 option "user-agent" U "String that will be used as user-agent. You can disable sending the user-agent header by giving an empty string." string optional  # the default value will be "MapPTTH/VERSION"

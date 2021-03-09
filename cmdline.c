@@ -761,20 +761,8 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
       error_occurred = 1;
     }
   
-  if (! args_info->allowed_domains_given)
-    {
-      fprintf (stderr, "%s: '--allowed-domains' ('-a') option required%s\n", prog_name, (additional_error ? additional_error : ""));
-      error_occurred = 1;
-    }
-  
   if (check_multiple_option_occurrences(prog_name, args_info->allowed_domains_given, args_info->allowed_domains_min, args_info->allowed_domains_max, "'--allowed-domains' ('-a')"))
      error_occurred = 1;
-  
-  if (! args_info->disallowed_domains_given)
-    {
-      fprintf (stderr, "%s: '--disallowed-domains' ('-l') option required%s\n", prog_name, (additional_error ? additional_error : ""));
-      error_occurred = 1;
-    }
   
   if (check_multiple_option_occurrences(prog_name, args_info->disallowed_domains_given, args_info->disallowed_domains_min, args_info->disallowed_domains_max, "'--disallowed-domains' ('-l')"))
      error_occurred = 1;

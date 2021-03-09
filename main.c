@@ -444,7 +444,7 @@ int main(int argc, char* argv[]) {
             if(http_status_cat == 3) {
                 printf("[%s%ld%s] %s -> %s [%s] [%zu]", color,
                     current_document->status_code_http, RESET, current_document->url,
-                    current_document->redirect_location,
+                    current_document->redirect_location != NULL ? current_document->redirect_location : "(nowhere)",
                     current_document->content_type, current_document->size);
             } else {
                 printf("[%s%ld%s] %s [%s] [%zu]", color,
