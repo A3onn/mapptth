@@ -42,8 +42,8 @@ const char *gengetopt_args_info_help[] = {
   "  -D, --max-depth=INT           Maximum depth of paths. If a path has a longer\n                                  depth, it won't be fetched.",
   "  -s, --allow-subdomains        Allow the crawler to go into subdomains of the\n                                  initial URL and allowed domains.\n                                  (default=off)",
   "  -a, --allowed-domains=STRING  Allow the crawler to go to these domains.",
-  "  -l, --disallowed-domains=STRING\n                                Disallow the crawler to go to these domains.",
-  "  -k, --keep-query              Keep the query part of the URL. Note that if\n                                  two same URLs with a different query is\n                                  found, both will be fetched.  (default=off)",
+  "  -d, --disallowed-domains=STRING\n                                Disallow the crawler to go to these domains.",
+  "  -q, --keep-query              Keep the query part of the URL. Note that if\n                                  two same URLs with a different query is\n                                  found, both will be fetched.  (default=off)",
   "  -c, --no-color                Don't print with colors.  (default=off)",
   "  -U, --user-agent=STRING       String that will be used as user-agent. You can\n                                  disable sending the user-agent header by\n                                  giving an empty string.",
   "  -T, --title                   Print the title of the page if there is one\n                                  when displaying an URL.  (default=off)",
@@ -51,8 +51,8 @@ const char *gengetopt_args_info_help[] = {
   "  -o, --output=STRING           File to write output into (without colors).",
   "  -?, --debug                   Print debug information while running. Uses\n                                  color when printing, --no-color doesn't have\n                                  any effects on this.  (default=off)",
   "\n Group: scheme",
-  "  -p, --http-only               Only fetch URLs with HTTP as scheme.",
-  "  -P, --https-only              Only fetch URLs with HTTPS as scheme.",
+  "  -f, --http-only               Only fetch URLs with HTTP as scheme.",
+  "  -F, --https-only              Only fetch URLs with HTTPS as scheme.",
   "\n Group: parsing-part",
   "  -B, --only-body               Only parse the <body> part.",
   "  -H, --only-head               Only parse the <head> part.",
@@ -60,8 +60,8 @@ const char *gengetopt_args_info_help[] = {
   "  -6, --IPv6                    Only resolve to IPv6 addresses.",
   "  -4, --IPv4                    Only resolve to IPv4 addresses.",
   "\n Group: paths",
-  "  -d, --disallowed-paths=STRING Disallow the crawler to fetch URL starting with\n                                  these paths.",
-  "  -A, --allowed-paths=STRING    Allow the crawler to only fetch URL starting\n                                  with these paths.",
+  "  -p, --allowed-paths=STRING    Allow the crawler to only fetch URL starting\n                                  with these paths.",
+  "  -P, --disallowed-paths=STRING Disallow the crawler to fetch URL starting with\n                                  these paths.",
   "\n Group: extensions",
   "  -x, --allowed-extensions=STRING\n                                Allow the crawler to only fetch files with\n                                  these extensions. If no extension is found\n                                  then this filter won't apply. Extensions have\n                                  to start with a '.' (dot).",
   "  -X, --disallowed-extensions=STRING\n                                Disallow the crawler to fetch files with these\n                                  extensions. If no extension is found then\n                                  this filter won't apply. Extensions have to\n                                  start with a '.' (dot).",
@@ -114,8 +114,8 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->only_head_given = 0 ;
   args_info->IPv6_given = 0 ;
   args_info->IPv4_given = 0 ;
-  args_info->disallowed_paths_given = 0 ; args_info->disallowed_paths_group = 0 ;
   args_info->allowed_paths_given = 0 ; args_info->allowed_paths_group = 0 ;
+  args_info->disallowed_paths_given = 0 ; args_info->disallowed_paths_group = 0 ;
   args_info->allowed_extensions_given = 0 ; args_info->allowed_extensions_group = 0 ;
   args_info->disallowed_extensions_given = 0 ; args_info->disallowed_extensions_group = 0 ;
   args_info->extensions_group_counter = 0 ;
@@ -151,10 +151,10 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->output_arg = NULL;
   args_info->output_orig = NULL;
   args_info->debug_flag = 0;
-  args_info->disallowed_paths_arg = NULL;
-  args_info->disallowed_paths_orig = NULL;
   args_info->allowed_paths_arg = NULL;
   args_info->allowed_paths_orig = NULL;
+  args_info->disallowed_paths_arg = NULL;
+  args_info->disallowed_paths_orig = NULL;
   args_info->allowed_extensions_arg = NULL;
   args_info->allowed_extensions_orig = NULL;
   args_info->disallowed_extensions_arg = NULL;
@@ -193,12 +193,12 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->only_head_help = gengetopt_args_info_help[21] ;
   args_info->IPv6_help = gengetopt_args_info_help[23] ;
   args_info->IPv4_help = gengetopt_args_info_help[24] ;
-  args_info->disallowed_paths_help = gengetopt_args_info_help[26] ;
-  args_info->disallowed_paths_min = 0;
-  args_info->disallowed_paths_max = 0;
-  args_info->allowed_paths_help = gengetopt_args_info_help[27] ;
+  args_info->allowed_paths_help = gengetopt_args_info_help[26] ;
   args_info->allowed_paths_min = 0;
   args_info->allowed_paths_max = 0;
+  args_info->disallowed_paths_help = gengetopt_args_info_help[27] ;
+  args_info->disallowed_paths_min = 0;
+  args_info->disallowed_paths_max = 0;
   args_info->allowed_extensions_help = gengetopt_args_info_help[29] ;
   args_info->allowed_extensions_min = 0;
   args_info->allowed_extensions_max = 0;
@@ -352,8 +352,8 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->sitemap_orig));
   free_string_field (&(args_info->output_arg));
   free_string_field (&(args_info->output_orig));
-  free_multiple_string_field (args_info->disallowed_paths_given, &(args_info->disallowed_paths_arg), &(args_info->disallowed_paths_orig));
   free_multiple_string_field (args_info->allowed_paths_given, &(args_info->allowed_paths_arg), &(args_info->allowed_paths_orig));
+  free_multiple_string_field (args_info->disallowed_paths_given, &(args_info->disallowed_paths_arg), &(args_info->disallowed_paths_orig));
   free_multiple_string_field (args_info->allowed_extensions_given, &(args_info->allowed_extensions_arg), &(args_info->allowed_extensions_orig));
   free_multiple_string_field (args_info->disallowed_extensions_given, &(args_info->disallowed_extensions_arg), &(args_info->disallowed_extensions_orig));
   
@@ -436,8 +436,8 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "IPv6", 0, 0 );
   if (args_info->IPv4_given)
     write_into_file(outfile, "IPv4", 0, 0 );
-  write_multiple_into_file(outfile, args_info->disallowed_paths_given, "disallowed-paths", args_info->disallowed_paths_orig, 0);
   write_multiple_into_file(outfile, args_info->allowed_paths_given, "allowed-paths", args_info->allowed_paths_orig, 0);
+  write_multiple_into_file(outfile, args_info->disallowed_paths_given, "disallowed-paths", args_info->disallowed_paths_orig, 0);
   write_multiple_into_file(outfile, args_info->allowed_extensions_given, "allowed-extensions", args_info->allowed_extensions_orig, 0);
   write_multiple_into_file(outfile, args_info->disallowed_extensions_given, "disallowed-extensions", args_info->disallowed_extensions_orig, 0);
   
@@ -654,10 +654,10 @@ reset_group_paths(struct gengetopt_args_info *args_info)
   if (! args_info->paths_group_counter)
     return;
   
-  args_info->disallowed_paths_given = 0 ; args_info->disallowed_paths_group = 0 ;
-  free_multiple_string_field (args_info->disallowed_paths_given, &(args_info->disallowed_paths_arg), &(args_info->disallowed_paths_orig));
   args_info->allowed_paths_given = 0 ; args_info->allowed_paths_group = 0 ;
   free_multiple_string_field (args_info->allowed_paths_given, &(args_info->allowed_paths_arg), &(args_info->allowed_paths_orig));
+  args_info->disallowed_paths_given = 0 ; args_info->disallowed_paths_group = 0 ;
+  free_multiple_string_field (args_info->disallowed_paths_given, &(args_info->disallowed_paths_arg), &(args_info->disallowed_paths_orig));
 
   args_info->paths_group_counter = 0;
 }
@@ -764,13 +764,13 @@ cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *pro
   if (check_multiple_option_occurrences(prog_name, args_info->allowed_domains_given, args_info->allowed_domains_min, args_info->allowed_domains_max, "'--allowed-domains' ('-a')"))
      error_occurred = 1;
   
-  if (check_multiple_option_occurrences(prog_name, args_info->disallowed_domains_given, args_info->disallowed_domains_min, args_info->disallowed_domains_max, "'--disallowed-domains' ('-l')"))
+  if (check_multiple_option_occurrences(prog_name, args_info->disallowed_domains_given, args_info->disallowed_domains_min, args_info->disallowed_domains_max, "'--disallowed-domains' ('-d')"))
      error_occurred = 1;
   
-  if (check_multiple_option_occurrences(prog_name, args_info->disallowed_paths_given, args_info->disallowed_paths_min, args_info->disallowed_paths_max, "'--disallowed-paths' ('-d')"))
+  if (check_multiple_option_occurrences(prog_name, args_info->allowed_paths_given, args_info->allowed_paths_min, args_info->allowed_paths_max, "'--allowed-paths' ('-p')"))
      error_occurred = 1;
   
-  if (check_multiple_option_occurrences(prog_name, args_info->allowed_paths_given, args_info->allowed_paths_min, args_info->allowed_paths_max, "'--allowed-paths' ('-A')"))
+  if (check_multiple_option_occurrences(prog_name, args_info->disallowed_paths_given, args_info->disallowed_paths_min, args_info->disallowed_paths_max, "'--disallowed-paths' ('-P')"))
      error_occurred = 1;
   
   if (check_multiple_option_occurrences(prog_name, args_info->allowed_extensions_given, args_info->allowed_extensions_min, args_info->allowed_extensions_max, "'--allowed-extensions' ('-x')"))
@@ -1042,8 +1042,8 @@ cmdline_parser_internal (
 
   struct generic_list * allowed_domains_list = NULL;
   struct generic_list * disallowed_domains_list = NULL;
-  struct generic_list * disallowed_paths_list = NULL;
   struct generic_list * allowed_paths_list = NULL;
+  struct generic_list * disallowed_paths_list = NULL;
   struct generic_list * allowed_extensions_list = NULL;
   struct generic_list * disallowed_extensions_list = NULL;
   int error_occurred = 0;
@@ -1090,28 +1090,28 @@ cmdline_parser_internal (
         { "max-depth",	1, NULL, 'D' },
         { "allow-subdomains",	0, NULL, 's' },
         { "allowed-domains",	1, NULL, 'a' },
-        { "disallowed-domains",	1, NULL, 'l' },
-        { "keep-query",	0, NULL, 'k' },
+        { "disallowed-domains",	1, NULL, 'd' },
+        { "keep-query",	0, NULL, 'q' },
         { "no-color",	0, NULL, 'c' },
         { "user-agent",	1, NULL, 'U' },
         { "title",	0, NULL, 'T' },
         { "sitemap",	1, NULL, 'S' },
         { "output",	1, NULL, 'o' },
         { "debug",	0, NULL, '?' },
-        { "http-only",	0, NULL, 'p' },
-        { "https-only",	0, NULL, 'P' },
+        { "http-only",	0, NULL, 'f' },
+        { "https-only",	0, NULL, 'F' },
         { "only-body",	0, NULL, 'B' },
         { "only-head",	0, NULL, 'H' },
         { "IPv6",	0, NULL, '6' },
         { "IPv4",	0, NULL, '4' },
-        { "disallowed-paths",	1, NULL, 'd' },
-        { "allowed-paths",	1, NULL, 'A' },
+        { "allowed-paths",	1, NULL, 'p' },
+        { "disallowed-paths",	1, NULL, 'P' },
         { "allowed-extensions",	1, NULL, 'x' },
         { "disallowed-extensions",	1, NULL, 'X' },
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:D:sa:l:kcU:TS:o:?pPBH64d:A:x:X:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:D:sa:d:qcU:TS:o:?fFBH64p:P:x:X:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1194,21 +1194,21 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'l':	/* Disallow the crawler to go to these domains..  */
+        case 'd':	/* Disallow the crawler to go to these domains..  */
         
           if (update_multiple_arg_temp(&disallowed_domains_list, 
               &(local_args_info.disallowed_domains_given), optarg, 0, 0, ARG_STRING,
-              "disallowed-domains", 'l',
+              "disallowed-domains", 'd',
               additional_error))
             goto failure;
         
           break;
-        case 'k':	/* Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched..  */
+        case 'q':	/* Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched..  */
         
         
           if (update_arg((void *)&(args_info->keep_query_flag), 0, &(args_info->keep_query_given),
               &(local_args_info.keep_query_given), optarg, 0, 0, ARG_FLAG,
-              check_ambiguity, override, 1, 0, "keep-query", 'k',
+              check_ambiguity, override, 1, 0, "keep-query", 'q',
               additional_error))
             goto failure;
         
@@ -1282,7 +1282,7 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'p':	/* Only fetch URLs with HTTP as scheme..  */
+        case 'f':	/* Only fetch URLs with HTTP as scheme..  */
         
           if (args_info->scheme_group_counter && override)
             reset_group_scheme (args_info);
@@ -1292,12 +1292,12 @@ cmdline_parser_internal (
                0 , &(args_info->http_only_given),
               &(local_args_info.http_only_given), optarg, 0, 0, ARG_NO,
               check_ambiguity, override, 0, 0,
-              "http-only", 'p',
+              "http-only", 'f',
               additional_error))
             goto failure;
         
           break;
-        case 'P':	/* Only fetch URLs with HTTPS as scheme..  */
+        case 'F':	/* Only fetch URLs with HTTPS as scheme..  */
         
           if (args_info->scheme_group_counter && override)
             reset_group_scheme (args_info);
@@ -1307,7 +1307,7 @@ cmdline_parser_internal (
                0 , &(args_info->https_only_given),
               &(local_args_info.https_only_given), optarg, 0, 0, ARG_NO,
               check_ambiguity, override, 0, 0,
-              "https-only", 'P',
+              "https-only", 'F',
               additional_error))
             goto failure;
         
@@ -1372,30 +1372,30 @@ cmdline_parser_internal (
             goto failure;
         
           break;
-        case 'd':	/* Disallow the crawler to fetch URL starting with these paths..  */
-        
-          if (update_multiple_arg_temp(&disallowed_paths_list, 
-              &(local_args_info.disallowed_paths_given), optarg, 0, 0, ARG_STRING,
-              "disallowed-paths", 'd',
-              additional_error))
-            goto failure;
-          if (!args_info->disallowed_paths_group)
-            {
-              args_info->disallowed_paths_group = 1;
-              args_info->paths_group_counter += 1;
-            }
-        
-          break;
-        case 'A':	/* Allow the crawler to only fetch URL starting with these paths..  */
+        case 'p':	/* Allow the crawler to only fetch URL starting with these paths..  */
         
           if (update_multiple_arg_temp(&allowed_paths_list, 
               &(local_args_info.allowed_paths_given), optarg, 0, 0, ARG_STRING,
-              "allowed-paths", 'A',
+              "allowed-paths", 'p',
               additional_error))
             goto failure;
           if (!args_info->allowed_paths_group)
             {
               args_info->allowed_paths_group = 1;
+              args_info->paths_group_counter += 1;
+            }
+        
+          break;
+        case 'P':	/* Disallow the crawler to fetch URL starting with these paths..  */
+        
+          if (update_multiple_arg_temp(&disallowed_paths_list, 
+              &(local_args_info.disallowed_paths_given), optarg, 0, 0, ARG_STRING,
+              "disallowed-paths", 'P',
+              additional_error))
+            goto failure;
+          if (!args_info->disallowed_paths_group)
+            {
+              args_info->disallowed_paths_group = 1;
               args_info->paths_group_counter += 1;
             }
         
@@ -1476,14 +1476,14 @@ cmdline_parser_internal (
     &(args_info->disallowed_domains_orig), args_info->disallowed_domains_given,
     local_args_info.disallowed_domains_given, 0,
     ARG_STRING, disallowed_domains_list);
-  update_multiple_arg((void *)&(args_info->disallowed_paths_arg),
-    &(args_info->disallowed_paths_orig), args_info->disallowed_paths_given,
-    local_args_info.disallowed_paths_given, 0,
-    ARG_STRING, disallowed_paths_list);
   update_multiple_arg((void *)&(args_info->allowed_paths_arg),
     &(args_info->allowed_paths_orig), args_info->allowed_paths_given,
     local_args_info.allowed_paths_given, 0,
     ARG_STRING, allowed_paths_list);
+  update_multiple_arg((void *)&(args_info->disallowed_paths_arg),
+    &(args_info->disallowed_paths_orig), args_info->disallowed_paths_given,
+    local_args_info.disallowed_paths_given, 0,
+    ARG_STRING, disallowed_paths_list);
   update_multiple_arg((void *)&(args_info->allowed_extensions_arg),
     &(args_info->allowed_extensions_orig), args_info->allowed_extensions_given,
     local_args_info.allowed_extensions_given, 0,
@@ -1497,10 +1497,10 @@ cmdline_parser_internal (
   local_args_info.allowed_domains_given = 0;
   args_info->disallowed_domains_given += local_args_info.disallowed_domains_given;
   local_args_info.disallowed_domains_given = 0;
-  args_info->disallowed_paths_given += local_args_info.disallowed_paths_given;
-  local_args_info.disallowed_paths_given = 0;
   args_info->allowed_paths_given += local_args_info.allowed_paths_given;
   local_args_info.allowed_paths_given = 0;
+  args_info->disallowed_paths_given += local_args_info.disallowed_paths_given;
+  local_args_info.disallowed_paths_given = 0;
   args_info->allowed_extensions_given += local_args_info.allowed_extensions_given;
   local_args_info.allowed_extensions_given = 0;
   args_info->disallowed_extensions_given += local_args_info.disallowed_extensions_given;
@@ -1521,8 +1521,8 @@ cmdline_parser_internal (
 failure:
   free_list (allowed_domains_list, 1 );
   free_list (disallowed_domains_list, 1 );
-  free_list (disallowed_paths_list, 1 );
   free_list (allowed_paths_list, 1 );
+  free_list (disallowed_paths_list, 1 );
   free_list (allowed_extensions_list, 1 );
   free_list (disallowed_extensions_list, 1 );
   

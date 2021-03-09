@@ -1,5 +1,5 @@
 package "mapptth"
-version "0.1.0"
+version "0.2.0"
 
 option "threads" t "Number of threads that will fetch URLs." int default="5" optional
 option "url" u "URL where to start crawling." string required
@@ -7,8 +7,8 @@ option "timeout" m "Timeout in seconds for each connection. If a connection time
 option "max-depth" D "Maximum depth of paths. If a path has a longer depth, it won't be fetched." int optional
 option "allow-subdomains" s "Allow the crawler to go into subdomains of the initial URL and allowed domains." flag off
 option "allowed-domains" a "Allow the crawler to go to these domains." string multiple optional
-option "disallowed-domains" l "Disallow the crawler to go to these domains." string multiple optional
-option "keep-query" k "Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched." flag off
+option "disallowed-domains" d "Disallow the crawler to go to these domains." string multiple optional
+option "keep-query" q "Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched." flag off
 option "no-color" c "Don't print with colors." flag off
 option "user-agent" U "String that will be used as user-agent. You can disable sending the user-agent header by giving an empty string." string optional  # the default value will be "MapPTTH/VERSION"
 option "title" T "Print the title of the page if there is one when displaying an URL." flag off
@@ -17,8 +17,8 @@ option "output" o "File to write output into (without colors)." string optional
 option "debug" ? "Print debug information while running. Uses color when printing, --no-color doesn't have any effects on this." flag off
 
 defgroup "scheme"
-groupoption "http-only" p "Only fetch URLs with HTTP as scheme." group="scheme"
-groupoption "https-only" P "Only fetch URLs with HTTPS as scheme." group="scheme"
+groupoption "http-only" f "Only fetch URLs with HTTP as scheme." group="scheme"
+groupoption "https-only" F "Only fetch URLs with HTTPS as scheme." group="scheme"
 
 defgroup "parsing-part"
 groupoption "only-body" B "Only parse the <body> part." group="parsing-part"
@@ -29,8 +29,8 @@ groupoption "IPv6" 6 "Only resolve to IPv6 addresses." group="resolving-ip-versi
 groupoption "IPv4" 4 "Only resolve to IPv4 addresses." group="resolving-ip-version"
 
 defgroup "paths"
-groupoption "disallowed-paths" d "Disallow the crawler to fetch URL starting with these paths." group="paths" string multiple
-groupoption "allowed-paths" A "Allow the crawler to only fetch URL starting with these paths." group="paths" string multiple
+groupoption "allowed-paths" p "Allow the crawler to only fetch URL starting with these paths." group="paths" string multiple
+groupoption "disallowed-paths" P "Disallow the crawler to fetch URL starting with these paths." group="paths" string multiple
 
 defgroup "extensions"
 groupoption "allowed-extensions" x "Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. Extensions have to start with a '.' (dot)." group="extensions" string multiple

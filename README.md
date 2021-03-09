@@ -60,14 +60,15 @@ Here is the list of available parameters grouped by category:
 | --- | --- |
 | Allow the crawler to go into subdomains of the initial URL and allowed domains. | -s |
 | Allow the crawler to go to these domains. | -a \<domain> |
-| Disallow the crawler to fetch URL starting with these paths. | -d \<path> |
-| Allow the crawler to only fetch URL starting with these paths. | -A \<path> |
+| Disallow the crawler to go to these domains. | -d \<domain> |
+| Allow the crawler to only fetch URL starting with these paths. | -p \<path> |
+| Disallow the crawler to fetch URL starting with these paths. | -P \<path> |
 | Maximum depth of paths. If a path has a longer depth, it won't be fetched. | -D \<depth> |
-| Only fetch URLs with HTTP as scheme. | -p |
-| Only fetch URLs with HTTPS as scheme. | -P |
+| Only fetch URLs with HTTP as scheme. | -f |
+| Only fetch URLs with HTTPS as scheme. | -F |
 | Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. | -x .\<extension> |
 | Disallow the crawler to fetch files with these extensions. If no extension is found then this filter won't apply. | -X .\<extension> |
-| Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched. | -k |
+| Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched. | -q |
 
 
 ### Parsing
@@ -114,8 +115,6 @@ Without any priority :
 
 - [ ] Add a parameter to control the connection rate
 
-- [ ] Add parameters to control: disallowed domains, only allowed paths and disallowed extensions
-
 - [ ] Add exemples in readme
 
 - [ ] Add robots.txt parser, can choose to follow rules or add URLs specified into starting list of URLs
@@ -125,3 +124,5 @@ Without any priority :
 - [ ] Create logo (maybe)
 
 - [X] Output to file
+
+- [X] Add parameters to control: disallowed domains, only allowed paths and disallowed extensions
