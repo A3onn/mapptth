@@ -573,7 +573,7 @@ int main(int argc, char* argv[]) {
                     if(url_not_seen(current_document->redirect_location, urls_stack_done, urls_stack_todo)) {
                         if((is_same_domain(redirect_location_domain, cur_doc_url_domain, cli_arguments.allow_subdomains_flag) ||
                                 is_in_valid_domains(redirect_location_domain, cli_arguments.allowed_domains_arg, cli_arguments.allowed_domains_given, cli_arguments.allow_subdomains_flag)) &&
-				!is_in_disallowed_domains(found_url_domain, bundle->disallowed_domains, bundle->count_disallowed_domains)) {
+				!is_in_disallowed_domains(redirect_location_domain, cli_arguments.disallowed_domains_arg, cli_arguments.disallowed_domains_given)) {
                             stack_url_push(&urls_stack_todo, current_document->redirect_location);
                             has_been_added = 1;
                         }
