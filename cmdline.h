@@ -58,6 +58,11 @@ struct gengetopt_args_info
   unsigned int allowed_domains_min; /**< @brief Allow the crawler to go to these domains.'s minimum occurreces */
   unsigned int allowed_domains_max; /**< @brief Allow the crawler to go to these domains.'s maximum occurreces */
   const char *allowed_domains_help; /**< @brief Allow the crawler to go to these domains. help description.  */
+  char ** disallowed_domains_arg;	/**< @brief Disallow the crawler to go to these domains..  */
+  char ** disallowed_domains_orig;	/**< @brief Disallow the crawler to go to these domains. original value given at command line.  */
+  unsigned int disallowed_domains_min; /**< @brief Disallow the crawler to go to these domains.'s minimum occurreces */
+  unsigned int disallowed_domains_max; /**< @brief Disallow the crawler to go to these domains.'s maximum occurreces */
+  const char *disallowed_domains_help; /**< @brief Disallow the crawler to go to these domains. help description.  */
   int keep_query_flag;	/**< @brief Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched. (default=off).  */
   const char *keep_query_help; /**< @brief Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched. help description.  */
   int no_color_flag;	/**< @brief Don't print with colors. (default=off).  */
@@ -110,6 +115,7 @@ struct gengetopt_args_info
   unsigned int max_depth_given ;	/**< @brief Whether max-depth was given.  */
   unsigned int allow_subdomains_given ;	/**< @brief Whether allow-subdomains was given.  */
   unsigned int allowed_domains_given ;	/**< @brief Whether allowed-domains was given.  */
+  unsigned int disallowed_domains_given ;	/**< @brief Whether disallowed-domains was given.  */
   unsigned int keep_query_given ;	/**< @brief Whether keep-query was given.  */
   unsigned int no_color_given ;	/**< @brief Whether no-color was given.  */
   unsigned int user_agent_given ;	/**< @brief Whether user-agent was given.  */

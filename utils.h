@@ -32,6 +32,8 @@ int is_disallowed_extension(char* path, char** disallowed_extensions, int count_
 
 int is_in_valid_domains(char* domain, char** allowed_domains, int count_allowed_domains, int allow_subdomain);
 
+int is_in_disallowed_domains(char* domain, char** disallowed_domains, int count_disallowed_domains);
+
 int get_path_depth(char* path);
 
 char* get_base_tag_value(lxb_html_document_t* document);

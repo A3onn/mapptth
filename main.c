@@ -25,6 +25,8 @@ struct WalkBundle {  // used with walk_cb.
     int allow_subdomains;
     char** allowed_domains;
     int count_allowed_domains;
+    char** disallowed_domains;
+    int count_disallowed_domains;
     char** allowed_extensions;
     int count_allowed_extensions;
     char** disallowed_extensions;
@@ -147,7 +149,9 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
         if(url_not_seen(final_url, *(bundle->urls_stack_done), *(bundle->urls_stack_todo))) {
             curl_url_get(curl_url_handler, CURLUPART_HOST, &found_url_domain, 0);  // get the domain of the URL found
 
-            if(is_same_domain(found_url_domain, document_domain, bundle->allow_subdomains) || is_in_valid_domains(found_url_domain, bundle->allowed_domains, bundle->count_allowed_domains, bundle->allow_subdomains)) {
+            if((is_same_domain(found_url_domain, document_domain, bundle->allow_subdomains) ||
+		is_in_valid_domains(found_url_domain, bundle->allowed_domains, bundle->count_allowed_domains, bundle->allow_subdomains)) &&
+		!is_in_disallowed_domains(found_url_domain, bundle->disallowed_domains, bundle->count_disallowed_domains)) {
                 stack_url_push(bundle->urls_stack_todo, final_url);
                 has_been_added = 1;
             }
@@ -308,7 +312,9 @@ int main(int argc, char* argv[]) {
                     curl_url_get(curl_url_handler, CURLUPART_HOST, &initial_url_domain, 0);
 
                     // check domains
-                    if(is_same_domain(domain_url_found, initial_url_domain, cli_arguments.allow_subdomains_flag) || is_in_valid_domains(domain_url_found, cli_arguments.allowed_domains_arg, cli_arguments.allowed_domains_given, cli_arguments.allow_subdomains_flag)) {
+                    if((is_same_domain(domain_url_found, initial_url_domain, cli_arguments.allow_subdomains_flag) ||
+			is_in_valid_domains(domain_url_found, cli_arguments.allowed_domains_arg, cli_arguments.allowed_domains_given, cli_arguments.allow_subdomains_flag)) &&
+			!is_in_disallowed_domains(domain_url_found, cli_arguments.disallowed_domains_arg, cli_arguments.disallowed_domains_given)) {
                         stack_url_push(&urls_stack_todo, url);
                         count++;
                     } else {
@@ -372,6 +378,8 @@ int main(int argc, char* argv[]) {
     struct WalkBundle bundle_walk;  // in this bundle these elements never change
     bundle_walk.allowed_domains = cli_arguments.allowed_domains_arg;
     bundle_walk.count_allowed_domains = cli_arguments.allowed_domains_given;
+    bundle_walk.disallowed_domains = cli_arguments.disallowed_domains_arg;
+    bundle_walk.count_disallowed_domains = cli_arguments.disallowed_domains_given;
     bundle_walk.allowed_extensions = cli_arguments.allowed_extensions_arg;
     bundle_walk.count_allowed_extensions = cli_arguments.allowed_extensions_given;
     bundle_walk.disallowed_extensions = cli_arguments.disallowed_extensions_arg;

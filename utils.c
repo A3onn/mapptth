@@ -46,6 +46,15 @@ int is_in_valid_domains(char* domain, char** allowed_domains, int count_allowed_
     return 0;
 }
 
+int is_in_disallowed_domains(char* domain, char** disallowed_domains, int count_disallowed_domains) {
+    for(int i = 0; i < count_disallowed_domains; i++) {
+        if(is_same_domain(domain, disallowed_domains[i], false)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int is_valid_link(const char* url) {
     if(url == NULL) {
         return 0;
