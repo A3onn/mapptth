@@ -1,7 +1,9 @@
 #include <check.h>
+#include <strings.h>
 #include "stack_urls.h"
 #include "stack_documents.h"
 #include "utils.h"
+#include "sitemaps_parser.h"
 
 
 /* STACK OF URLS */
@@ -594,6 +596,65 @@ START_TEST(need_normalize_three_get_path_depth) {
 END_TEST
 
 
+/* SITEMAPS PARSER */
+#define getXMLDoc(content) xmlReadMemory(content, strlen(content), "test.xml", NULL, 0); // simpler to write and understand
+#define getRoot(doc) xmlDocGetRootElement(doc)
+
+START_TEST(correct__sitemap_get_location) {
+	xmlDocPtr doc;
+
+	doc = getXMLDoc("<loc>http://localhost</loc>");
+	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "http://localhost");
+	xmlFreeDoc(doc);
+
+	doc = getXMLDoc("<loc>http://localhost/</loc>");
+	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "http://localhost/");
+	xmlFreeDoc(doc);
+
+	doc = getXMLDoc("<loc>http://localhost:8080/</loc>");
+	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "http://localhost:8080/");
+	xmlFreeDoc(doc);
+}
+END_TEST
+
+START_TEST(empty_value__sitemap_get_location) {
+	xmlDocPtr doc;
+	doc = getXMLDoc("<loc></loc>");
+	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "");
+	xmlFreeDoc(doc);
+}
+END_TEST
+
+START_TEST(empty_node__sitemap_get_location) {
+	xmlDocPtr doc;
+	doc = getXMLDoc("");
+	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "");
+	xmlFreeDoc(doc);
+}
+END_TEST
+
+START_TEST(null_root__sitemap_get_location) {
+	ck_assert_pstr_eq(__sitemap_get_location(NULL), "");
+}
+END_TEST
+
+START_TEST(multiple_values__sitemap_get_location) {
+	xmlDocPtr doc;
+	doc = getXMLDoc("<test><loc>http://localhost:8000</loc><loc>http://localhost:8888</loc></test>");
+	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)->children), "http://localhost:8000"); // getRoot(doc)->children refers to the childrens of <test>, getRoot refers to <test>
+	xmlFreeDoc(doc);
+}
+END_TEST
+
+START_TEST(no_loc_tag__sitemap_get_location) {
+	xmlDocPtr doc;
+	doc = getXMLDoc("<test></test>");
+	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "");
+	xmlFreeDoc(doc);
+}
+END_TEST
+
+
 Suite* stack_urls_suite(void) {
     Suite* s;
     TCase* tc;
@@ -732,28 +793,53 @@ Suite* utils_suite(void) {
 }
 
 
+Suite* sitemaps_parser_suite(void) {
+    Suite* s;
+    TCase* tc;
+    s = suite_create("sitemaps parser suite");
+    tc = tcase_create("__sitemap_get_location");
+
+    tcase_add_test(tc, correct__sitemap_get_location);
+    tcase_add_test(tc, empty_node__sitemap_get_location);
+    tcase_add_test(tc, empty_value__sitemap_get_location);
+    tcase_add_test(tc, null_root__sitemap_get_location);
+    tcase_add_test(tc, multiple_values__sitemap_get_location);
+    tcase_add_test(tc, no_loc_tag__sitemap_get_location);
+
+    suite_add_tcase(s, tc);
+
+    return s;
+}
+
 int main(void) {
     int number_failed = 0;
-    SRunner* sr_stack_urls, * sr_stack_documents, *sr_utils;
+    SRunner* sr_stack_urls, *sr_stack_documents, *sr_utils, *sr_sitemaps_parser;
 
     Suite* s_stack_urls = stack_urls_suite();
     Suite* s_stack_documents = stack_documents_suite();
     Suite* s_utils = utils_suite();
+    Suite* s_sitemaps_parser = sitemaps_parser_suite();
 
     sr_stack_urls = srunner_create(s_stack_urls);
     sr_stack_documents = srunner_create(s_stack_documents);
     sr_utils = srunner_create(s_utils);
+    sr_sitemaps_parser = srunner_create(s_sitemaps_parser);
 
     srunner_run_all(sr_stack_urls, CK_NORMAL);
     srunner_run_all(sr_stack_documents, CK_NORMAL);
     srunner_run_all(sr_utils, CK_NORMAL);
 
+    LIBXML_TEST_VERSION; // initialize libXML2
+    srunner_run_all(sr_sitemaps_parser, CK_NORMAL);
+
     number_failed += srunner_ntests_failed(sr_stack_urls);
     number_failed += srunner_ntests_failed(sr_stack_documents);
     number_failed += srunner_ntests_failed(sr_utils);
+    number_failed += srunner_ntests_failed(sr_sitemaps_parser);
 
     srunner_free(sr_stack_urls);
     srunner_free(sr_stack_documents);
     srunner_free(sr_utils);
+    srunner_free(sr_sitemaps_parser);
     return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

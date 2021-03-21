@@ -1,9 +1,4 @@
 #include "sitemaps_parser.h"
-#include "stack_urls.h"
-#include "utils.h"
-#include <curl/curl.h>
-#include <libxml/parser.h>
-#include <string.h>
 
 static size_t __sitemap_fetch_callback(const char *content, size_t size, size_t nmemb, void *userp) {
     xmlParseChunk(*((xmlParserCtxtPtr*) userp), content, size*nmemb, 0);
