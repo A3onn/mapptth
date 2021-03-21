@@ -617,6 +617,24 @@ START_TEST(correct__sitemap_get_location) {
 }
 END_TEST
 
+START_TEST(correct_not_valid_url__sitemap_get_location) {
+	xmlDocPtr doc;
+
+	doc = getXMLDoc("<loc>not a valid url</loc>");
+	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "not a valid url");
+	xmlFreeDoc(doc);
+
+	doc = getXMLDoc("<loc>test</loc>");
+	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "test");
+	xmlFreeDoc(doc);
+
+	doc = getXMLDoc("<loc>some string</loc>");
+	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "some string");
+	xmlFreeDoc(doc);
+}
+END_TEST
+
+
 START_TEST(empty_value__sitemap_get_location) {
 	xmlDocPtr doc;
 	doc = getXMLDoc("<loc></loc>");
@@ -797,15 +815,15 @@ Suite* sitemaps_parser_suite(void) {
     Suite* s;
     TCase* tc;
     s = suite_create("sitemaps parser suite");
-    tc = tcase_create("__sitemap_get_location");
 
+    tc = tcase_create("__sitemap_get_location");
     tcase_add_test(tc, correct__sitemap_get_location);
+    tcase_add_test(tc, correct_not_valid_url__sitemap_get_location);
     tcase_add_test(tc, empty_node__sitemap_get_location);
     tcase_add_test(tc, empty_value__sitemap_get_location);
     tcase_add_test(tc, null_root__sitemap_get_location);
     tcase_add_test(tc, multiple_values__sitemap_get_location);
     tcase_add_test(tc, no_loc_tag__sitemap_get_location);
-
     suite_add_tcase(s, tc);
 
     return s;
