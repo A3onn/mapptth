@@ -347,6 +347,13 @@ START_TEST(false_tel_is_valid_link) {
 }
 END_TEST
 
+START_TEST(false_data_is_valid_link) {
+    ck_assert_int_eq(is_valid_link("data:"), 0);
+    ck_assert_int_eq(is_valid_link("data:image"), 0);
+    ck_assert_int_eq(is_valid_link("data:,"), 0);
+}
+END_TEST
+
 
 
 START_TEST(nothing_change_file_normalize_path) {
@@ -888,6 +895,7 @@ Suite* utils_suite(void) {
     tcase_add_test(tc, false_mailto_is_valid_link);
     tcase_add_test(tc, false_javascript_is_valid_link);
     tcase_add_test(tc, false_tel_is_valid_link);
+    tcase_add_test(tc, false_data_is_valid_link);
     suite_add_tcase(s, tc);
 
     tc = tcase_create("normalize_path");

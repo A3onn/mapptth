@@ -60,7 +60,7 @@ int is_valid_link(const char* url) {
         return 0;
     }
 
-    if(strncmp("mailto:", url, 7) == 0 || strncmp("javascript:", url, 11) == 0 || strncmp("tel:", url, 4) == 0) {
+    if(strncmp("mailto:", url, 7) == 0 || strncmp("javascript:", url, 11) == 0 || strncmp("tel:", url, 4) == 0 || strncmp("data:", url, 5) == 0) {
         return 0;
     }
 
