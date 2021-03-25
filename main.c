@@ -364,6 +364,7 @@ int main(int argc, char* argv[]) {
         bundles[i].resolve_ip_versions = resolve_ip_version;
         bundles[i].no_color = cli_arguments.no_color_given;
         bundles[i].curl_share = curl_share;
+        bundles[i].cookies = cli_arguments.cookies_arg;
         if(cli_arguments.user_agent_given) {
             bundles[i].user_agent = cli_arguments.user_agent_arg;
         } else {

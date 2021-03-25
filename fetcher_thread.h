@@ -21,6 +21,7 @@ struct BundleVarsThread {  // used to needed variables to the thread
     int no_color;
 
     char* user_agent;
+    char* cookies;
 };
 
 void* fetcher_thread_func(void* bundle_arg);

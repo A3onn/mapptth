@@ -78,6 +78,9 @@ struct gengetopt_args_info
   char * output_arg;	/**< @brief File to write output into (without colors)..  */
   char * output_orig;	/**< @brief File to write output into (without colors). original value given at command line.  */
   const char *output_help; /**< @brief File to write output into (without colors). help description.  */
+  char * cookies_arg;	/**< @brief Colon separeted values that every fetcher will use as cookies..  */
+  char * cookies_orig;	/**< @brief Colon separeted values that every fetcher will use as cookies. original value given at command line.  */
+  const char *cookies_help; /**< @brief Colon separeted values that every fetcher will use as cookies. help description.  */
   int debug_flag;	/**< @brief Print debug information while running. Uses color when printing, --no-color doesn't have any effects on this. (default=off).  */
   const char *debug_help; /**< @brief Print debug information while running. Uses color when printing, --no-color doesn't have any effects on this. help description.  */
   const char *http_only_help; /**< @brief Only fetch URLs with HTTP as scheme. help description.  */
@@ -122,6 +125,7 @@ struct gengetopt_args_info
   unsigned int title_given ;	/**< @brief Whether title was given.  */
   unsigned int sitemap_given ;	/**< @brief Whether sitemap was given.  */
   unsigned int output_given ;	/**< @brief Whether output was given.  */
+  unsigned int cookies_given ;	/**< @brief Whether cookies was given.  */
   unsigned int debug_given ;	/**< @brief Whether debug was given.  */
   unsigned int http_only_given ;	/**< @brief Whether http-only was given.  */
   unsigned int https_only_given ;	/**< @brief Whether https-only was given.  */

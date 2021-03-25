@@ -14,6 +14,7 @@ option "user-agent" U "String that will be used as user-agent. You can disable s
 option "title" T "Print the title of the page if there is one when displaying an URL." flag off
 option "sitemap" S "Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap." string optional
 option "output" o "File to write output into (without colors)." string optional
+option "cookies" C "Colon separeted values that every fetcher will use as cookies." string optional
 option "debug" ? "Print debug information while running. Uses color when printing, --no-color doesn't have any effects on this." flag off
 
 defgroup "scheme"

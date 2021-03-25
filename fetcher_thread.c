@@ -47,6 +47,7 @@ void* fetcher_thread_func(void* bundle_arg) {
     curl_easy_setopt(curl, CURLOPT_IPRESOLVE, bundle->resolve_ip_versions);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, bundle->user_agent);
     curl_easy_setopt(curl, CURLOPT_SHARE, bundle->curl_share);
+    curl_easy_setopt(curl, CURLOPT_COOKIE, bundle->cookies);
 
     lxb_status_t status_l;
     struct ProcessContentBundle* current_document = (struct ProcessContentBundle*) malloc(sizeof(struct ProcessContentBundle));
