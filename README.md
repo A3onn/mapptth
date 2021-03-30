@@ -123,6 +123,10 @@ Without any priority :
 
 - [ ] Create logo (maybe)
 
+- [ ] Use only getopt to parse arguments
+
+- [ ] Use regex in filters (disallowed paths, allowed paths, etc...)
+
 - [X] Output to file
 
 - [X] Add parameters to control: disallowed domains, only allowed paths and disallowed extensions
