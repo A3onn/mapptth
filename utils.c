@@ -60,6 +60,7 @@ int is_valid_link(const char* url) {
         return 0;
     }
 
+    // need to check these because curl doesn't set them as scheme, so next check will fail to filter them
     if(strncmp("mailto:", url, 7) == 0 || strncmp("javascript:", url, 11) == 0 || strncmp("tel:", url, 4) == 0 || strncmp("data:", url, 5) == 0) {
         return 0;
     }
@@ -69,6 +70,8 @@ int is_valid_link(const char* url) {
     CURLU* curl_u = curl_url();
     curl_url_set(curl_u, CURLUPART_URL, url, 0);
     curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
+
+    printf("scheme of %s: %s\n", url, scheme);
 
     if(scheme == NULL) {
         free(scheme);
