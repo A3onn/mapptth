@@ -71,8 +71,6 @@ int is_valid_link(const char* url) {
     curl_url_set(curl_u, CURLUPART_URL, url, 0);
     curl_url_get(curl_u, CURLUPART_SCHEME, &scheme, 0);
 
-    printf("scheme of %s: %s\n", url, scheme);
-
     if(scheme == NULL) {
         free(scheme);
         curl_url_cleanup(curl_u);
