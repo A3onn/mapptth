@@ -12,6 +12,10 @@
 #include "stack_urls.h"
 #include "utils.h"
 
+#if GRAPHVIZ_SUPPORT
+#include <graphviz/gvc.h>
+#endif
+
 #include "cmdline.h"
 
 #if !CURL_AT_LEAST_VERSION(7, 62, 0)

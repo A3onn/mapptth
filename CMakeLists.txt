@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.1.0)
 
 option(MAPPTTH_GENERATE_TESTS "Generate tests" OFF)
+option(MAPPTTH_NO_GRAPHVIZ "GraphVizSupport" OFF)
 
 project(mapptth VERSION 0.1.0 LANGUAGES C)
 
@@ -13,6 +14,21 @@ add_executable(mapptth ${SRCS} ${HEADERS})
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(mapptth Threads::Threads)
+
+
+#check for graphviz
+if(NOT MAPPTTH_NO_GRAPHVIZ)
+	find_library(GRAPHVIZ_LIB_GVC NAMES gvc libgvc)
+	find_library(GRAPHVIZ_LIB_CGRAPH NAMES cgraph libcgraph)
+	if(NOT(GRAPHVIZ_LIB_GVC AND GRAPHVIZ_LIB_CGRAPH))
+		message(STATUS "Could not find the GraphViz library. Disabling GraphViz support")
+		target_compile_definitions(mapptth PRIVATE GRAPHVIZ_SUPPORT=0)
+	else()
+		message(STATUS "Found the GraphViz library: ${GRAPHVIZ_LIB_GVC} ${GRAPHVIZ_LIB_CGRAPH}")
+		target_compile_definitions(mapptth PRIVATE GRAPHVIZ_SUPPORT=1)
+		target_link_libraries(mapptth ${GRAPHVIZ_LIB_GVC} ${GRAPHVIZ_LIB_CGRAPH})
+	endif()
+endif()
 
 
 # check for curl
