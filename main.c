@@ -44,6 +44,9 @@ struct WalkBundle {  // used with walk_cb.
     int keep_query;
     int max_path_depth;
     char* base_tag_url;
+#if GRAPHVIZ_SUPPORT
+    Agraph_t* graph;
+#endif
 };
 
 lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
@@ -150,20 +153,32 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
 
         char has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
         curl_url_get(curl_url_handler, CURLUPART_URL, &final_url, 0);  // get final url
-        if(url_not_seen(final_url, *(bundle->urls_stack_done), *(bundle->urls_stack_todo))) {
-            curl_url_get(curl_url_handler, CURLUPART_HOST, &found_url_domain, 0);  // get the domain of the URL found
+        curl_url_get(curl_url_handler, CURLUPART_HOST, &found_url_domain, 0);  // get the domain of the URL found
 
-            if((is_same_domain(found_url_domain, document_domain, bundle->allow_subdomains) ||
-		is_in_valid_domains(found_url_domain, bundle->allowed_domains, bundle->count_allowed_domains, bundle->allow_subdomains)) &&
-		!is_in_disallowed_domains(found_url_domain, bundle->disallowed_domains, bundle->count_disallowed_domains)) {
+        if((is_same_domain(found_url_domain, document_domain, bundle->allow_subdomains) ||
+            is_in_valid_domains(found_url_domain, bundle->allowed_domains, bundle->count_allowed_domains, bundle->allow_subdomains)) &&
+            !is_in_disallowed_domains(found_url_domain, bundle->disallowed_domains, bundle->count_disallowed_domains)) {
+
+            if(url_not_seen(final_url, *(bundle->urls_stack_done), *(bundle->urls_stack_todo))) {
                 stack_url_push(bundle->urls_stack_todo, final_url);
                 has_been_added = 1;
             }
-            free(found_url_domain);
+
+#if GRAPHVIZ_SUPPORT
+            Agnode_t* node_new = agnode(bundle->graph, final_url, 1);
+
+            // should not create any node
+            Agnode_t* node_current = agnode(bundle->graph, bundle->document->url, 0);
+
+            Agedge_t* edge = agedge(bundle->graph, node_current, node_new, 0, 1);
+#endif
+
         }
+
         if(!has_been_added) {
             free(final_url);
         }
+        free(found_url_domain);
         free(document_domain);
         curl_url_cleanup(curl_url_handler);
     }
@@ -319,6 +334,7 @@ int main(int argc, char* argv[]) {
                     if((is_same_domain(domain_url_found, initial_url_domain, cli_arguments.allow_subdomains_flag) ||
 			is_in_valid_domains(domain_url_found, cli_arguments.allowed_domains_arg, cli_arguments.allowed_domains_given, cli_arguments.allow_subdomains_flag)) &&
 			!is_in_disallowed_domains(domain_url_found, cli_arguments.disallowed_domains_arg, cli_arguments.disallowed_domains_given)) {
+
                         stack_url_push(&urls_stack_todo, url);
                         count++;
                     } else {
@@ -398,6 +414,11 @@ int main(int argc, char* argv[]) {
     bundle_walk.count_allowed_paths = cli_arguments.allowed_paths_given;
     bundle_walk.keep_query = cli_arguments.keep_query_given;
     bundle_walk.max_path_depth = cli_arguments.max_depth_arg;
+#if GRAPHVIZ_SUPPORT
+    bundle_walk.graph = agopen(cli_arguments.url_arg, Agdirected, 0);
+
+    agnode(bundle_walk.graph, cli_arguments.url_arg, 1); // add initial node
+#endif
 
     while(1) {
         pthread_mutex_lock(&mutex);
@@ -575,13 +596,22 @@ int main(int argc, char* argv[]) {
 
                 int has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
                 if(is_still_valid) {
-                    if(url_not_seen(current_document->redirect_location, urls_stack_done, urls_stack_todo)) {
-                        if((is_same_domain(redirect_location_domain, cur_doc_url_domain, cli_arguments.allow_subdomains_flag) ||
-                                is_in_valid_domains(redirect_location_domain, cli_arguments.allowed_domains_arg, cli_arguments.allowed_domains_given, cli_arguments.allow_subdomains_flag)) &&
-				!is_in_disallowed_domains(redirect_location_domain, cli_arguments.disallowed_domains_arg, cli_arguments.disallowed_domains_given)) {
+                    if((is_same_domain(redirect_location_domain, cur_doc_url_domain, cli_arguments.allow_subdomains_flag) ||
+                        is_in_valid_domains(redirect_location_domain, cli_arguments.allowed_domains_arg, cli_arguments.allowed_domains_given, cli_arguments.allow_subdomains_flag)) &&
+                        !is_in_disallowed_domains(redirect_location_domain, cli_arguments.disallowed_domains_arg, cli_arguments.disallowed_domains_given)) {
+
+                        if(url_not_seen(current_document->redirect_location, urls_stack_done, urls_stack_todo)) {
                             stack_url_push(&urls_stack_todo, current_document->redirect_location);
                             has_been_added = 1;
                         }
+#if GRAPHVIZ_SUPPORT
+                        Agnode_t* node_new = agnode(bundle_walk.graph, current_document->redirect_location, 1);
+
+                        // should not create any node
+                        Agnode_t* node_current = agnode(bundle_walk.graph, current_document->url, 0);
+
+                        Agedge_t* edge = agedge(bundle_walk.graph, node_current, node_new, 0, 1);
+#endif
                     }
                 }
                 if(!has_been_added) {
@@ -626,5 +656,19 @@ int main(int argc, char* argv[]) {
     cmdline_parser_free(&cli_arguments);
     curl_share_cleanup(curl_share);
     curl_global_cleanup();
+
+#if GRAPHVIZ_SUPPORT
+    GVC_t* gvc = gvContext();
+
+    gvLayout(gvc, bundle_walk.graph, "sfdp");
+    gvRenderFilename(gvc, bundle_walk.graph, "dot", "output.dot");
+
+    gvFreeLayout(gvc, bundle_walk.graph);
+
+    agclose(bundle_walk.graph);
+
+    gvFreeContext(gvc);
+#endif
+
     return EXIT_SUCCESS;
 }
