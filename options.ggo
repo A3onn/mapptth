@@ -17,6 +17,10 @@ option "output" o "File to write output into (without colors)." string optional
 option "cookies" C "Colon separeted values that every fetcher will use as cookies." string optional
 option "debug" ? "Print debug information while running. Uses color when printing, --no-color doesn't have any effects on this." flag off
 
+option "graph" g "Render what the crawler found as a graph." flag off
+option "graph-format" G "File format of the graph." optional values="png","jpg","dot","xdot","gif","ps","pdf","svg","fig","json","imap","cmapx"
+option "graph-layout" L "Layout used to generate the graph." optional values="dot","neato","twopi","circo","fdp","sfdp","patchwork","osage"
+
 defgroup "scheme"
 groupoption "http-only" f "Only fetch URLs with HTTP as scheme." group="scheme"
 groupoption "https-only" F "Only fetch URLs with HTTPS as scheme." group="scheme"

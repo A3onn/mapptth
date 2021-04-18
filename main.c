@@ -45,6 +45,7 @@ struct WalkBundle {  // used with walk_cb.
     int max_path_depth;
     char* base_tag_url;
 #if GRAPHVIZ_SUPPORT
+    int generate_graph;
     Agraph_t* graph;
 #endif
 };
@@ -165,14 +166,15 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
             }
 
 #if GRAPHVIZ_SUPPORT
-            Agnode_t* node_new = agnode(bundle->graph, final_url, 1);
+            if(bundle->generate_graph) {
+                Agnode_t* node_new = agnode(bundle->graph, final_url, 1);
 
-            // should not create any node
-            Agnode_t* node_current = agnode(bundle->graph, bundle->document->url, 0);
+                // should not create any node
+                Agnode_t* node_current = agnode(bundle->graph, bundle->document->url, 0);
 
-            Agedge_t* edge = agedge(bundle->graph, node_current, node_new, 0, 1);
+                Agedge_t* edge = agedge(bundle->graph, node_current, node_new, 0, 1);
+	    }
 #endif
-
         }
 
         if(!has_been_added) {
@@ -247,6 +249,22 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
+
+#if !GRAPHVIZ_SUPPORT
+    if(cli_arguments.graph_flag || cli_arguments.graph_layout_arg != NULL || cli_arguments.graph_format_arg != NULL) {
+	    fprintf(stderr, "%s: Graphviz support is disabled. You can't use the graph flag, the graph layout and the graph format arguments.\n", argv[0]);
+	    return 1;
+    }
+#else
+    char* graph_output_layout = cli_arguments.graph_layout_arg;
+    if(graph_output_layout == NULL) {
+        graph_output_layout = "sfdp"; // default value
+    }
+    char* graph_output_format = cli_arguments.graph_format_arg;
+    if(graph_output_format == NULL) {
+        graph_output_format = "png"; // default value
+    }
+#endif
 
     // normalize paths given by the user
     char** disallowed_paths = (char**) malloc(sizeof(char*) * cli_arguments.disallowed_paths_given);
@@ -415,9 +433,11 @@ int main(int argc, char* argv[]) {
     bundle_walk.keep_query = cli_arguments.keep_query_given;
     bundle_walk.max_path_depth = cli_arguments.max_depth_arg;
 #if GRAPHVIZ_SUPPORT
-    bundle_walk.graph = agopen(cli_arguments.url_arg, Agdirected, 0);
-
-    agnode(bundle_walk.graph, cli_arguments.url_arg, 1); // add initial node
+    bundle_walk.generate_graph = cli_arguments.graph_flag;
+    if(cli_arguments.graph_flag) {
+        bundle_walk.graph = agopen(cli_arguments.url_arg, Agdirected, 0);
+        agnode(bundle_walk.graph, cli_arguments.url_arg, 1); // add initial node
+    }
 #endif
 
     while(1) {
@@ -605,12 +625,14 @@ int main(int argc, char* argv[]) {
                             has_been_added = 1;
                         }
 #if GRAPHVIZ_SUPPORT
-                        Agnode_t* node_new = agnode(bundle_walk.graph, current_document->redirect_location, 1);
+                        if(cli_arguments.graph_flag) {
+                            Agnode_t* node_new = agnode(bundle_walk.graph, current_document->redirect_location, 1);
 
-                        // should not create any node
-                        Agnode_t* node_current = agnode(bundle_walk.graph, current_document->url, 0);
+                            // should not create any node
+                            Agnode_t* node_current = agnode(bundle_walk.graph, current_document->url, 0);
 
-                        Agedge_t* edge = agedge(bundle_walk.graph, node_current, node_new, 0, 1);
+                            Agedge_t* edge = agedge(bundle_walk.graph, node_current, node_new, 0, 1);
+			}
 #endif
                     }
                 }
@@ -653,22 +675,30 @@ int main(int argc, char* argv[]) {
         free(allowed_paths[i]);
     }
 
-    cmdline_parser_free(&cli_arguments);
     curl_share_cleanup(curl_share);
     curl_global_cleanup();
 
 #if GRAPHVIZ_SUPPORT
-    GVC_t* gvc = gvContext();
+    if(cli_arguments.graph_flag) {
+        GVC_t* gvc = gvContext();
 
-    gvLayout(gvc, bundle_walk.graph, "sfdp");
-    gvRenderFilename(gvc, bundle_walk.graph, "dot", "output.dot");
+        char* graph_output_filename = (char*) malloc(sizeof (char) * (strlen("output.") + strlen(graph_output_format) + 1));
+        strcpy(graph_output_filename, "output.");
+        strcat(graph_output_filename, graph_output_format);
 
-    gvFreeLayout(gvc, bundle_walk.graph);
+        gvLayout(gvc, bundle_walk.graph, graph_output_layout);
 
-    agclose(bundle_walk.graph);
+        gvRenderFilename(gvc, bundle_walk.graph, graph_output_format, graph_output_filename);
 
-    gvFreeContext(gvc);
+        free(graph_output_filename);
+
+        gvFreeLayout(gvc, bundle_walk.graph);
+        agclose(bundle_walk.graph);
+        gvFreeContext(gvc);
+    }
 #endif
+
+    cmdline_parser_free(&cli_arguments);
 
     return EXIT_SUCCESS;
 }

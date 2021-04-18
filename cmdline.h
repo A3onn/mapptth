@@ -83,6 +83,14 @@ struct gengetopt_args_info
   const char *cookies_help; /**< @brief Colon separeted values that every fetcher will use as cookies. help description.  */
   int debug_flag;	/**< @brief Print debug information while running. Uses color when printing, --no-color doesn't have any effects on this. (default=off).  */
   const char *debug_help; /**< @brief Print debug information while running. Uses color when printing, --no-color doesn't have any effects on this. help description.  */
+  int graph_flag;	/**< @brief Render what the crawler found as a graph. (default=off).  */
+  const char *graph_help; /**< @brief Render what the crawler found as a graph. help description.  */
+  char * graph_format_arg;	/**< @brief File format of the graph..  */
+  char * graph_format_orig;	/**< @brief File format of the graph. original value given at command line.  */
+  const char *graph_format_help; /**< @brief File format of the graph. help description.  */
+  char * graph_layout_arg;	/**< @brief Layout used to generate the graph..  */
+  char * graph_layout_orig;	/**< @brief Layout used to generate the graph. original value given at command line.  */
+  const char *graph_layout_help; /**< @brief Layout used to generate the graph. help description.  */
   const char *http_only_help; /**< @brief Only fetch URLs with HTTP as scheme. help description.  */
   const char *https_only_help; /**< @brief Only fetch URLs with HTTPS as scheme. help description.  */
   const char *only_body_help; /**< @brief Only parse the <body> part. help description.  */
@@ -127,6 +135,9 @@ struct gengetopt_args_info
   unsigned int output_given ;	/**< @brief Whether output was given.  */
   unsigned int cookies_given ;	/**< @brief Whether cookies was given.  */
   unsigned int debug_given ;	/**< @brief Whether debug was given.  */
+  unsigned int graph_given ;	/**< @brief Whether graph was given.  */
+  unsigned int graph_format_given ;	/**< @brief Whether graph-format was given.  */
+  unsigned int graph_layout_given ;	/**< @brief Whether graph-layout was given.  */
   unsigned int http_only_given ;	/**< @brief Whether http-only was given.  */
   unsigned int https_only_given ;	/**< @brief Whether https-only was given.  */
   unsigned int only_body_given ;	/**< @brief Whether only-body was given.  */
@@ -269,6 +280,9 @@ void cmdline_parser_free (struct gengetopt_args_info *args_info);
  */
 int cmdline_parser_required (struct gengetopt_args_info *args_info,
   const char *prog_name);
+
+extern const char *cmdline_parser_graph_format_values[];  /**< @brief Possible values for graph-format. */
+extern const char *cmdline_parser_graph_layout_values[];  /**< @brief Possible values for graph-layout. */
 
 
 #ifdef __cplusplus

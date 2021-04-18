@@ -51,6 +51,9 @@ const char *gengetopt_args_info_help[] = {
   "  -o, --output=STRING           File to write output into (without colors).",
   "  -C, --cookies=STRING          Colon separeted values that every fetcher will\n                                  use as cookies.",
   "  -?, --debug                   Print debug information while running. Uses\n                                  color when printing, --no-color doesn't have\n                                  any effects on this.  (default=off)",
+  "  -g, --graph                   Render what the crawler found as a graph.\n                                  (default=off)",
+  "  -G, --graph-format=STRING     File format of the graph.  (possible\n                                  values=\"png\", \"jpg\", \"dot\", \"xdot\",\n                                  \"gif\", \"ps\", \"pdf\", \"svg\", \"fig\",\n                                  \"json\", \"imap\", \"cmapx\")",
+  "  -L, --graph-layout=STRING     Layout used to generate the graph.  (possible\n                                  values=\"dot\", \"neato\", \"twopi\",\n                                  \"circo\", \"fdp\", \"sfdp\", \"patchwork\",\n                                  \"osage\")",
   "\n Group: scheme",
   "  -f, --http-only               Only fetch URLs with HTTP as scheme.",
   "  -F, --https-only              Only fetch URLs with HTTPS as scheme.",
@@ -87,6 +90,9 @@ cmdline_parser_internal (int argc, char **argv, struct gengetopt_args_info *args
 static int
 cmdline_parser_required2 (struct gengetopt_args_info *args_info, const char *prog_name, const char *additional_error);
 
+const char *cmdline_parser_graph_format_values[] = {"png", "jpg", "dot", "xdot", "gif", "ps", "pdf", "svg", "fig", "json", "imap", "cmapx", 0}; /*< Possible values for graph-format. */
+const char *cmdline_parser_graph_layout_values[] = {"dot", "neato", "twopi", "circo", "fdp", "sfdp", "patchwork", "osage", 0}; /*< Possible values for graph-layout. */
+
 static char *
 gengetopt_strdup (const char *s);
 
@@ -110,6 +116,9 @@ void clear_given (struct gengetopt_args_info *args_info)
   args_info->output_given = 0 ;
   args_info->cookies_given = 0 ;
   args_info->debug_given = 0 ;
+  args_info->graph_given = 0 ;
+  args_info->graph_format_given = 0 ;
+  args_info->graph_layout_given = 0 ;
   args_info->http_only_given = 0 ;
   args_info->https_only_given = 0 ;
   args_info->only_body_given = 0 ;
@@ -155,6 +164,11 @@ void clear_args (struct gengetopt_args_info *args_info)
   args_info->cookies_arg = NULL;
   args_info->cookies_orig = NULL;
   args_info->debug_flag = 0;
+  args_info->graph_flag = 0;
+  args_info->graph_format_arg = NULL;
+  args_info->graph_format_orig = NULL;
+  args_info->graph_layout_arg = NULL;
+  args_info->graph_layout_orig = NULL;
   args_info->allowed_paths_arg = NULL;
   args_info->allowed_paths_orig = NULL;
   args_info->disallowed_paths_arg = NULL;
@@ -192,22 +206,25 @@ void init_args_info(struct gengetopt_args_info *args_info)
   args_info->output_help = gengetopt_args_info_help[14] ;
   args_info->cookies_help = gengetopt_args_info_help[15] ;
   args_info->debug_help = gengetopt_args_info_help[16] ;
-  args_info->http_only_help = gengetopt_args_info_help[18] ;
-  args_info->https_only_help = gengetopt_args_info_help[19] ;
-  args_info->only_body_help = gengetopt_args_info_help[21] ;
-  args_info->only_head_help = gengetopt_args_info_help[22] ;
-  args_info->IPv6_help = gengetopt_args_info_help[24] ;
-  args_info->IPv4_help = gengetopt_args_info_help[25] ;
-  args_info->allowed_paths_help = gengetopt_args_info_help[27] ;
+  args_info->graph_help = gengetopt_args_info_help[17] ;
+  args_info->graph_format_help = gengetopt_args_info_help[18] ;
+  args_info->graph_layout_help = gengetopt_args_info_help[19] ;
+  args_info->http_only_help = gengetopt_args_info_help[21] ;
+  args_info->https_only_help = gengetopt_args_info_help[22] ;
+  args_info->only_body_help = gengetopt_args_info_help[24] ;
+  args_info->only_head_help = gengetopt_args_info_help[25] ;
+  args_info->IPv6_help = gengetopt_args_info_help[27] ;
+  args_info->IPv4_help = gengetopt_args_info_help[28] ;
+  args_info->allowed_paths_help = gengetopt_args_info_help[30] ;
   args_info->allowed_paths_min = 0;
   args_info->allowed_paths_max = 0;
-  args_info->disallowed_paths_help = gengetopt_args_info_help[28] ;
+  args_info->disallowed_paths_help = gengetopt_args_info_help[31] ;
   args_info->disallowed_paths_min = 0;
   args_info->disallowed_paths_max = 0;
-  args_info->allowed_extensions_help = gengetopt_args_info_help[30] ;
+  args_info->allowed_extensions_help = gengetopt_args_info_help[33] ;
   args_info->allowed_extensions_min = 0;
   args_info->allowed_extensions_max = 0;
-  args_info->disallowed_extensions_help = gengetopt_args_info_help[31] ;
+  args_info->disallowed_extensions_help = gengetopt_args_info_help[34] ;
   args_info->disallowed_extensions_min = 0;
   args_info->disallowed_extensions_max = 0;
   
@@ -359,6 +376,10 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   free_string_field (&(args_info->output_orig));
   free_string_field (&(args_info->cookies_arg));
   free_string_field (&(args_info->cookies_orig));
+  free_string_field (&(args_info->graph_format_arg));
+  free_string_field (&(args_info->graph_format_orig));
+  free_string_field (&(args_info->graph_layout_arg));
+  free_string_field (&(args_info->graph_layout_orig));
   free_multiple_string_field (args_info->allowed_paths_given, &(args_info->allowed_paths_arg), &(args_info->allowed_paths_orig));
   free_multiple_string_field (args_info->disallowed_paths_given, &(args_info->disallowed_paths_arg), &(args_info->disallowed_paths_orig));
   free_multiple_string_field (args_info->allowed_extensions_given, &(args_info->allowed_extensions_arg), &(args_info->allowed_extensions_orig));
@@ -369,13 +390,54 @@ cmdline_parser_release (struct gengetopt_args_info *args_info)
   clear_given (args_info);
 }
 
+/**
+ * @param val the value to check
+ * @param values the possible values
+ * @return the index of the matched value:
+ * -1 if no value matched,
+ * -2 if more than one value has matched
+ */
+static int
+check_possible_values(const char *val, const char *values[])
+{
+  int i, found, last;
+  size_t len;
+
+  if (!val)   /* otherwise strlen() crashes below */
+    return -1; /* -1 means no argument for the option */
+
+  found = last = 0;
+
+  for (i = 0, len = strlen(val); values[i]; ++i)
+    {
+      if (strncmp(val, values[i], len) == 0)
+        {
+          ++found;
+          last = i;
+          if (strlen(values[i]) == len)
+            return i; /* exact macth no need to check more */
+        }
+    }
+
+  if (found == 1) /* one match: OK */
+    return last;
+
+  return (found ? -2 : -1); /* return many values or none matched */
+}
+
 
 static void
 write_into_file(FILE *outfile, const char *opt, const char *arg, const char *values[])
 {
-  FIX_UNUSED (values);
+  int found = -1;
   if (arg) {
-    fprintf(outfile, "%s=\"%s\"\n", opt, arg);
+    if (values) {
+      found = check_possible_values(arg, values);      
+    }
+    if (found >= 0)
+      fprintf(outfile, "%s=\"%s\" # %s\n", opt, arg, values[found]);
+    else
+      fprintf(outfile, "%s=\"%s\"\n", opt, arg);
   } else {
     fprintf(outfile, "%s\n", opt);
   }
@@ -433,6 +495,12 @@ cmdline_parser_dump(FILE *outfile, struct gengetopt_args_info *args_info)
     write_into_file(outfile, "cookies", args_info->cookies_orig, 0);
   if (args_info->debug_given)
     write_into_file(outfile, "debug", 0, 0 );
+  if (args_info->graph_given)
+    write_into_file(outfile, "graph", 0, 0 );
+  if (args_info->graph_format_given)
+    write_into_file(outfile, "graph-format", args_info->graph_format_orig, cmdline_parser_graph_format_values);
+  if (args_info->graph_layout_given)
+    write_into_file(outfile, "graph-layout", args_info->graph_layout_orig, cmdline_parser_graph_layout_values);
   if (args_info->http_only_given)
     write_into_file(outfile, "http-only", 0, 0 );
   if (args_info->https_only_given)
@@ -848,7 +916,18 @@ int update_arg(void *field, char **orig_field,
       return 1; /* failure */
     }
 
-  FIX_UNUSED (default_value);
+  if (possible_values && (found = check_possible_values((value ? value : default_value), possible_values)) < 0)
+    {
+      if (short_opt != '-')
+        fprintf (stderr, "%s: %s argument, \"%s\", for option `--%s' (`-%c')%s\n", 
+          package_name, (found == -2) ? "ambiguous" : "invalid", value, long_opt, short_opt,
+          (additional_error ? additional_error : ""));
+      else
+        fprintf (stderr, "%s: %s argument, \"%s\", for option `--%s'%s\n", 
+          package_name, (found == -2) ? "ambiguous" : "invalid", value, long_opt,
+          (additional_error ? additional_error : ""));
+      return 1; /* failure */
+    }
     
   if (field_given && *field_given && ! override)
     return 0;
@@ -1108,6 +1187,9 @@ cmdline_parser_internal (
         { "output",	1, NULL, 'o' },
         { "cookies",	1, NULL, 'C' },
         { "debug",	0, NULL, '?' },
+        { "graph",	0, NULL, 'g' },
+        { "graph-format",	1, NULL, 'G' },
+        { "graph-layout",	1, NULL, 'L' },
         { "http-only",	0, NULL, 'f' },
         { "https-only",	0, NULL, 'F' },
         { "only-body",	0, NULL, 'B' },
@@ -1121,7 +1203,7 @@ cmdline_parser_internal (
         { 0,  0, 0, 0 }
       };
 
-      c = getopt_long (argc, argv, "hVt:u:m:D:sa:d:qcU:TS:o:C:?fFBH64p:P:x:X:", long_options, &option_index);
+      c = getopt_long (argc, argv, "hVt:u:m:D:sa:d:qcU:TS:o:C:?gG:L:fFBH64p:P:x:X:", long_options, &option_index);
 
       if (c == -1) break;	/* Exit from `while (1)' loop.  */
 
@@ -1300,6 +1382,40 @@ cmdline_parser_internal (
           if (update_arg((void *)&(args_info->debug_flag), 0, &(args_info->debug_given),
               &(local_args_info.debug_given), optarg, 0, 0, ARG_FLAG,
               check_ambiguity, override, 1, 0, "debug", '?',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'g':	/* Render what the crawler found as a graph..  */
+        
+        
+          if (update_arg((void *)&(args_info->graph_flag), 0, &(args_info->graph_given),
+              &(local_args_info.graph_given), optarg, 0, 0, ARG_FLAG,
+              check_ambiguity, override, 1, 0, "graph", 'g',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'G':	/* File format of the graph..  */
+        
+        
+          if (update_arg( (void *)&(args_info->graph_format_arg), 
+               &(args_info->graph_format_orig), &(args_info->graph_format_given),
+              &(local_args_info.graph_format_given), optarg, cmdline_parser_graph_format_values, 0, ARG_STRING,
+              check_ambiguity, override, 0, 0,
+              "graph-format", 'G',
+              additional_error))
+            goto failure;
+        
+          break;
+        case 'L':	/* Layout used to generate the graph..  */
+        
+        
+          if (update_arg( (void *)&(args_info->graph_layout_arg), 
+               &(args_info->graph_layout_orig), &(args_info->graph_layout_given),
+              &(local_args_info.graph_layout_given), optarg, cmdline_parser_graph_layout_values, 0, ARG_STRING,
+              check_ambiguity, override, 0, 0,
+              "graph-layout", 'L',
               additional_error))
             goto failure;
         
