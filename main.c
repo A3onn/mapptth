@@ -204,7 +204,7 @@ int main(int argc, char* argv[]) {
            "|_|   |_\\_____|  __/|_|       |_|     |_|  |_|   |_|\n"
            "              |_|                                   \n"
            "Version %s\n\n",
-        CMDLINE_PARSER_VERSION);
+        MAPPTTH_VERSION);
     struct gengetopt_args_info cli_arguments;
     if(cmdline_parser(argc, argv, &cli_arguments) != 0) {
         return 1;

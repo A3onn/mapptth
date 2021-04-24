@@ -3,12 +3,14 @@ cmake_minimum_required(VERSION 3.1.0)
 option(MAPPTTH_GENERATE_TESTS "Generate tests" OFF)
 option(MAPPTTH_NO_GRAPHVIZ "GraphVizSupport" OFF)
 
-project(mapptth VERSION 0.1.0 LANGUAGES C)
+project(mapptth VERSION 0.2.0 LANGUAGES C)
 
 set(SRCS main.c fetcher_thread.c stack_documents.c stack_urls.c cmdline.c utils.c sitemaps_parser.c)
 set(HEADERS fetcher_thread.h stack_documents.h stack_urls.h cmdline.h utils.h sitemaps_parser.h)
 
 add_executable(mapptth ${SRCS} ${HEADERS})
+
+target_compile_definitions(mapptth PRIVATE MAPPTTH_VERSION="${CMAKE_PROJECT_VERSION}")
 
 # check for threads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
