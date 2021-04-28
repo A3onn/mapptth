@@ -15,6 +15,7 @@ MapPTTH uses:
 
 #### Optional
 
+- GraphViz (_libgvc_ and _libcgraph_): generate graphs
 - libcheck: unit tests
 
 ## Installation
@@ -36,6 +37,12 @@ cd mapptth/
 mkdir build/ && cd build/
 cmake .. && make
 ```
+
+### GraphViz support
+
+If GraphViz is found on the system when running CMake, you will be able to generate graphs.
+
+If you want to disable it, you can run `cmake -DMAPPTTH_NO_GRAPHVIZ ..` instead of `cmake ..`.
 
 ## How to use
 
@@ -89,6 +96,15 @@ _Only works for HTML files._
 | Print the title of the page if there is one when displaying an URL. | -T |
 | File to write output into (without colors). | -o \<file name> |
 
+### Graph
+
+GraphViz support must be enabled to use these parameters.
+
+| Name | Argument |
+| --- | --- |
+| Create a graph. | -g |
+| Change the layout of the graph. (default='sfdp') | -L \<layout> |
+| Change the output graph file format. (default='png') | -G \<format> |
 
 ### Other
 
@@ -111,8 +127,6 @@ Without any priority :
 
 - [ ] More unit tests
 
-- [ ] GraphViz support to generate graphs
-
 - [ ] Add a parameter to control the connection rate
 
 - [ ] Add exemples in readme
@@ -123,9 +137,11 @@ Without any priority :
 
 - [ ] Create logo (maybe)
 
-- [ ] Use only getopt to parse arguments
-
 - [ ] Use regex in filters (disallowed paths, allowed paths, etc...)
+
+- [X] Use only getopt to parse arguments
+
+- [X] GraphViz support to generate graphs
 
 - [X] Output to file
 
