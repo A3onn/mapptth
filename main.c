@@ -11,12 +11,11 @@
 #include "stack_documents.h"
 #include "stack_urls.h"
 #include "utils.h"
+#include "cli_parser.h"
 
 #if GRAPHVIZ_SUPPORT
 #include <graphviz/gvc.h>
 #endif
-
-#include "cmdline.h"
 
 #if !CURL_AT_LEAST_VERSION(7, 62, 0)
 #error "libcurl 7.62.0 or later is required"
@@ -205,85 +204,70 @@ int main(int argc, char* argv[]) {
            "              |_|                                   \n"
            "Version %s\n\n",
         MAPPTTH_VERSION);
-    struct gengetopt_args_info cli_arguments;
-    if(cmdline_parser(argc, argv, &cli_arguments) != 0) {
+    struct arguments* cli_arguments;
+    if((cli_arguments = parse_cli_arguments(argc, argv)) == NULL) {
         return 1;
     }
-    if(cli_arguments.debug_given) {
+
+    if(cli_arguments->debug_flag) {
         ACTIVATE_DEBUG();
     }
-    if((strncmp(cli_arguments.url_arg, "http://", 7) != 0 && strncmp(cli_arguments.url_arg, "https://", 8) != 0) || strchr(cli_arguments.url_arg, ' ') != NULL) {
-        fprintf(stderr, "%s: invalid URL: %s\n", argv[0], cli_arguments.url_arg);
+    if((strncmp(cli_arguments->url, "http://", 7) != 0 && strncmp(cli_arguments->url, "https://", 8) != 0) || strchr(cli_arguments->url, ' ') != NULL) {
+        fprintf(stderr, "%s: invalid URL: %s\n", argv[0], cli_arguments->url);
         return 1;
     }
-    if(cli_arguments.threads_arg <= 0) {
+    if(cli_arguments->threads <= 0) {
         fprintf(stderr, "%s: the number of threads should be positive\n", argv[0]);
         return 1;
     }
-    if(cli_arguments.timeout_arg <= 0) {
+    if(cli_arguments->timeout <= 0) {
         fprintf(stderr, "%s: the timeout should be positive\n", argv[0]);
         return 1;
     }
-    if(cli_arguments.max_depth_given && cli_arguments.max_depth_arg <= 0) {
+    if(cli_arguments->max_depth_given && cli_arguments->max_depth <= 0) {
         fprintf(stderr, "%s: max-depth have to be positive\n", argv[0]);
         return 1;
     }
-    for(int i = 0; i < cli_arguments.allowed_extensions_given; i++) {
-        if(cli_arguments.allowed_extensions_arg[i][0] != '.') {
+    for(int i = 0; i < cli_arguments->allowed_extensions_count; i++) {
+        if(cli_arguments->allowed_extensions[i][0] != '.') {
             fprintf(stderr, "%s: extensions have to begin with a '.' (dot)\n", argv[0]);
             return 1;
         }
     }
-    for(int i = 0; i < cli_arguments.disallowed_extensions_given; i++) {
-        if(cli_arguments.disallowed_extensions_arg[i][0] != '.') {
+    for(int i = 0; i < cli_arguments->disallowed_extensions_count; i++) {
+        if(cli_arguments->disallowed_extensions[i][0] != '.') {
             fprintf(stderr, "%s: extensions have to begin with a '.' (dot)\n", argv[0]);
             return 1;
         }
     }
 
     FILE* output_file = NULL;
-    if(cli_arguments.output_given) {
-        output_file = fopen(cli_arguments.output_arg, "w");
+    if(cli_arguments->output_given) {
+        output_file = fopen(cli_arguments->output, "w");
         if(output_file == NULL) {
-            fprintf(stderr, "%s: failed to open %s: %s.\n", argv[0], cli_arguments.output_arg, strerror(errno));
+            fprintf(stderr, "%s: failed to open %s: %s.\n", argv[0], cli_arguments->output, strerror(errno));
             return 1;
         }
     }
 
-#if !GRAPHVIZ_SUPPORT
-    if(cli_arguments.graph_flag || cli_arguments.graph_layout_arg != NULL || cli_arguments.graph_format_arg != NULL) {
-	    fprintf(stderr, "%s: Graphviz support is disabled. You can't use the graph flag, the graph layout and the graph format arguments.\n", argv[0]);
-	    return 1;
-    }
-#else
-    char* graph_output_layout = cli_arguments.graph_layout_arg;
-    if(graph_output_layout == NULL) {
-        graph_output_layout = "sfdp"; // default value
-    }
-    char* graph_output_format = cli_arguments.graph_format_arg;
-    if(graph_output_format == NULL) {
-        graph_output_format = "png"; // default value
-    }
-#endif
-
     // normalize paths given by the user
-    char** disallowed_paths = (char**) malloc(sizeof(char*) * cli_arguments.disallowed_paths_given);
-    for(int i = 0; i < cli_arguments.disallowed_paths_given; i++) {
-        disallowed_paths[i] = normalize_path(cli_arguments.disallowed_paths_arg[i], 0);
+    char** disallowed_paths = (char**) malloc(sizeof(char*) * cli_arguments->disallowed_paths_count);
+    for(int i = 0; i < cli_arguments->disallowed_paths_count; i++) {
+        disallowed_paths[i] = normalize_path(cli_arguments->disallowed_paths[i], 0);
     }
-    char** allowed_paths = (char**) malloc(sizeof(char*) * cli_arguments.allowed_paths_given);
-    for(int i = 0; i < cli_arguments.allowed_paths_given; i++) {
-        allowed_paths[i] = normalize_path(cli_arguments.allowed_paths_arg[i], 0);
+    char** allowed_paths = (char**) malloc(sizeof(char*) * cli_arguments->allowed_paths_count);
+    for(int i = 0; i < cli_arguments->allowed_paths_count; i++) {
+        allowed_paths[i] = normalize_path(cli_arguments->allowed_paths[i], 0);
     }
 
     int resolve_ip_version = CURL_IPRESOLVE_WHATEVER;
-    if(cli_arguments.IPv4_given) {
+    if(cli_arguments->only_ipv4_flag) {
         resolve_ip_version = CURL_IPRESOLVE_V4;
-    } else if(cli_arguments.IPv6_given) {
+    } else if(cli_arguments->only_ipv6_flag) {
         resolve_ip_version = CURL_IPRESOLVE_V6;
     }
 
-    pthread_t fetcher_threads[cli_arguments.threads_arg];
+    pthread_t fetcher_threads[cli_arguments->threads];
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
     DocumentNode_t* documents_stack = NULL;
@@ -293,9 +277,9 @@ int main(int argc, char* argv[]) {
 
     curl_global_init(CURL_GLOBAL_ALL);  // initialize libcurl
 
-    if(cli_arguments.sitemap_given) {
+    if(cli_arguments->sitemap_given) {
         // get the content of the sitemap
-        URLNode_t* url_stack_sitemap = get_sitemap_urls(cli_arguments.sitemap_arg, cli_arguments.no_color_flag);
+        URLNode_t* url_stack_sitemap = get_sitemap_urls(cli_arguments->sitemap, cli_arguments->no_color_flag);
 
         // validate the URLs found in the sitemap, same code as when finding an URL in a document
         CURLU* curl_url_handler = curl_url();
@@ -305,35 +289,35 @@ int main(int argc, char* argv[]) {
             curl_url_set(curl_url_handler, CURLUPART_URL, url, 0);
 
             if(is_valid_link(url)) {
-                if(!cli_arguments.keep_query_flag) {
+                if(!cli_arguments->keep_query_flag) {
                     curl_url_set(curl_url_handler, CURLUPART_QUERY, NULL, 0);
                 }
 
                 char* path;
                 curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
                 // check disallowed paths
-                if(is_disallowed_path(path, disallowed_paths, cli_arguments.disallowed_paths_given)) {
+                if(is_disallowed_path(path, disallowed_paths, cli_arguments->disallowed_paths_count)) {
                     free(url);
                     free(path);
                     continue;
                 }
-                if(!is_allowed_path(path, allowed_paths, cli_arguments.allowed_paths_given)) {
+                if(!is_allowed_path(path, allowed_paths, cli_arguments->allowed_paths_count)) {
                     free(url);
                     free(path);
                     continue;
                 }
                 // check extensions
-                if(is_disallowed_extension(path, cli_arguments.disallowed_extensions_arg, cli_arguments.disallowed_extensions_given)) {
+                if(is_disallowed_extension(path, cli_arguments->disallowed_extensions, cli_arguments->disallowed_extensions_count)) {
                     free(url);
                     free(path);
                     continue;
                 }
-                if(!is_allowed_extension(path, cli_arguments.allowed_extensions_arg, cli_arguments.allowed_extensions_given)) {
+                if(!is_allowed_extension(path, cli_arguments->allowed_extensions, cli_arguments->allowed_extensions_count)) {
                   free(url);
                   free(path);
                   continue;
                 }
-                if(cli_arguments.max_depth_given && get_path_depth(path) > cli_arguments.max_depth_given) {
+                if(cli_arguments->max_depth_given && get_path_depth(path) > cli_arguments->max_depth_given) {
                     free(url);
                     free(path);
                     continue;
@@ -345,13 +329,13 @@ int main(int argc, char* argv[]) {
                     curl_url_get(curl_url_handler, CURLUPART_HOST, &domain_url_found, 0);  // get the domain of the URL
 
                     char* initial_url_domain;  // URL specified by -u
-                    curl_url_set(curl_url_handler, CURLUPART_URL, cli_arguments.url_arg, 0);
+                    curl_url_set(curl_url_handler, CURLUPART_URL, cli_arguments->url, 0);
                     curl_url_get(curl_url_handler, CURLUPART_HOST, &initial_url_domain, 0);
 
                     // check domains
-                    if((is_same_domain(domain_url_found, initial_url_domain, cli_arguments.allow_subdomains_flag) ||
-			is_in_valid_domains(domain_url_found, cli_arguments.allowed_domains_arg, cli_arguments.allowed_domains_given, cli_arguments.allow_subdomains_flag)) &&
-			!is_in_disallowed_domains(domain_url_found, cli_arguments.disallowed_domains_arg, cli_arguments.disallowed_domains_given)) {
+                    if((is_same_domain(domain_url_found, initial_url_domain, cli_arguments->allow_subdomains_flag) ||
+			is_in_valid_domains(domain_url_found, cli_arguments->allowed_domains, cli_arguments->allowed_domains_count, cli_arguments->allow_subdomains_flag)) &&
+			!is_in_disallowed_domains(domain_url_found, cli_arguments->disallowed_domains, cli_arguments->disallowed_domains_count)) {
 
                         stack_url_push(&urls_stack_todo, url);
                         count++;
@@ -369,7 +353,7 @@ int main(int argc, char* argv[]) {
         printf("Added %i new URLs.\n", count);
     }
 
-    stack_url_push(&urls_stack_todo, cli_arguments.url_arg);  // add the URL specified by -u
+    stack_url_push(&urls_stack_todo, cli_arguments->url);  // add the URL specified by -u
 
     // create shared interface
     CURLSH* curl_share = curl_share_init();
@@ -387,9 +371,9 @@ int main(int argc, char* argv[]) {
     curl_share_setopt(curl_share, CURLSHOPT_USERDATA, (void*) &mutex_conn);
 
     int should_exit = 0;  // if threads should exit, set to 1 when all threads have is_running == 1
-    int* list_running_thread_status = (int*) malloc(sizeof(int) * cli_arguments.threads_arg);  // list containing ints indicating if each thread is fetching
-    struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * cli_arguments.threads_arg);
-    for(int i = 0; i < cli_arguments.threads_arg; i++) {
+    int* list_running_thread_status = (int*) malloc(sizeof(int) * cli_arguments->threads);  // list containing ints indicating if each thread is fetching
+    struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * cli_arguments->threads);
+    for(int i = 0; i < cli_arguments->threads; i++) {
         list_running_thread_status[i] = 1;
 
         bundles[i].documents = &documents_stack;
@@ -398,15 +382,15 @@ int main(int argc, char* argv[]) {
         bundles[i].mutex = &mutex;
         bundles[i].should_exit = &should_exit;
         bundles[i].is_running = &(list_running_thread_status[i]);
-        bundles[i].timeout = cli_arguments.timeout_arg;
+        bundles[i].timeout = cli_arguments->timeout;
         bundles[i].resolve_ip_versions = resolve_ip_version;
-        bundles[i].no_color = cli_arguments.no_color_given;
+        bundles[i].no_color = cli_arguments->no_color_flag;
         bundles[i].curl_share = curl_share;
-        bundles[i].cookies = cli_arguments.cookies_arg;
-        if(cli_arguments.user_agent_given) {
-            bundles[i].user_agent = cli_arguments.user_agent_arg;
+        bundles[i].cookies = cli_arguments->cookies;
+        if(cli_arguments->user_agent_given) {
+            bundles[i].user_agent = cli_arguments->user_agent;
         } else {
-            bundles[i].user_agent = "MapPTTH/" CMDLINE_PARSER_VERSION;
+            bundles[i].user_agent = "MapPTTH/" MAPPTTH_VERSION;
         }
         pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*) &(bundles[i]));
     }
@@ -415,28 +399,28 @@ int main(int argc, char* argv[]) {
     CURLU* curl_url_handler = curl_url();  // used when handling redirections
 
     struct WalkBundle bundle_walk;  // in this bundle these elements never change
-    bundle_walk.allowed_domains = cli_arguments.allowed_domains_arg;
-    bundle_walk.count_allowed_domains = cli_arguments.allowed_domains_given;
-    bundle_walk.disallowed_domains = cli_arguments.disallowed_domains_arg;
-    bundle_walk.count_disallowed_domains = cli_arguments.disallowed_domains_given;
-    bundle_walk.allowed_extensions = cli_arguments.allowed_extensions_arg;
-    bundle_walk.count_allowed_extensions = cli_arguments.allowed_extensions_given;
-    bundle_walk.disallowed_extensions = cli_arguments.disallowed_extensions_arg;
-    bundle_walk.count_disallowed_extensions = cli_arguments.disallowed_extensions_given;
-    bundle_walk.allow_subdomains = cli_arguments.allow_subdomains_given;
-    bundle_walk.http_only = cli_arguments.http_only_given;
-    bundle_walk.https_only = cli_arguments.https_only_given;
+    bundle_walk.allowed_domains = cli_arguments->allowed_domains;
+    bundle_walk.count_allowed_domains = cli_arguments->allowed_domains_count;
+    bundle_walk.disallowed_domains = cli_arguments->disallowed_domains;
+    bundle_walk.count_disallowed_domains = cli_arguments->disallowed_domains_count;
+    bundle_walk.allowed_extensions = cli_arguments->allowed_extensions;
+    bundle_walk.count_allowed_extensions = cli_arguments->allowed_extensions_count;
+    bundle_walk.disallowed_extensions = cli_arguments->disallowed_extensions;
+    bundle_walk.count_disallowed_extensions = cli_arguments->disallowed_extensions_count;
+    bundle_walk.allow_subdomains = cli_arguments->allow_subdomains_flag;
+    bundle_walk.http_only = cli_arguments->http_only_flag;
+    bundle_walk.https_only = cli_arguments->https_only_flag;
     bundle_walk.disallowed_paths = disallowed_paths;
-    bundle_walk.count_disallowed_paths = cli_arguments.disallowed_paths_given;
+    bundle_walk.count_disallowed_paths = cli_arguments->disallowed_paths_count;
     bundle_walk.allowed_paths = allowed_paths;
-    bundle_walk.count_allowed_paths = cli_arguments.allowed_paths_given;
-    bundle_walk.keep_query = cli_arguments.keep_query_given;
-    bundle_walk.max_path_depth = cli_arguments.max_depth_arg;
+    bundle_walk.count_allowed_paths = cli_arguments->allowed_paths_count;
+    bundle_walk.keep_query = cli_arguments->keep_query_flag;
+    bundle_walk.max_path_depth = cli_arguments->max_depth;
 #if GRAPHVIZ_SUPPORT
-    bundle_walk.generate_graph = cli_arguments.graph_flag;
-    if(cli_arguments.graph_flag) {
-        bundle_walk.graph = agopen(cli_arguments.url_arg, Agdirected, 0);
-        agnode(bundle_walk.graph, cli_arguments.url_arg, 1); // add initial node
+    bundle_walk.generate_graph = cli_arguments->graph_flag;
+    if(cli_arguments->graph_flag) {
+        bundle_walk.graph = agopen(cli_arguments->url, Agdirected, 0);
+        agnode(bundle_walk.graph, cli_arguments->url, 1); // add initial node
     }
 #endif
 
@@ -447,7 +431,7 @@ int main(int argc, char* argv[]) {
             // urls, then it means that everything was discovered and they should
             // quit, otherwise just continue to check for something to do
             int should_quit = 1;
-            for(int i = 0; i < cli_arguments.threads_arg; i++) {  // check if all threads are running
+            for(int i = 0; i < cli_arguments->threads; i++) {  // check if all threads are running
                 if(list_running_thread_status[i] == 1) {  // if one is running
                     should_quit = 0;  // should not quit
                     break;  // don't need to check other threads
@@ -468,7 +452,7 @@ int main(int argc, char* argv[]) {
         pthread_mutex_unlock(&mutex);
 
         int http_status_cat = current_document->status_code_http / 100;
-        if(!cli_arguments.no_color_given) {
+        if(!cli_arguments->no_color_flag) {
             char* color;
             switch(http_status_cat) {
             case 5:  // 5xx
@@ -509,28 +493,28 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        if(cli_arguments.title_flag) { // print title
+        if(cli_arguments->title_flag) { // print title
             const char* title = (const char*) lxb_html_document_title(current_document->lexbor_document, NULL);
             if(title != NULL) {
                 printf(" [%s]", title);
             }
         }
         printf("\n");
-        if(cli_arguments.output_given) {
+        if(cli_arguments->output_given) {
             if(http_status_cat == 3) {
-                if(cli_arguments.output_given) {
+                if(cli_arguments->output_given) {
                     fprintf(output_file, "[%ld] %s -> %s [%s] [%zu]", current_document->status_code_http,
                             current_document->url, current_document->redirect_location,
                             current_document->content_type, current_document->size);
                 }
             } else {
-                if(cli_arguments.output_given) {
+                if(cli_arguments->output_given) {
                     fprintf(output_file, "[%ld] %s [%s] [%zu]", current_document->status_code_http,
                             current_document->url, current_document->content_type,
                             current_document->size);
                 }
             }
-            if(cli_arguments.title_flag) {
+            if(cli_arguments->title_flag) {
                 const char* title = (const char*) lxb_html_document_title(current_document->lexbor_document, NULL);
                 if(title != NULL) {
                     fprintf(output_file, " [%s]", title);
@@ -547,10 +531,10 @@ int main(int argc, char* argv[]) {
                 pthread_mutex_lock(&mutex);
                 bundle_walk.urls_stack_done = &urls_stack_done;
                 bundle_walk.urls_stack_todo = &urls_stack_todo;
-                if(current_document->lexbor_document->head && !cli_arguments.only_body_given) {
+                if(current_document->lexbor_document->head && !cli_arguments->only_body_flag) {
                     lxb_dom_node_simple_walk(lxb_dom_interface_node(current_document->lexbor_document->head), walk_cb, &bundle_walk);
                 }
-                if(current_document->lexbor_document->body && !cli_arguments.only_head_given) {
+                if(current_document->lexbor_document->body && !cli_arguments->only_head_flag) {
                     lxb_dom_node_simple_walk(lxb_dom_interface_node(current_document->lexbor_document->body), walk_cb, &bundle_walk);
                 }
                 pthread_mutex_unlock(&mutex);
@@ -580,7 +564,7 @@ int main(int argc, char* argv[]) {
 
                 int is_still_valid = 1;  // indicates if it is a valid URL through the checks, if not then it is useless to do checks anymore
 
-                if((cli_arguments.http_only_given && strcmp("http", url_scheme) != 0) || (cli_arguments.https_only_given && strcmp("https", url_scheme) != 0)) {
+                if((cli_arguments->http_only_flag && strcmp("http", url_scheme) != 0) || (cli_arguments->https_only_flag && strcmp("https", url_scheme) != 0)) {
                     is_still_valid = 0;
                 }
                 free(url_scheme);
@@ -588,27 +572,27 @@ int main(int argc, char* argv[]) {
                 char* path;
                 curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
                 if(is_still_valid) {
-                    if(is_disallowed_path(path, disallowed_paths, cli_arguments.disallowed_paths_given)) {
+                    if(is_disallowed_path(path, disallowed_paths, cli_arguments->disallowed_paths_count)) {
                         is_still_valid = 0;
                     }
                 }
                 if(is_still_valid) {
-                    if(!is_allowed_path(path, allowed_paths, cli_arguments.allowed_paths_given)) {
+                    if(!is_allowed_path(path, allowed_paths, cli_arguments->allowed_paths_count)) {
                         is_still_valid = 0;
                     }
                 }
                 if(is_still_valid) {
-                    if(!is_allowed_extension(path, cli_arguments.allowed_extensions_arg, cli_arguments.allowed_extensions_given)) {
+                    if(!is_allowed_extension(path, cli_arguments->allowed_extensions, cli_arguments->allowed_extensions_count)) {
                         is_still_valid = 0;
                     }
                 }
                 if(is_still_valid) {
-                    if(is_disallowed_extension(path, cli_arguments.disallowed_extensions_arg, cli_arguments.disallowed_extensions_given)) {
+                    if(is_disallowed_extension(path, cli_arguments->disallowed_extensions, cli_arguments->disallowed_extensions_count)) {
                         is_still_valid = 0;
                     }
                 }
                 if(is_still_valid) {
-                    if(cli_arguments.max_depth_given && get_path_depth(path) > cli_arguments.max_depth_given) {
+                    if(cli_arguments->max_depth_given && get_path_depth(path) > cli_arguments->max_depth_given) {
                         is_still_valid = 0;
                     }
                 }
@@ -616,16 +600,16 @@ int main(int argc, char* argv[]) {
 
                 int has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
                 if(is_still_valid) {
-                    if((is_same_domain(redirect_location_domain, cur_doc_url_domain, cli_arguments.allow_subdomains_flag) ||
-                        is_in_valid_domains(redirect_location_domain, cli_arguments.allowed_domains_arg, cli_arguments.allowed_domains_given, cli_arguments.allow_subdomains_flag)) &&
-                        !is_in_disallowed_domains(redirect_location_domain, cli_arguments.disallowed_domains_arg, cli_arguments.disallowed_domains_given)) {
+                    if((is_same_domain(redirect_location_domain, cur_doc_url_domain, cli_arguments->allow_subdomains_flag) ||
+                        is_in_valid_domains(redirect_location_domain, cli_arguments->allowed_domains, cli_arguments->allowed_domains_count, cli_arguments->allow_subdomains_flag)) &&
+                        !is_in_disallowed_domains(redirect_location_domain, cli_arguments->disallowed_domains, cli_arguments->disallowed_domains_count)) {
 
                         if(url_not_seen(current_document->redirect_location, urls_stack_done, urls_stack_todo)) {
                             stack_url_push(&urls_stack_todo, current_document->redirect_location);
                             has_been_added = 1;
                         }
 #if GRAPHVIZ_SUPPORT
-                        if(cli_arguments.graph_flag) {
+                        if(cli_arguments->graph_flag) {
                             Agnode_t* node_new = agnode(bundle_walk.graph, current_document->redirect_location, 1);
 
                             // should not create any node
@@ -649,11 +633,11 @@ int main(int argc, char* argv[]) {
         lxb_html_document_destroy(current_document->lexbor_document);
         free(current_document);
     }
-    for(int i = 0; i < cli_arguments.threads_arg; i++) {
+    for(int i = 0; i < cli_arguments->threads; i++) {
         pthread_join(fetcher_threads[i], NULL);
     }
 
-    if(cli_arguments.output_given) {
+    if(cli_arguments->output_given) {
         fclose(output_file);
     }
 
@@ -668,10 +652,10 @@ int main(int argc, char* argv[]) {
         free(url_done);
     }
 
-    for(int i = 0; i < cli_arguments.disallowed_paths_given; i++) {
+    for(int i = 0; i < cli_arguments->disallowed_paths_count; i++) {
         free(disallowed_paths[i]);
     }
-    for(int i = 0; i < cli_arguments.allowed_paths_given; i++) {
+    for(int i = 0; i < cli_arguments->allowed_paths_count; i++) {
         free(allowed_paths[i]);
     }
 
@@ -679,16 +663,16 @@ int main(int argc, char* argv[]) {
     curl_global_cleanup();
 
 #if GRAPHVIZ_SUPPORT
-    if(cli_arguments.graph_flag) {
+    if(cli_arguments->graph_flag) {
         GVC_t* gvc = gvContext();
 
-        char* graph_output_filename = (char*) malloc(sizeof (char) * (strlen("output.") + strlen(graph_output_format) + 1));
+        char* graph_output_filename = (char*) malloc(sizeof (char) * (strlen("output.") + strlen(cli_arguments->graph_output_format) + 1));
         strcpy(graph_output_filename, "output.");
-        strcat(graph_output_filename, graph_output_format);
+        strcat(graph_output_filename, cli_arguments->graph_output_format);
 
-        gvLayout(gvc, bundle_walk.graph, graph_output_layout);
+        gvLayout(gvc, bundle_walk.graph, cli_arguments->graph_layout);
 
-        gvRenderFilename(gvc, bundle_walk.graph, graph_output_format, graph_output_filename);
+        gvRenderFilename(gvc, bundle_walk.graph, cli_arguments->graph_output_format, graph_output_filename);
 
         free(graph_output_filename);
 
@@ -698,7 +682,7 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-    cmdline_parser_free(&cli_arguments);
+    cli_arguments_free(cli_arguments);
 
     return EXIT_SUCCESS;
 }
