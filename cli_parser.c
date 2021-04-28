@@ -243,7 +243,7 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
     }
 
     if(args->url == NULL) {
-        fprintf(stderr, "%s: you need to specify an URL\n", argv[0], optopt);
+        fprintf(stderr, "%s: you need to specify an URL\n", argv[0]);
         free(args);
         return NULL;
     }
