@@ -60,11 +60,11 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 args->threads = strtoul(optarg, &endptr, 10);
                 if(errno != 0) {
                     fprintf(stderr, "%s: %s", argv[0], strerror(errno));
-                    free(args);
+                    cli_arguments_free(args);
                     return NULL;
                 } else if(endptr == optarg) { // if starts of invalid number is the first chararcter of the arg
                     fprintf(stderr, "%s: invalid number of threads value: %s\n", argv[0], optarg);
-                    free(args);
+                    cli_arguments_free(args);
                     return NULL;
                 }
                 break;
@@ -73,11 +73,11 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 args->timeout = strtoul(optarg, &endptr, 10);
                 if(errno != 0) {
                     fprintf(stderr, "%s: %s", argv[0], strerror(errno));
-                    free(args);
+                    cli_arguments_free(args);
                     return NULL;
                 } else if(endptr == optarg) { // if starts of invalid number is the first chararcter of the arg
                     fprintf(stderr, "%s: invalid timeout value: %s\n", argv[0], optarg);
-                    free(args);
+                    cli_arguments_free(args);
                     return NULL;
                 }
                 break;
@@ -87,11 +87,11 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 args->max_depth_given = 1;
                 if(errno != 0) {
                     fprintf(stderr, "%s: %s", argv[0], strerror(errno));
-                    free(args);
+                    cli_arguments_free(args);
                     return NULL;
                 } else if(endptr == optarg) { // if starts of invalid number is the first chararcter of the arg
                     fprintf(stderr, "%s: invalid max-depth value: %s\n", argv[0], optarg);
-                    free(args);
+                    cli_arguments_free(args);
                     return NULL;
                 }
                 break;
@@ -154,21 +154,51 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 args->title_flag = 1;
                 break;
             case 'f': // http-only
+                if(args->https_only_flag) { // cannot have both flag set
+                        fprintf(stderr, "%s: you cannot set both http and https only flags\n", argv[0]);
+                        cli_arguments_free(args);
+                        return NULL;
+                }
                 args->http_only_flag = 1;
                 break;
             case 'F': // https-only
+                if(args->http_only_flag) { // cannot have both flag set
+                        fprintf(stderr, "%s: you cannot set both http and https only flags\n", argv[0]);
+                        cli_arguments_free(args);
+                        return NULL;
+                }
                 args->https_only_flag = 1;
                 break;
             case 'B': // parse only the <body>
+                if(args->only_head_flag) { // cannot have both flag set
+                        fprintf(stderr, "%s: you cannot set both head-only and body-only flags\n", argv[0]);
+                        cli_arguments_free(args);
+                        return NULL;
+                }
                 args->only_body_flag = 1;
                 break;
             case 'H': // parse only the <head> 
+                if(args->only_body_flag) { // cannot have both flag set
+                        fprintf(stderr, "%s: you cannot set both head-only and body-only flags\n", argv[0]);
+                        cli_arguments_free(args);
+                        return NULL;
+                }
                 args->only_head_flag = 1;
                 break;
             case '4': // ipv4 only
+                if(args->only_ipv6_flag) { // cannot have both flag set
+                        fprintf(stderr, "%s: you cannot set both IPv4 and IPv6 only flags\n", argv[0]);
+                        cli_arguments_free(args);
+                        return NULL;
+                }
                 args->only_ipv4_flag = 1;
                 break;
             case '6': // ipv6 only
+                if(args->only_ipv4_flag) { // cannot have both flag set
+                        fprintf(stderr, "%s: you cannot set both IPv4 and IPv6 only flags\n", argv[0]);
+                        cli_arguments_free(args);
+                        return NULL;
+                }
                 args->only_ipv6_flag = 1;
                 break;
             case 'h': // print help
