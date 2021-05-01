@@ -172,6 +172,7 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
                 Agnode_t* node_current = agnode(bundle->graph, bundle->document->url, 0);
 
                 Agedge_t* edge = agedge(bundle->graph, node_current, node_new, 0, 1);
+                agsafeset(edge, "splines", "curved", "curved");
 	    }
 #endif
         }
@@ -419,7 +420,7 @@ int main(int argc, char* argv[]) {
 #if GRAPHVIZ_SUPPORT
     bundle_walk.generate_graph = cli_arguments->graph_flag;
     if(cli_arguments->graph_flag) {
-        bundle_walk.graph = agopen(cli_arguments->url, Agdirected, 0);
+        bundle_walk.graph = agopen(cli_arguments->url, Agstrictdirected, 0);
         agnode(bundle_walk.graph, cli_arguments->url, 1); // add initial node
     }
 #endif
