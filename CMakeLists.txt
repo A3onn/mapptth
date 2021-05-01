@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.1.0)
 option(MAPPTTH_GENERATE_TESTS "Generate tests" OFF)
 option(MAPPTTH_NO_GRAPHVIZ "GraphVizSupport" OFF)
 
-project(mapptth VERSION 0.2.0 LANGUAGES C)
+project(mapptth VERSION 0.3.0 LANGUAGES C)
 
 set(SRCS main.c fetcher_thread.c stack_documents.c stack_urls.c cli_parser.c utils.c sitemaps_parser.c)
 set(HEADERS fetcher_thread.h stack_documents.h stack_urls.h cli_parser.h utils.h sitemaps_parser.h)
