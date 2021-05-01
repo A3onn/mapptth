@@ -3,6 +3,14 @@
 #include <errno.h>
 #include <string.h>
 
+// for versions strings
+#include <curl/curlver.h>
+#include <libxml/xmlversion.h>
+#include <lexbor/core/base.h>
+#if GRAPHVIZ_SUPPORT
+#include <graphviz/graphviz_version.h> // PACKAGE_VERSION
+#endif
+
 void _init_arguments(struct arguments* args) {
     memset(args, 0, sizeof (struct arguments));
     args->timeout = 3;
@@ -247,7 +255,13 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 cli_arguments_free(args);
                 return NULL;
             case 'V': // print version
-                printf("Version %s\n", MAPPTTH_VERSION);
+                printf("MapPPTH: %s\n", MAPPTTH_VERSION);
+                printf("libcurl: %s\n", LIBCURL_VERSION);
+		printf("lexbor: %s\n", LEXBOR_VERSION_STRING);
+                printf("libxml2: %s\n", LIBXML_DOTTED_VERSION);
+#if GRAPHVIZ_SUPPORT
+                printf("GraphViz: %s\n", PACKAGE_VERSION);
+#endif
                 cli_arguments_free(args);
                 return NULL;
 #if GRAPHVIZ_SUPPORT
