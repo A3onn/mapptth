@@ -77,7 +77,7 @@ void cli_arguments_print_help(char* prgm_name) {
     puts("\t-G <format>: Change the output graph file format. (default='png')");
 #endif
 
-    puts("Other:");
+    puts("\nOther:");
     puts("\t-t <integer>: Number of threads that will fetch URLs.");
     puts("\t-S <url>: Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap.");
     puts("\t-h: Print the help.");
