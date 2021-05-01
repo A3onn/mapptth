@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <errno.h>
 
 #include "fetcher_thread.h"
@@ -249,6 +250,17 @@ int main(int argc, char* argv[]) {
             fprintf(stderr, "%s: failed to open %s: %s.\n", argv[0], cli_arguments->output, strerror(errno));
             return 1;
         }
+        // put some infos at the beginning of the file
+        char time_buf[200];
+        time_t curr_time = time(NULL);
+        struct tm* tmp = localtime(&curr_time);
+        strftime(time_buf, 200, "%c", tmp);
+
+        fprintf(output_file, "# MapPTTH started at %s as:", time_buf);
+        for(int i = 0; i < argc; i++) {
+            fprintf(output_file, " %s", argv[i]);
+        }
+        fprintf(output_file, "\n");
     }
 
     // normalize paths given by the user
