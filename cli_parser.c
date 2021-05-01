@@ -32,7 +32,48 @@ void cli_arguments_free(struct arguments* args) {
 }
 
 void cli_arguments_print_help(char* prgm_name) {
-        printf("Usage: %s <parameters>\n", prgm_name);
+    printf("Usage: %s <parameters>\n\n", prgm_name);
+    puts("Connection:");
+    puts("\t-u <url>: URL where to start crawling.");
+    puts("\t-B <string>: string that will be used as user-agent. You can disable sending the user-agent header by giving an empty string. ");
+    puts("\t-m <integer>: Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL.");
+    puts("\t-4: Only resolve to IPv4 addresses.");
+    puts("\t-6: Only resolve to IPv6 addresses.");
+
+    puts("\nControlling where the crawler goes:");
+    puts("\t-s: Allow the crawler to go into subdomains of the initial URL and allowed domains.");
+    puts("\t-a <domain>: Allow the crawler to go to these domains.");
+    puts("\t-d <domain>: Disallow the crawler to go to these domains.");
+    puts("\t-p <path>: Allow the crawler to only fetch URL starting with these paths.");
+    puts("\t-P <path>: Disallow the crawler to fetch URL starting with these paths.");
+    puts("\t-D <integer>: Maximum depth of paths. If a path has a longer depth, it won't be fetched.");
+    puts("\t-f: Only fetch URLs with HTTP as scheme.");
+    puts("\t-F: Only fetch URLs with HTTPS as scheme.");
+    puts("\t-x <extension>: Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply.");
+    puts("\t-X <extension>: Disallow the crawler to fetch files with these extensions. If no extension is found then this filter won't apply.");
+    puts("\t-q: Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched.");
+
+    puts("\nParsing:");
+    puts("\t-H: Only parse the <head> part.");
+    puts("\t-B: Only parse the <body> part.");
+
+    puts("\nOutput:");
+    puts("\t-c: Don't print with colors.");
+    puts("\t-T: Print the title of the page if there is one when displaying an URL.");
+    puts("\t-o <file name>: File to write output into (without colors).");
+
+#if GRAPHVIZ_SUPPORT
+    puts("\nGraph:");
+    puts("\t-g: Create a graph.");
+    puts("\t-L <layout>: Change the layout of the graph. (default='sfdp')");
+    puts("\t-G <format>: Change the output graph file format. (default='png')");
+#endif
+
+    puts("Other:");
+    puts("\t-t <integer>: Number of threads that will fetch URLs.");
+    puts("\t-S <url>: Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap.");
+    puts("\t-h: Print the help.");
+    puts("\t-V: Print the version.");
 }
 
 struct arguments* parse_cli_arguments(int argc, char** argv) {
