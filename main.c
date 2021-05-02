@@ -174,7 +174,7 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
 
                 Agedge_t* edge = agedge(bundle->graph, node_current, node_new, 0, 1);
                 agsafeset(edge, "splines", "curved", "curved");
-	    }
+            }
 #endif
         }
 
@@ -433,7 +433,12 @@ int main(int argc, char* argv[]) {
     bundle_walk.generate_graph = cli_arguments->graph_flag;
     if(cli_arguments->graph_flag) {
         bundle_walk.graph = agopen(cli_arguments->url, Agstrictdirected, 0);
-        agnode(bundle_walk.graph, cli_arguments->url, 1); // add initial node
+        Agnode_t* first_node = agnode(bundle_walk.graph, cli_arguments->url, 1); // add initial node
+
+        // https://graphviz.org/doc/info/attrs.html#d:root
+        agsafeset(first_node, "root", "true", "true"); // set the node as the root (used by circo and twopi)
+
+        agsafeset(first_node, "URL", cli_arguments->url, cli_arguments->url); // used by svg
     }
 #endif
 
@@ -536,6 +541,66 @@ int main(int argc, char* argv[]) {
             fprintf(output_file, "\n");
         }
 
+#if GRAPHVIZ_SUPPORT
+        // set node infos
+        if(cli_arguments->graph_flag) {
+            // TODO: refactor code
+            // get currend node representing the current_document
+            Agnode_t* node_current = agnode(bundle_walk.graph, current_document->url, 0);
+
+            char label_curr_node[4096];
+            if(current_document->redirect_location != NULL) {
+                if(current_document->content_type != NULL) {
+                    snprintf(label_curr_node, 4096, "%s\nStatus code: %d\nRedirect location: %s\nContent type: %s\nContent length: %d",
+                        current_document->url, current_document->status_code_http, current_document->redirect_location,
+                        current_document->content_type, current_document->size);
+                } else {
+                    snprintf(label_curr_node, 4096, "%s\nStatus code: %d\nRedirect location: %s\nContent length: %d",
+                        current_document->url, current_document->status_code_http, current_document->redirect_location, current_document->size);
+                }
+            } else {
+                if(current_document->content_type != NULL) {
+                    snprintf(label_curr_node, 4096, "%s\nStatus code: %d\nContent type: %s\nContent length: %d",
+                        current_document->url, current_document->status_code_http,
+                        current_document->content_type, current_document->size);
+                } else {
+                    snprintf(label_curr_node, 4096, "%s\nStatus code: %d\nContent length: %d",
+                        current_document->url, current_document->status_code_http, current_document->size);
+                }
+            }
+            agsafeset(node_current, "label", label_curr_node, label_curr_node);
+            agsafeset(node_current, "URL", current_document->url, current_document->url);
+
+            // set rank for the node based on its path depth
+            char* path;
+            curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
+
+            char rank_str[4];
+            snprintf(rank_str, 4, "%d", get_path_depth(path));
+            agsafeset(node_current, "rank", rank_str, rank_str);
+
+            char* color;
+            switch(current_document->status_code_http / 100) {
+            case 5:  // 5xx
+                color = "#CC0000";
+                break;
+            case 4:  // 4xx
+                color = "#CC00CC";
+                break;
+            case 3:  // 3xx
+                color = "#CCCC00";
+                break;
+            case 2:  // 2xx
+                color = "#00CC00";
+                break;
+            case 1:  // 1xx
+                color = "#00CCCC";
+                break;
+            }
+            agsafeset(node_current, "color", color, color);
+        }
+#endif
+
         if(current_document->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
             // parse only html and xhtml files
             if(strstr(current_document->content_type, "text/html") != NULL || strstr(current_document->content_type, "application/xhtml+xml") != NULL) {
@@ -629,6 +694,7 @@ int main(int argc, char* argv[]) {
                             Agnode_t* node_current = agnode(bundle_walk.graph, current_document->url, 0);
 
                             Agedge_t* edge = agedge(bundle_walk.graph, node_current, node_new, 0, 1);
+                            agsafeset(edge, "splines", "curved", "curved");
 			}
 #endif
                     }

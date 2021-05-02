@@ -23,7 +23,7 @@ void _init_arguments(struct arguments* args) {
     args->allowed_extensions = (char**) malloc(sizeof (char*));
     args->allowed_domains = (char**) malloc(sizeof (char*));
 #if GRAPHVIZ_SUPPORT
-    args->graph_layout = "sfdp";
+    args->graph_layout = "dot"; // works best with ranks
     args->graph_output_format = "png";
 #endif
 }
