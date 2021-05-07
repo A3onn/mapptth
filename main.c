@@ -162,11 +162,13 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
 
             if(url_not_seen(final_url, *(bundle->urls_stack_done), *(bundle->urls_stack_todo))) {
                 stack_url_push(bundle->urls_stack_todo, final_url);
+                LOG("Found in %s a <%s> containing: %s\n", bundle->document->url, lxb_dom_element_tag_name(element, NULL), final_url);
                 has_been_added = 1;
             }
 
 #if GRAPHVIZ_SUPPORT
             if(bundle->generate_graph) {
+                LOG("Adding node and edge for: %s\n", final_url);
                 Agnode_t* node_new = agnode(bundle->graph, final_url, 1);
 
                 // should not create any node
@@ -197,6 +199,7 @@ static void unlock_cb(CURL* handle, curl_lock_data data, void* userptr) {
 }
 
 int main(int argc, char* argv[]) {
+    setvbuf(stdout, NULL, _IONBF, 0); // disable stdout buffer
     printf("\n _______             ______ _______ _______ _     _ \n"
            "(_______)           (_____ (_______|_______|_)   (_)\n"
            " _  _  _ _____ ____  _____) )  _       _    _______ \n"
@@ -211,9 +214,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if(cli_arguments->debug_flag) {
-        ACTIVATE_DEBUG();
+    if(cli_arguments->verbose) {
+        ACTIVATE_VERBOSE();
     }
+
     if((strncmp(cli_arguments->url, "http://", 7) != 0 && strncmp(cli_arguments->url, "https://", 8) != 0) || strchr(cli_arguments->url, ' ') != NULL) {
         fprintf(stderr, "%s: invalid URL: %s\n", argv[0], cli_arguments->url);
         return 1;
@@ -245,6 +249,7 @@ int main(int argc, char* argv[]) {
 
     FILE* output_file = NULL;
     if(cli_arguments->output_given) {
+        LOG("Opening %s...\n", cli_arguments->output);
         output_file = fopen(cli_arguments->output, "w");
         if(output_file == NULL) {
             fprintf(stderr, "%s: failed to open %s: %s.\n", argv[0], cli_arguments->output, strerror(errno));
@@ -261,6 +266,7 @@ int main(int argc, char* argv[]) {
             fprintf(output_file, " %s", argv[i]);
         }
         fprintf(output_file, "\n");
+        LOG("Wrote header in %s\n", cli_arguments->output);
     }
 
     // normalize paths given by the user
@@ -291,6 +297,7 @@ int main(int argc, char* argv[]) {
     curl_global_init(CURL_GLOBAL_ALL);  // initialize libcurl
 
     if(cli_arguments->sitemap_given) {
+        LOG("Fetching and parsing sitemaps\n");
         // get the content of the sitemap
         URLNode_t* url_stack_sitemap = get_sitemap_urls(cli_arguments->sitemap, cli_arguments->no_color_flag);
 
@@ -347,8 +354,8 @@ int main(int argc, char* argv[]) {
 
                     // check domains
                     if((is_same_domain(domain_url_found, initial_url_domain, cli_arguments->allow_subdomains_flag) ||
-			is_in_valid_domains(domain_url_found, cli_arguments->allowed_domains, cli_arguments->allowed_domains_count, cli_arguments->allow_subdomains_flag)) &&
-			!is_in_disallowed_domains(domain_url_found, cli_arguments->disallowed_domains, cli_arguments->disallowed_domains_count)) {
+                        is_in_valid_domains(domain_url_found, cli_arguments->allowed_domains, cli_arguments->allowed_domains_count, cli_arguments->allow_subdomains_flag)) &&
+                        !is_in_disallowed_domains(domain_url_found, cli_arguments->disallowed_domains, cli_arguments->disallowed_domains_count)) {
 
                         stack_url_push(&urls_stack_todo, url);
                         count++;
@@ -382,6 +389,8 @@ int main(int argc, char* argv[]) {
     curl_share_setopt(curl_share, CURLSHOPT_UNLOCKFUNC, unlock_cb);
     pthread_mutex_t mutex_conn = PTHREAD_MUTEX_INITIALIZER;
     curl_share_setopt(curl_share, CURLSHOPT_USERDATA, (void*) &mutex_conn);
+
+    LOG("Creating threads...\n");
 
     int should_exit = 0;  // if threads should exit, set to 1 when all threads have is_running == 1
     int* list_running_thread_status = (int*) malloc(sizeof(int) * cli_arguments->threads);  // list containing ints indicating if each thread is fetching
@@ -442,6 +451,7 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
+    LOG("Starting...\n");
     while(1) {
         pthread_mutex_lock(&mutex);
         if(stack_document_length(documents_stack) == 0) {  // no documents to parse
@@ -468,6 +478,7 @@ int main(int argc, char* argv[]) {
 
         current_document = stack_document_pop(&documents_stack);
         pthread_mutex_unlock(&mutex);
+        LOG("Got a document to parse.\n");
 
         int http_status_cat = current_document->status_code_http / 100;
         if(!cli_arguments->no_color_flag) {
@@ -519,6 +530,7 @@ int main(int argc, char* argv[]) {
         }
         printf("\n");
         if(cli_arguments->output_given) {
+            LOG("Writing to %s...\n", cli_arguments->output);
             if(http_status_cat == 3) {
                 if(cli_arguments->output_given) {
                     fprintf(output_file, "[%ld] %s -> %s [%s] [%zu]", current_document->status_code_http,
@@ -544,6 +556,7 @@ int main(int argc, char* argv[]) {
 #if GRAPHVIZ_SUPPORT
         // set node infos
         if(cli_arguments->graph_flag) {
+            LOG("Adding label for the node: %s\n", current_document->url);
             // TODO: refactor code
             // get currend node representing the current_document
             Agnode_t* node_current = agnode(bundle_walk.graph, current_document->url, 0);
@@ -602,6 +615,7 @@ int main(int argc, char* argv[]) {
 #endif
 
         if(current_document->content_type != NULL) {  // sometimes, the server doesn't send a content-type header
+            LOG("Handling content type for %s\n", current_document->url);
             // parse only html and xhtml files
             if(strstr(current_document->content_type, "text/html") != NULL || strstr(current_document->content_type, "application/xhtml+xml") != NULL) {
                 bundle_walk.base_tag_url = get_base_tag_value(current_document->lexbor_document);
@@ -622,6 +636,7 @@ int main(int argc, char* argv[]) {
         }  // maybe check using libmagick if this is a html file if the server didn't specified it
 
         if(current_document->redirect_location != NULL) {
+            LOG("Handling redirect URL for %s\n", current_document->url);
             // get the domain of the current document and the domain of the redirect URL
             char* cur_doc_url_domain;
             char* redirect_location_domain;
@@ -683,20 +698,21 @@ int main(int argc, char* argv[]) {
                         !is_in_disallowed_domains(redirect_location_domain, cli_arguments->disallowed_domains, cli_arguments->disallowed_domains_count)) {
 
                         if(url_not_seen(current_document->redirect_location, urls_stack_done, urls_stack_todo)) {
+                            LOG("Added redirect URL: %s\n", current_document->redirect_location);
                             stack_url_push(&urls_stack_todo, current_document->redirect_location);
+#if GRAPHVIZ_SUPPORT
+                            if(cli_arguments->graph_flag) {
+                                Agnode_t* node_new = agnode(bundle_walk.graph, current_document->redirect_location, 1);
+
+                                // should not create any node
+                                Agnode_t* node_current = agnode(bundle_walk.graph, current_document->url, 0);
+
+                                Agedge_t* edge = agedge(bundle_walk.graph, node_current, node_new, 0, 1);
+                                agsafeset(edge, "splines", "curved", "curved");
+                            }
+#endif
                             has_been_added = 1;
                         }
-#if GRAPHVIZ_SUPPORT
-                        if(cli_arguments->graph_flag) {
-                            Agnode_t* node_new = agnode(bundle_walk.graph, current_document->redirect_location, 1);
-
-                            // should not create any node
-                            Agnode_t* node_current = agnode(bundle_walk.graph, current_document->url, 0);
-
-                            Agedge_t* edge = agedge(bundle_walk.graph, node_current, node_new, 0, 1);
-                            agsafeset(edge, "splines", "curved", "curved");
-			}
-#endif
                     }
                 }
                 if(!has_been_added) {
@@ -712,6 +728,7 @@ int main(int argc, char* argv[]) {
         lxb_html_document_destroy(current_document->lexbor_document);
         free(current_document);
     }
+    LOG("Quitting...\n");
     for(int i = 0; i < cli_arguments->threads; i++) {
         pthread_join(fetcher_threads[i], NULL);
     }
@@ -743,14 +760,17 @@ int main(int argc, char* argv[]) {
 
 #if GRAPHVIZ_SUPPORT
     if(cli_arguments->graph_flag) {
-        GVC_t* gvc = gvContext();
-
         char* graph_output_filename = (char*) malloc(sizeof (char) * (strlen("output.") + strlen(cli_arguments->graph_output_format) + 1));
         strcpy(graph_output_filename, "output.");
         strcat(graph_output_filename, cli_arguments->graph_output_format);
+        printf("[G] Creating graph: %s\n", graph_output_filename);
 
+        GVC_t* gvc = gvContext();
+
+        puts("[G] Generating layout...");
         gvLayout(gvc, bundle_walk.graph, cli_arguments->graph_layout);
 
+        puts("[G] Rendering graph to file...");
         gvRenderFilename(gvc, bundle_walk.graph, cli_arguments->graph_output_format, graph_output_filename);
 
         free(graph_output_filename);

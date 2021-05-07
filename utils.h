@@ -38,13 +38,12 @@ int get_path_depth(char* path);
 
 char* get_base_tag_value(lxb_html_document_t* document);
 
-// DEBUG
+// VERBOSE
+extern int _verbose;
+void _verbose_print(const char* function_name, const char* format, ...);
 
-extern int _debug;
-void _debug_print(const char* function_name, const char* format, ...);
+#define LOG(...) _verbose_print(__func__, __VA_ARGS__)
 
-#define DEBUG(...) _debug_print(__func__, __VA_ARGS__)
-
-#define ACTIVATE_DEBUG() _debug = 1;
+#define ACTIVATE_VERBOSE() _verbose = 1;
 
 #endif

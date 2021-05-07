@@ -87,6 +87,8 @@ URLNode_t* get_sitemap_urls(char *url, int no_color) {
     curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS | CURLPROTO_HTTP);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __sitemap_fetch_callback);
 
+    LOG("Finished initialisation.\n");
+
     while(!stack_url_isempty(list_sitemaps)) {
         char* current_sitemap_url = stack_url_pop(&list_sitemaps);
         if(no_color) {
@@ -131,6 +133,7 @@ URLNode_t* get_sitemap_urls(char *url, int no_color) {
 
         xmlParseChunk(ctxt, NULL, 0, 1); // indicate the end of chunk parsing
 
+        LOG("Parsing %s...\n", current_sitemap_url);
         doc = ctxt->myDoc; // get the final document
         int res = ctxt->wellFormed;
         xmlFreeParserCtxt(ctxt);
@@ -149,6 +152,7 @@ URLNode_t* get_sitemap_urls(char *url, int no_color) {
         __sitemap_get_content(root_element, &list_sitemaps, &list_urls_found, no_color);
 
         xmlFreeDoc(doc);
+        LOG("Finished parsing %s\n", current_sitemap_url);
     }
 
     xmlCleanupParser();

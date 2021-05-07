@@ -80,6 +80,7 @@ void cli_arguments_print_help(char* prgm_name) {
     puts("\nOther:");
     puts("\t-t <integer>: Number of threads that will fetch URLs.");
     puts("\t-S <url>: Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap.");
+    puts("\t-v: Verbose mode.");
     puts("\t-h: Print the help.");
     puts("\t-V: Print the version.");
 }
@@ -89,9 +90,9 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
     _init_arguments(args);
 
 #if GRAPHVIZ_SUPPORT
-    char* args_str = "u:t:m:U:S:o:D:C:sqcTfFBH64qVhp:P:x:X:a:d:gG:L:";
+    char* args_str = "u:t:m:U:S:o:D:C:vsqcTfFBH64qVhp:P:x:X:a:d:gG:L:";
 #else
-    char* args_str = "u:t:m:U:S:o:D:C:sqcTfFBH64qVhp:P:x:X:a:d:";
+    char* args_str = "u:t:m:U:S:o:D:C:vsqcTfFBH64qVhp:P:x:X:a:d:";
 #endif
 
     // used when using strtoul
@@ -254,6 +255,9 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 cli_arguments_print_help(argv[0]);
                 cli_arguments_free(args);
                 return NULL;
+            case 'v': // verbose mode
+                args->verbose = 1;
+                break;
             case 'V': // print version
                 printf("MapPPTH: %s\n", MAPPTTH_VERSION);
                 printf("libcurl: %s\n", LIBCURL_VERSION);

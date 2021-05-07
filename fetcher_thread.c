@@ -56,6 +56,8 @@ void* fetcher_thread_func(void* bundle_arg) {
     char* redirect_location;
     long status_code_http;
 
+    LOG("Ready to fetch!\n");
+
     while(*should_exit == 0) {
         pthread_mutex_lock(mutex);
         if(stack_url_isempty(*urls_stack_todo)) {  // no url to fetch
@@ -67,6 +69,7 @@ void* fetcher_thread_func(void* bundle_arg) {
         current_url = stack_url_pop(urls_stack_todo);
         stack_url_push(urls_stack_done, current_url);
         pthread_mutex_unlock(mutex);
+        LOG("Got this URL to fetch: %s\n", current_url);
 
         current_document->lxb_document = lxb_html_document_create();
         current_document->size = 0L;
@@ -91,6 +94,7 @@ void* fetcher_thread_func(void* bundle_arg) {
         // fetch
         lxb_html_document_parse_chunk_begin(current_document->lxb_document);
 
+        LOG("Fetching %s...\n", current_url);
         status_c = curl_easy_perform(curl);
 
         if(status_c == CURLE_OPERATION_TIMEDOUT) {
@@ -126,6 +130,8 @@ void* fetcher_thread_func(void* bundle_arg) {
 
         status_l = lxb_html_document_parse_chunk_end(current_document->lxb_document);
 
+        LOG("Getting infos about %s\n", current_url);
+
         status_c = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code_http);
         if(status_c != CURLE_OK) {
             fprintf(stderr, "curl_easy_getinfo for getting the HTTP status code failed for %s. Setting it to 0. Error: %s.\n", current_url, curl_easy_strerror(status_c));
@@ -152,7 +158,9 @@ void* fetcher_thread_func(void* bundle_arg) {
         pthread_mutex_lock(mutex);
         stack_document_push(documents, current_document->lxb_document, current_url, status_code_http, current_document->size, content_type, redirect_location);
         pthread_mutex_unlock(mutex);
+        LOG("Done with %s\n", current_url);
     }
+    LOG("Quitting...\n");
     curl_easy_cleanup(curl);
     free(current_document);
 

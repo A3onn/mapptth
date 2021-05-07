@@ -34,7 +34,7 @@ struct arguments {
 	unsigned int only_head_flag;
 	unsigned int only_ipv6_flag;
 	unsigned int only_ipv4_flag;
-    unsigned int debug_flag;
+    unsigned int verbose;
 #if GRAPHVIZ_SUPPORT
 	unsigned int graph_flag;
 #endif
