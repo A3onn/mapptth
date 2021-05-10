@@ -570,20 +570,20 @@ int main(int argc, char* argv[]) {
             char label_curr_node[4096];
             if(current_document->redirect_location != NULL) {
                 if(current_document->content_type != NULL) {
-                    snprintf(label_curr_node, 4096, "%s\nStatus code: %d\nRedirect location: %s\nContent type: %s\nContent length: %d",
+                    snprintf(label_curr_node, 4096, "%s\nStatus code: %lu\nRedirect location: %s\nContent type: %s\nContent length: %lu",
                         current_document->url, current_document->status_code_http, current_document->redirect_location,
                         current_document->content_type, current_document->size);
                 } else {
-                    snprintf(label_curr_node, 4096, "%s\nStatus code: %d\nRedirect location: %s\nContent length: %d",
+                    snprintf(label_curr_node, 4096, "%s\nStatus code: %lu\nRedirect location: %s\nContent length: %lu",
                         current_document->url, current_document->status_code_http, current_document->redirect_location, current_document->size);
                 }
             } else {
                 if(current_document->content_type != NULL) {
-                    snprintf(label_curr_node, 4096, "%s\nStatus code: %d\nContent type: %s\nContent length: %d",
+                    snprintf(label_curr_node, 4096, "%s\nStatus code: %lu\nContent type: %s\nContent length: %lu",
                         current_document->url, current_document->status_code_http,
                         current_document->content_type, current_document->size);
                 } else {
-                    snprintf(label_curr_node, 4096, "%s\nStatus code: %d\nContent length: %d",
+                    snprintf(label_curr_node, 4096, "%s\nStatus code: %lu\nContent length: %lu",
                         current_document->url, current_document->status_code_http, current_document->size);
                 }
             }
