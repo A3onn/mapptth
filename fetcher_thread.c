@@ -35,6 +35,7 @@ void* fetcher_thread_func(void* bundle_arg) {
     URLNode_t** urls_stack_todo = bundle->urls_stack_todo;
     URLNode_t** urls_stack_done = bundle->urls_stack_done;
     pthread_mutex_t* mutex = bundle->mutex;
+    pthread_cond_t* cond_var = bundle->cond_var;
     int* is_running = bundle->is_running;
     int* should_exit = bundle->should_exit;
     int timeout = bundle->timeout;
@@ -60,10 +61,14 @@ void* fetcher_thread_func(void* bundle_arg) {
 
     while(*should_exit == 0) {
         pthread_mutex_lock(mutex);
-        if(stack_url_isempty(*urls_stack_todo)) {  // no url to fetch
+        while(stack_url_isempty(*urls_stack_todo)) {  // no url to fetch
             *is_running = 0;  // change state
-            pthread_mutex_unlock(mutex);
-            continue;
+            LOG("Waiting an URL to fetch...\n");
+            pthread_cond_wait(cond_var, mutex);
+            if(*should_exit) { // main will send a broadcast when it is quitting and set should_exit to 1
+                pthread_mutex_unlock(mutex);
+                goto cleanup_and_exit;
+            }
         }
         *is_running = 1; // indicates the main thread that this thread is fetching
         current_url = stack_url_pop(urls_stack_todo);
@@ -160,6 +165,8 @@ void* fetcher_thread_func(void* bundle_arg) {
         pthread_mutex_unlock(mutex);
         LOG("Done with %s\n", current_url);
     }
+
+cleanup_and_exit:
     LOG("Quitting...\n");
     curl_easy_cleanup(curl);
     free(current_document);

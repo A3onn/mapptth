@@ -12,6 +12,7 @@ struct BundleVarsThread {  // used to needed variables to the thread
     URLNode_t** urls_stack_done;  // stack of URLS fetched
     CURLSH* curl_share;
     pthread_mutex_t* mutex;
+    pthread_cond_t* cond_var;
 
     int* is_running;  // let know the main thread if the thread is fetching something
     int* should_exit;  // if thread should exit; set by the main thread
