@@ -26,7 +26,7 @@ struct WalkBundle {  // used with walk_cb.
     struct Document* document;
     URLNode_t** urls_stack_todo;
     URLNode_t** urls_stack_done;
-    pthread_cond_t* cond_var;
+    pthread_cond_t* cv_url_added;
     int allow_subdomains;
     char** allowed_domains;
     int count_allowed_domains;
@@ -163,7 +163,7 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
 
             if(url_not_seen(final_url, *(bundle->urls_stack_done), *(bundle->urls_stack_todo))) {
                 stack_url_push(bundle->urls_stack_todo, final_url);
-                pthread_cond_signal(bundle->cond_var);
+                pthread_cond_signal(bundle->cv_url_added);
                 LOG("Found in %s a <%s> containing: %s\n", bundle->document->url, lxb_dom_element_tag_name(element, NULL), final_url);
                 has_been_added = 1;
             }
@@ -290,7 +290,8 @@ int main(int argc, char* argv[]) {
 
     pthread_t fetcher_threads[cli_arguments->threads];
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_cond_t cond_var = PTHREAD_COND_INITIALIZER;
+    pthread_cond_t cv_url_added = PTHREAD_COND_INITIALIZER;
+    pthread_cond_t cv_fetcher_produced = PTHREAD_COND_INITIALIZER;
 
     DocumentNode_t* documents_stack = NULL;
 
@@ -377,7 +378,6 @@ int main(int argc, char* argv[]) {
     }
 
     stack_url_push(&urls_stack_todo, cli_arguments->url);  // add the URL specified by -u
-    pthread_cond_signal(&cond_var);
 
     // create shared interface
     CURLSH* curl_share = curl_share_init();
@@ -406,7 +406,8 @@ int main(int argc, char* argv[]) {
         bundles[i].urls_stack_todo = &urls_stack_todo;
         bundles[i].urls_stack_done = &urls_stack_done;
         bundles[i].mutex = &mutex;
-        bundles[i].cond_var = &cond_var;
+        bundles[i].cv_url_added = &cv_url_added;
+        bundles[i].cv_fetcher_produced = &cv_fetcher_produced;
         bundles[i].should_exit = &should_exit;
         bundles[i].is_running = &(list_running_thread_status[i]);
         bundles[i].timeout = cli_arguments->timeout;
@@ -443,7 +444,7 @@ int main(int argc, char* argv[]) {
     bundle_walk.count_allowed_paths = cli_arguments->allowed_paths_count;
     bundle_walk.keep_query = cli_arguments->keep_query_flag;
     bundle_walk.max_path_depth = cli_arguments->max_depth;
-    bundle_walk.cond_var = &cond_var;
+    bundle_walk.cv_url_added = &cv_url_added;
 #if GRAPHVIZ_SUPPORT
     bundle_walk.generate_graph = cli_arguments->graph_flag;
     if(cli_arguments->graph_flag) {
@@ -460,10 +461,9 @@ int main(int argc, char* argv[]) {
     LOG("Starting...\n");
     while(1) {
         pthread_mutex_lock(&mutex);
-        if(stack_document_length(documents_stack) == 0) {  // no documents to parse
+        if(stack_document_isempty(documents_stack)) {  // no documents to parse
             // if this thread has no document to parse and all threads are waiting for
-            // urls, then it means that everything was discovered and they should
-            // quit, otherwise just continue to check for something to do
+            // urls, then it means that everything was discovered and they should quit
             int should_quit = 1;
             for(int i = 0; i < cli_arguments->threads; i++) {  // check if all threads are running
                 if(list_running_thread_status[i] == 1) {  // if one is running
@@ -477,8 +477,16 @@ int main(int argc, char* argv[]) {
                 pthread_mutex_unlock(&mutex);
                 break;  // quit parsing
             }
-            // if some thread(s) are running, just continue to check for a document to come
-            pthread_mutex_unlock(&mutex);
+
+            LOG("Waiting for a document to parse...\n");
+
+            // signaled when a fetcher adds something to the stack of documents and when
+            // it waits for cv_url_added (meaning when it does not have anything to fetch)
+            pthread_cond_wait(&cv_fetcher_produced, &mutex);
+
+            pthread_mutex_unlock(&mutex); // no need to keep the mutex any more
+            // need to recheck if the last pthread_cond_wait(&cv_fetcher) was not signaled
+            // by a fetcher to indicate that it has nothing left to fetch and he is no longer running
             continue;
         }
 
@@ -706,7 +714,7 @@ int main(int argc, char* argv[]) {
                         if(url_not_seen(current_document->redirect_location, urls_stack_done, urls_stack_todo)) {
                             LOG("Added redirect URL: %s\n", current_document->redirect_location);
                             stack_url_push(&urls_stack_todo, current_document->redirect_location);
-                            pthread_cond_signal(&cond_var);
+                            pthread_cond_signal(&cv_url_added);
 #if GRAPHVIZ_SUPPORT
                             if(cli_arguments->graph_flag) {
                                 Agnode_t* node_new = agnode(bundle_walk.graph, current_document->redirect_location, 1);
@@ -736,10 +744,11 @@ int main(int argc, char* argv[]) {
         free(current_document);
     }
 
+cleanup_and_quit:
     LOG("Quitting...\n");
     for(int i = 0; i < cli_arguments->threads; i++) {
         LOG("Waiting for the thread #%lu to quit...\n", fetcher_threads[i]);
-        pthread_cond_broadcast(&cond_var);
+        pthread_cond_broadcast(&cv_url_added);
         pthread_join(fetcher_threads[i], NULL);
     }
 
@@ -768,7 +777,7 @@ int main(int argc, char* argv[]) {
     curl_share_cleanup(curl_share);
     curl_global_cleanup();
     pthread_mutex_destroy(&mutex);
-    pthread_cond_destroy(&cond_var);
+    pthread_cond_destroy(&cv_url_added);
 
 #if GRAPHVIZ_SUPPORT
     if(cli_arguments->graph_flag) {

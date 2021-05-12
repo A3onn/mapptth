@@ -35,7 +35,8 @@ void* fetcher_thread_func(void* bundle_arg) {
     URLNode_t** urls_stack_todo = bundle->urls_stack_todo;
     URLNode_t** urls_stack_done = bundle->urls_stack_done;
     pthread_mutex_t* mutex = bundle->mutex;
-    pthread_cond_t* cond_var = bundle->cond_var;
+    pthread_cond_t* cv_url_added = bundle->cv_url_added;
+    pthread_cond_t* cv_fetcher_produced = bundle->cv_fetcher_produced;
     int* is_running = bundle->is_running;
     int* should_exit = bundle->should_exit;
     int timeout = bundle->timeout;
@@ -63,8 +64,13 @@ void* fetcher_thread_func(void* bundle_arg) {
         pthread_mutex_lock(mutex);
         while(stack_url_isempty(*urls_stack_todo)) {  // no url to fetch
             *is_running = 0;  // change state
-            LOG("Waiting an URL to fetch...\n");
-            pthread_cond_wait(cond_var, mutex);
+            LOG("Waiting for an URL to fetch...\n");
+
+            // signal that this thread is waiting, the main thread checks everytime
+            // if the program should exit when this signal is send and he is waiting
+            pthread_cond_signal(cv_fetcher_produced);
+
+            pthread_cond_wait(cv_url_added, mutex);
             if(*should_exit) { // main will send a broadcast when it is quitting and set should_exit to 1
                 pthread_mutex_unlock(mutex);
                 goto cleanup_and_exit;
@@ -163,6 +169,7 @@ void* fetcher_thread_func(void* bundle_arg) {
         pthread_mutex_lock(mutex);
         stack_document_push(documents, current_document->lxb_document, current_url, status_code_http, current_document->size, content_type, redirect_location);
         pthread_mutex_unlock(mutex);
+        pthread_cond_signal(cv_fetcher_produced);
         LOG("Done with %s\n", current_url);
     }
 

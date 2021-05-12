@@ -53,3 +53,7 @@ int stack_document_length(DocumentNode_t* head) {
 
     return res;
 }
+
+int stack_document_isempty(DocumentNode_t* head) {
+    return head == NULL;
+}

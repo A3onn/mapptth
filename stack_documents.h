@@ -28,5 +28,7 @@ struct Document* stack_document_pop(DocumentNode_t** head);
 
 int stack_document_length(DocumentNode_t* head);
 
+int stack_document_isempty(DocumentNode_t* head);
+
 
 #endif
