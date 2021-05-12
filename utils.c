@@ -258,10 +258,14 @@ char* get_base_tag_value(lxb_html_document_t* document) {
 
     char* url = NULL;
 
-    lxb_dom_elements_by_tag_name(lxb_dom_interface_element(document->head), collection, (const lxb_char_t*) "base", 4);
+    if(document->head != NULL) {
+        lxb_dom_elements_by_tag_name(lxb_dom_interface_element(document->head), collection, (const lxb_char_t*) "base", 4);
+    }
 
     // should not happen (by the standard) by just in case
-    lxb_dom_elements_by_tag_name(lxb_dom_interface_element(document->body), collection, (const lxb_char_t*) "base", 4);
+    if(document->body != NULL) {
+        lxb_dom_elements_by_tag_name(lxb_dom_interface_element(document->body), collection, (const lxb_char_t*) "base", 4);
+    }
 
     // will loop through the bases and return the first base tag with a href attribute
     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base#multiple_%3Cbase%3E_elements
