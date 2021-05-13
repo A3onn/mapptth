@@ -46,26 +46,28 @@ If you want to disable it, you can run `cmake -DMAPPTTH_NO_GRAPHVIZ ..` instead 
 
 ## How to use
 
+### Parameters
+
 The only required argument is ```-u <URL>```. This specifies where the crawler starts to crawl.
 
 Here is the list of available parameters grouped by category:
 
-### Connection
+#### Connection
 
 | Name | Argument |
 | --- | --- |
 | URL where to start crawling. __(REQUIRED)__ | -u \<URL> |
-| String that will be used as user-agent. You can disable sending the user-agent header by giving an empty string. | -U \<user-agent> |
-| Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL. | -m \<timeout> |
+| String that will be used as user-agent. You can disable sending the user-agent header by giving an empty string. (default='MAPPTTH/<version>') | -U \<user-agent> |
+| Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL. (default=3) | -m \<timeout> |
 | Only resolve to IPv4 addresses. | -4 |
 | Only resolve to IPv6 addresses. | -6 |
 
 
-### Controlling where the crawler goes
+#### Controlling where the crawler goes
 
 | Name | Argument |
 | --- | --- |
-| Allow the crawler to go into subdomains of the initial URL and allowed domains. | -s |
+| Allow the crawler to go into subdomains of the initial URL and allowed domains. (default=false) | -s |
 | Allow the crawler to go to these domains. | -a \<domain> |
 | Disallow the crawler to go to these domains. | -d \<domain> |
 | Allow the crawler to only fetch URL starting with these paths. | -p \<path> |
@@ -78,7 +80,7 @@ Here is the list of available parameters grouped by category:
 | Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched. | -q |
 
 
-### Parsing
+#### Parsing
 
 _Only works for HTML files._
 
@@ -88,7 +90,7 @@ _Only works for HTML files._
 | Only parse the \<body> part. | -B |
 
 
-### Output
+#### Output
 
 | Name | Argument |
 | --- | --- |
@@ -96,7 +98,7 @@ _Only works for HTML files._
 | Print the title of the page if there is one when displaying an URL. | -T |
 | File to write output into (without colors). | -o \<file name> |
 
-### Graph
+#### Graph
 
 GraphViz support must be enabled to use these parameters.
 
@@ -106,15 +108,70 @@ GraphViz support must be enabled to use these parameters.
 | Change the layout of the graph. (default='sfdp') | -L \<layout> |
 | Change the output graph file format. (default='png') | -G \<format> |
 
-### Other
+#### Other
 
 | Name | Argument |
 | --- | --- |
-| Number of threads that will fetch URLs. | -t \<number of threads> |
+| Number of threads that will fetch URLs. (default=5) | -t \<number of threads> |
 | Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap. | -S \<URL of the sitemap> |
 | Print the help. | -h |
 | Print the version. | -V |
 
+### Exemples
+
+Simple crawl:
+
+```
+mapptth -u https://google.com
+```
+
+Start crawling at a certain URL:
+
+```
+mapptth -u https://google.com/some/url/file.html
+```
+
+More threads:
+
+```
+mapptth -u https://google.com -t 10
+```
+
+Allow to crawl into subdomains (ex: www.google.com, mail.google.com, ww.mail.google.com):
+
+```
+mapptth -u https://google.com -s
+```
+
+Allow to crawl certain domains and their subdomains (ex: www.google.com, mail.gitlabl.com, www.mail.github.com):
+
+```
+mapptth -u https://google.com -s -a gitlab.com -a github.com
+```
+
+Disallow some paths:
+
+```
+mapptth -u https://google.com -P /path -P /some-path
+```
+
+Disallow a path and only fetch .html and .php files:
+
+```
+mapptth -u https://google.com -P /some-path -x .html -x .php
+```
+
+Only crawl in the /path directory:
+
+```
+mapptth -u https://google.com -p /path
+```
+
+A more complete and complicated one:
+
+```
+mapptth -u https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://google.com/sitemap.xml
+```
 
 ## TODO
 

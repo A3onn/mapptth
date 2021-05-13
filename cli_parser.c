@@ -43,13 +43,13 @@ void cli_arguments_print_help(char* prgm_name) {
     printf("Usage: %s <parameters>\n\n", prgm_name);
     puts("Connection:");
     puts("\t-u <url>: URL where to start crawling.");
-    puts("\t-B <string>: string that will be used as user-agent. You can disable sending the user-agent header by giving an empty string. ");
-    puts("\t-m <integer>: Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL.");
+    printf("\t-B <string>: string that will be used as user-agent. You can disable sending the user-agent header by giving an empty string. (default='MAPPTTH/%s')\n", MAPPTTH_VERSION);
+    puts("\t-m <integer>: Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL. (default=3)");
     puts("\t-4: Only resolve to IPv4 addresses.");
     puts("\t-6: Only resolve to IPv6 addresses.");
 
     puts("\nControlling where the crawler goes:");
-    puts("\t-s: Allow the crawler to go into subdomains of the initial URL and allowed domains.");
+    puts("\t-s: Allow the crawler to go into subdomains of the initial URL and allowed domains. (default=false)");
     puts("\t-a <domain>: Allow the crawler to go to these domains.");
     puts("\t-d <domain>: Disallow the crawler to go to these domains.");
     puts("\t-p <path>: Allow the crawler to only fetch URL starting with these paths.");
@@ -78,11 +78,19 @@ void cli_arguments_print_help(char* prgm_name) {
 #endif
 
     puts("\nOther:");
-    puts("\t-t <integer>: Number of threads that will fetch URLs.");
+    puts("\t-t <integer>: Number of threads that will fetch URLs. (default=5)");
     puts("\t-S <url>: Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap.");
     puts("\t-v: Verbose mode.");
     puts("\t-h: Print the help.");
     puts("\t-V: Print the version.");
+
+
+    puts("\nExemples:");
+    puts("\tmapptth -u https://google.com/some/url/file.html");
+    puts("\tmapptth -u https://google.com -s -a gitlab.com -a github.com");
+    puts("\tmapptth -u https://google.com -P /path -P /some-path");
+    puts("\tmapptth -u https://google.com -P /some-path -x .html -x .php");
+    puts("\tmapptth -u https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://google.com/sitemap.xml");
 }
 
 struct arguments* parse_cli_arguments(int argc, char** argv) {
