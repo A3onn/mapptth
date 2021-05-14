@@ -24,16 +24,17 @@ void __sitemap_location_get_urls(xmlNode* sitemap_root, URLNode_t** urls_found) 
 
     for (cur_node = sitemap_root; cur_node; cur_node = cur_node->next) {
         if (cur_node->type == XML_ELEMENT_NODE) {
+            //puts((const char*)cur_node->name);
             if(strcmp((const char*)cur_node->name, "loc") == 0) { // <location>
                 if(!stack_url_contains(*urls_found, (char*)xmlNodeGetContent(cur_node))) {
-                    stack_url_push(urls_found, (char*)xmlNodeGetContent(cur_node)); // add the url
+                    stack_url_push(urls_found, strdup((char*)xmlNodeGetContent(cur_node))); // add the url
                 }
             } else if(strcmp((const char*)cur_node->name, "link") == 0) { // <link>
                 // find href attribute and add the value to the list
                 for(xmlAttrPtr attr = cur_node->properties; NULL != attr; attr = attr->next) {
                     if(strcmp((const char*)attr->name, "href") == 0) {
                         if(!stack_url_contains(*urls_found, (char*)attr->children->content)) {
-                            stack_url_push(urls_found, (char*)attr->children->content);
+                            stack_url_push(urls_found, strdup((char*)attr->children->content));
                         }
                     }
                 }
@@ -50,7 +51,7 @@ void __sitemap_get_content(xmlNode* root, URLNode_t** urls_sitemaps, URLNode_t**
             if(strcmp((const char*)cur_node->name, "sitemap") == 0) { // if node is <sitemap>
                 if(!stack_url_contains(*urls_found, (char*)xmlNodeGetContent(cur_node))) {
                     char* found_url = __sitemap_get_location(cur_node->children); // get the location of the sitemap
-                    stack_url_push(urls_sitemaps, found_url); // add the sitemap to the list of sitemaps to fetch and parse
+                    stack_url_push(urls_sitemaps, strdup(found_url)); // add the sitemap to the list of sitemaps to fetch and parse
                     if(no_color) {
                         printf("Found new sitemap: %s\n", found_url);
                     } else {
