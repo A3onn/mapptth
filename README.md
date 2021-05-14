@@ -170,7 +170,7 @@ mapptth -u https://google.com -p /path
 A more complete and complicated one:
 
 ```
-mapptth -u https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://google.com/sitemap.xml
+mapptth -u https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://www.google.com/sitemap.xml
 ```
 
 ## TODO

@@ -90,7 +90,7 @@ void cli_arguments_print_help(char* prgm_name) {
     puts("\tmapptth -u https://google.com -s -a gitlab.com -a github.com");
     puts("\tmapptth -u https://google.com -P /path -P /some-path");
     puts("\tmapptth -u https://google.com -P /some-path -x .html -x .php");
-    puts("\tmapptth -u https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://google.com/sitemap.xml");
+    puts("\tmapptth -u https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://www.google.com/sitemap.xml");
 }
 
 struct arguments* parse_cli_arguments(int argc, char** argv) {
