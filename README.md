@@ -48,7 +48,7 @@ If you want to disable it, you can run `cmake -DMAPPTTH_NO_GRAPHVIZ ..` instead 
 
 ### Parameters
 
-The only required argument is ```-u <URL>```. This specifies where the crawler starts to crawl.
+The only required argument is ```-u <URL>```. This parameter specifies where the crawler starts to crawl.
 
 Here is the list of available parameters grouped by category:
 
@@ -100,7 +100,7 @@ _Only works for HTML files._
 
 #### Graph
 
-GraphViz support must be enabled to use these parameters.
+_GraphViz support must be enabled to use these parameters._
 
 | Name | Argument |
 | --- | --- |
@@ -143,7 +143,7 @@ Allow to crawl into subdomains (ex: www.google.com, mail.google.com, ww.mail.goo
 mapptth -u https://google.com -s
 ```
 
-Allow to crawl certain domains and their subdomains (ex: www.google.com, mail.gitlabl.com, www.mail.github.com):
+Allow to crawl certain domains and their subdomains (ex: www.google.com, mail.gitlab.com, www.mail.github.com):
 
 ```
 mapptth -u https://google.com -s -a gitlab.com -a github.com
@@ -186,7 +186,7 @@ Without any priority :
 
 - [ ] Add a parameter to control the connection rate
 
-- [ ] Add exemples in readme
+- [X] Add exemples in readme
 
 - [ ] Add robots.txt parser, can choose to follow rules or add URLs specified into starting list of URLs
 
