@@ -563,6 +563,8 @@ cleanup_and_quit:
     curl_share_cleanup(curl_share);
     curl_global_cleanup();
     pthread_mutex_destroy(&mutex);
+    pthread_mutex_destroy(&mutex_conn);
+    pthread_cond_destroy(&cv_fetcher_produced);
     pthread_cond_destroy(&cv_url_added);
 
 #if GRAPHVIZ_SUPPORT
