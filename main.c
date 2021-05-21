@@ -22,8 +22,9 @@
 #error "libcurl 7.62.0 or later is required"
 #endif
 
-struct WalkBundle {  // used with walk_cb.
-    struct Document* document;
+struct FoundURLHandlerBundle {
+    char* found_url; // url to handle
+    struct Document* document; // only document->url will be used from this struct
     URLNode_t** urls_stack_todo;
     URLNode_t** urls_stack_done;
     pthread_cond_t* cv_url_added;
@@ -51,6 +52,8 @@ struct WalkBundle {  // used with walk_cb.
 #endif
 };
 
+static inline int handle_found_url(struct FoundURLHandlerBundle* bundle);
+
 lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     // this function will be called for every nodes
 
@@ -69,7 +72,7 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
         return LEXBOR_ACTION_OK;
     }
 
-    struct WalkBundle* bundle = (struct WalkBundle*) ctx;
+    struct FoundURLHandlerBundle* bundle = (struct FoundURLHandlerBundle*) ctx;
 
     // try to get the 'href' attribute if it has one, 'src' attribute if it
     // doesn't have an 'href' attribute instead
@@ -83,112 +86,12 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
         }
     }
 
-
-    // used when checking for valid domain
-    char* document_domain;
-    char* found_url_domain;
-
-    // URL that will be added to the stack of URLs to fetch
-    char* final_url;
-
-    char* url_scheme;
-
-    if(is_valid_link((char*) found_url)) {
-        CURLU* curl_url_handler = curl_url();
-        curl_url_set(curl_url_handler, CURLUPART_URL, bundle->document->url, 0);
-        curl_url_get(curl_url_handler, CURLUPART_HOST, &document_domain, 0);
-
-        // set final URL
-        // curl will change the url by himself based on the document's URL
-        if(bundle->base_tag_url != NULL) {
-            curl_url_set(curl_url_handler, CURLUPART_URL, bundle->base_tag_url, 0);
-        }
-        curl_url_set(curl_url_handler, CURLUPART_URL, (char*) found_url, 0);
-        curl_url_set(curl_url_handler, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
-
-        // check scheme
-        curl_url_get(curl_url_handler, CURLUPART_SCHEME, &url_scheme, 0);
-        if((bundle->http_only && strcmp("http", url_scheme) != 0) || (bundle->https_only && strcmp("https", url_scheme) != 0)) {
-            free(document_domain);
-            free(url_scheme);
-            return LEXBOR_ACTION_OK;
-        }
-        free(url_scheme);
-
-        if(!bundle->keep_query) {
-            curl_url_set(curl_url_handler, CURLUPART_QUERY, NULL, 0);
-        }
-
-        char* path;
-        curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
-
-        // check path
-        if(is_disallowed_path(path, bundle->disallowed_paths, bundle->count_disallowed_paths)) {
-            free(document_domain);
-            free(path);
-            return LEXBOR_ACTION_OK;
-        }
-        if(!is_allowed_path(path, bundle->allowed_paths, bundle->count_allowed_paths)) {
-            free(document_domain);
-            free(path);
-            return LEXBOR_ACTION_OK;
-        }
-
-        // check extensions
-        if(is_disallowed_extension(path, bundle->disallowed_extensions, bundle->count_disallowed_extensions)) {
-            free(document_domain);
-            free(path);
-            return LEXBOR_ACTION_OK;
-        }
-        if(!is_allowed_extension(path, bundle->allowed_extensions, bundle->count_allowed_extensions)) {
-          free(document_domain);
-          free(path);
-          return LEXBOR_ACTION_OK;
-        }
-
-        if(bundle->max_path_depth > 0 && get_path_depth(path) > bundle->max_path_depth) {
-            free(document_domain);
-            free(path);
-            return LEXBOR_ACTION_OK;
-        }
-        free(path);
-
-        char has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
-        curl_url_get(curl_url_handler, CURLUPART_URL, &final_url, 0);  // get final url
-        curl_url_get(curl_url_handler, CURLUPART_HOST, &found_url_domain, 0);  // get the domain of the URL found
-
-        if((is_same_domain(found_url_domain, document_domain, bundle->allow_subdomains) ||
-            is_in_valid_domains(found_url_domain, bundle->allowed_domains, bundle->count_allowed_domains, bundle->allow_subdomains)) &&
-            !is_in_disallowed_domains(found_url_domain, bundle->disallowed_domains, bundle->count_disallowed_domains)) {
-
-            if(url_not_seen(final_url, *(bundle->urls_stack_done), *(bundle->urls_stack_todo))) {
-                stack_url_push(bundle->urls_stack_todo, final_url);
-                pthread_cond_signal(bundle->cv_url_added);
-                LOG("Found in %s a <%s> containing: %s\n", bundle->document->url, lxb_dom_element_tag_name(element, NULL), final_url);
-                has_been_added = 1;
-            }
-
-#if GRAPHVIZ_SUPPORT
-            if(bundle->generate_graph) {
-                LOG("Adding node and edge for: %s\n", final_url);
-                Agnode_t* node_new = agnode(bundle->graph, final_url, 1);
-
-                // should not create any node
-                Agnode_t* node_current = agnode(bundle->graph, bundle->document->url, 0);
-
-                Agedge_t* edge = agedge(bundle->graph, node_current, node_new, 0, 1);
-                agsafeset(edge, "splines", "curved", "curved");
-            }
-#endif
-        }
-
-        if(!has_been_added) {
-            free(final_url);
-        }
-        free(found_url_domain);
-        free(document_domain);
-        curl_url_cleanup(curl_url_handler);
+    bundle->found_url = found_url;
+    int result = handle_found_url(bundle);
+    if(result) {
+        LOG("Found in %s a <%s> containing: %s\n", bundle->document->url, lxb_dom_element_tag_name(element, NULL), found_url);
     }
+
     return LEXBOR_ACTION_OK;
 }
 
@@ -288,8 +191,14 @@ int main(int argc, char* argv[]) {
         resolve_ip_version = CURL_IPRESOLVE_V6;
     }
 
-    pthread_t fetcher_threads[cli_arguments->threads];
+    // end checks
+
+    // set variables
+    curl_global_init(CURL_GLOBAL_ALL);  // initialize libcurl
+
+    pthread_t fetcher_threads[cli_arguments->threads]; // threads will be created after the sitemap parsing
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t mutex_conn = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t cv_url_added = PTHREAD_COND_INITIALIZER;
     pthread_cond_t cv_fetcher_produced = PTHREAD_COND_INITIALIZER;
 
@@ -297,87 +206,6 @@ int main(int argc, char* argv[]) {
 
     URLNode_t* urls_stack_todo = NULL;
     URLNode_t* urls_stack_done = NULL;
-
-    curl_global_init(CURL_GLOBAL_ALL);  // initialize libcurl
-
-    if(cli_arguments->sitemap_given) {
-        LOG("Fetching and parsing sitemaps\n");
-        // get the content of the sitemap
-        URLNode_t* url_stack_sitemap = get_sitemap_urls(cli_arguments->sitemap, cli_arguments->no_color_flag);
-
-        // validate the URLs found in the sitemap, same code as when finding an URL in a document
-        CURLU* curl_url_handler = curl_url();
-        int count = 0;  // keep track of how many validated URLs were added
-        while(!stack_url_isempty(url_stack_sitemap)) {  // loop over URLs
-            char* url = stack_url_pop(&url_stack_sitemap);
-            curl_url_set(curl_url_handler, CURLUPART_URL, url, 0);
-
-            if(is_valid_link(url)) {
-                if(!cli_arguments->keep_query_flag) {
-                    curl_url_set(curl_url_handler, CURLUPART_QUERY, NULL, 0);
-                }
-
-                char* path;
-                curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
-                // check disallowed paths
-                if(is_disallowed_path(path, disallowed_paths, cli_arguments->disallowed_paths_count)) {
-                    free(url);
-                    free(path);
-                    continue;
-                }
-                if(!is_allowed_path(path, allowed_paths, cli_arguments->allowed_paths_count)) {
-                    free(url);
-                    free(path);
-                    continue;
-                }
-                // check extensions
-                if(is_disallowed_extension(path, cli_arguments->disallowed_extensions, cli_arguments->disallowed_extensions_count)) {
-                    free(url);
-                    free(path);
-                    continue;
-                }
-                if(!is_allowed_extension(path, cli_arguments->allowed_extensions, cli_arguments->allowed_extensions_count)) {
-                  free(url);
-                  free(path);
-                  continue;
-                }
-                if(cli_arguments->max_depth_given && get_path_depth(path) > cli_arguments->max_depth_given) {
-                    free(url);
-                    free(path);
-                    continue;
-                }
-                free(path);
-
-                if(url_not_seen(url, urls_stack_done, urls_stack_todo)) {
-                    char* domain_url_found;
-                    curl_url_get(curl_url_handler, CURLUPART_HOST, &domain_url_found, 0);  // get the domain of the URL
-
-                    char* initial_url_domain;  // URL specified by -u
-                    curl_url_set(curl_url_handler, CURLUPART_URL, cli_arguments->url, 0);
-                    curl_url_get(curl_url_handler, CURLUPART_HOST, &initial_url_domain, 0);
-
-                    // check domains
-                    if((is_same_domain(domain_url_found, initial_url_domain, cli_arguments->allow_subdomains_flag) ||
-                        is_in_valid_domains(domain_url_found, cli_arguments->allowed_domains, cli_arguments->allowed_domains_count, cli_arguments->allow_subdomains_flag)) &&
-                        !is_in_disallowed_domains(domain_url_found, cli_arguments->disallowed_domains, cli_arguments->disallowed_domains_count)) {
-
-                        stack_url_push(&urls_stack_todo, url);
-                        count++;
-                    } else {
-                        free(url);
-                    }
-                    free(domain_url_found);
-                    free(initial_url_domain);
-                }
-            } else {
-                free(url);
-            }
-        }
-        curl_url_cleanup(curl_url_handler);
-        printf("Added %i new URLs.\n", count);
-    }
-
-    stack_url_push(&urls_stack_todo, cli_arguments->url);  // add the URL specified by -u
 
     // create shared interface
     CURLSH* curl_share = curl_share_init();
@@ -391,11 +219,76 @@ int main(int argc, char* argv[]) {
     curl_share_setopt(curl_share, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
     curl_share_setopt(curl_share, CURLSHOPT_LOCKFUNC, lock_cb);
     curl_share_setopt(curl_share, CURLSHOPT_UNLOCKFUNC, unlock_cb);
-    pthread_mutex_t mutex_conn = PTHREAD_MUTEX_INITIALIZER;
     curl_share_setopt(curl_share, CURLSHOPT_USERDATA, (void*) &mutex_conn);
 
-    LOG("Creating threads...\n");
+    stack_url_push(&urls_stack_todo, cli_arguments->url);  // add the URL specified by -u
 
+    struct FoundURLHandlerBundle found_url_handler_bundle;  // in this bundle these elements never change
+    found_url_handler_bundle.allowed_domains = cli_arguments->allowed_domains;
+    found_url_handler_bundle.count_allowed_domains = cli_arguments->allowed_domains_count;
+    found_url_handler_bundle.disallowed_domains = cli_arguments->disallowed_domains;
+    found_url_handler_bundle.count_disallowed_domains = cli_arguments->disallowed_domains_count;
+    found_url_handler_bundle.allowed_extensions = cli_arguments->allowed_extensions;
+    found_url_handler_bundle.count_allowed_extensions = cli_arguments->allowed_extensions_count;
+    found_url_handler_bundle.disallowed_extensions = cli_arguments->disallowed_extensions;
+    found_url_handler_bundle.count_disallowed_extensions = cli_arguments->disallowed_extensions_count;
+    found_url_handler_bundle.allow_subdomains = cli_arguments->allow_subdomains_flag;
+    found_url_handler_bundle.http_only = cli_arguments->http_only_flag;
+    found_url_handler_bundle.https_only = cli_arguments->https_only_flag;
+    found_url_handler_bundle.disallowed_paths = disallowed_paths;
+    found_url_handler_bundle.count_disallowed_paths = cli_arguments->disallowed_paths_count;
+    found_url_handler_bundle.allowed_paths = allowed_paths;
+    found_url_handler_bundle.count_allowed_paths = cli_arguments->allowed_paths_count;
+    found_url_handler_bundle.keep_query = cli_arguments->keep_query_flag;
+    found_url_handler_bundle.max_path_depth = cli_arguments->max_depth;
+    found_url_handler_bundle.cv_url_added = &cv_url_added;
+#if GRAPHVIZ_SUPPORT
+    found_url_handler_bundle.generate_graph = cli_arguments->graph_flag;
+    if(cli_arguments->graph_flag) {
+        found_url_handler_bundle.graph = agopen(cli_arguments->url, Agstrictdirected, 0);
+        Agnode_t* first_node = agnode(found_url_handler_bundle.graph, cli_arguments->url, 1); // add initial node
+
+        // https://graphviz.org/doc/info/attrs.html#d:root
+        agsafeset(first_node, "root", "true", "true"); // set the node as the root (used by circo and twopi)
+
+        agsafeset(first_node, "URL", cli_arguments->url, cli_arguments->url); // used by svg
+    }
+#endif
+
+
+    if(cli_arguments->sitemap_given) {
+        LOG("Fetching and parsing sitemaps\n");
+        // get the content of the sitemap
+        URLNode_t* url_stack_sitemap = get_sitemap_urls(cli_arguments->sitemap, cli_arguments->no_color_flag);
+
+        // validate the URLs found in the sitemap, same code as when finding an URL in a document
+        CURLU* curl_url_handler = curl_url();
+        int count = 0;  // keep track of how many validated URLs were added
+        while(!stack_url_isempty(url_stack_sitemap)) {  // loop over URLs
+            char* url = stack_url_pop(&url_stack_sitemap);
+            
+            // handle_found_url uses only the url in the document, and all other fields
+            // in this struct are useless here (status code, size, content_type etc...)
+            struct Document doc;
+            doc.url = url;
+
+            found_url_handler_bundle.found_url = url;
+            found_url_handler_bundle.document = &doc;
+            found_url_handler_bundle.base_tag_url = NULL;
+            found_url_handler_bundle.urls_stack_done = &urls_stack_done;
+            found_url_handler_bundle.urls_stack_todo = &urls_stack_todo;
+
+            int result = handle_found_url(&found_url_handler_bundle);
+            if(result) {
+                count++;
+            }
+        }
+        curl_url_cleanup(curl_url_handler);
+        printf("Added %i new URLs.\n", count);
+    }
+
+
+    LOG("Creating threads...\n");
     int should_exit = 0;  // if threads should exit, set to 1 when all threads have is_running == 1
     int* list_running_thread_status = (int*) malloc(sizeof(int) * cli_arguments->threads);  // list containing ints indicating if each thread is fetching
     struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * cli_arguments->threads);
@@ -426,37 +319,6 @@ int main(int argc, char* argv[]) {
     struct Document* current_document ;
     CURLU* curl_url_handler = curl_url();  // used when handling redirections
 
-    struct WalkBundle bundle_walk;  // in this bundle these elements never change
-    bundle_walk.allowed_domains = cli_arguments->allowed_domains;
-    bundle_walk.count_allowed_domains = cli_arguments->allowed_domains_count;
-    bundle_walk.disallowed_domains = cli_arguments->disallowed_domains;
-    bundle_walk.count_disallowed_domains = cli_arguments->disallowed_domains_count;
-    bundle_walk.allowed_extensions = cli_arguments->allowed_extensions;
-    bundle_walk.count_allowed_extensions = cli_arguments->allowed_extensions_count;
-    bundle_walk.disallowed_extensions = cli_arguments->disallowed_extensions;
-    bundle_walk.count_disallowed_extensions = cli_arguments->disallowed_extensions_count;
-    bundle_walk.allow_subdomains = cli_arguments->allow_subdomains_flag;
-    bundle_walk.http_only = cli_arguments->http_only_flag;
-    bundle_walk.https_only = cli_arguments->https_only_flag;
-    bundle_walk.disallowed_paths = disallowed_paths;
-    bundle_walk.count_disallowed_paths = cli_arguments->disallowed_paths_count;
-    bundle_walk.allowed_paths = allowed_paths;
-    bundle_walk.count_allowed_paths = cli_arguments->allowed_paths_count;
-    bundle_walk.keep_query = cli_arguments->keep_query_flag;
-    bundle_walk.max_path_depth = cli_arguments->max_depth;
-    bundle_walk.cv_url_added = &cv_url_added;
-#if GRAPHVIZ_SUPPORT
-    bundle_walk.generate_graph = cli_arguments->graph_flag;
-    if(cli_arguments->graph_flag) {
-        bundle_walk.graph = agopen(cli_arguments->url, Agstrictdirected, 0);
-        Agnode_t* first_node = agnode(bundle_walk.graph, cli_arguments->url, 1); // add initial node
-
-        // https://graphviz.org/doc/info/attrs.html#d:root
-        agsafeset(first_node, "root", "true", "true"); // set the node as the root (used by circo and twopi)
-
-        agsafeset(first_node, "URL", cli_arguments->url, cli_arguments->url); // used by svg
-    }
-#endif
 
     LOG("Starting...\n");
     while(1) {
@@ -573,7 +435,7 @@ int main(int argc, char* argv[]) {
             LOG("Adding label for the node: %s\n", current_document->url);
             // TODO: refactor code
             // get currend node representing the current_document
-            Agnode_t* node_current = agnode(bundle_walk.graph, current_document->url, 0);
+            Agnode_t* node_current = agnode(found_url_handler_bundle.graph, current_document->url, 0);
 
             char label_curr_node[4096];
             if(current_document->redirect_location != NULL) {
@@ -632,112 +494,36 @@ int main(int argc, char* argv[]) {
             LOG("Handling content type for %s\n", current_document->url);
             // parse only html and xhtml files
             if(strstr(current_document->content_type, "text/html") != NULL || strstr(current_document->content_type, "application/xhtml+xml") != NULL) {
-                bundle_walk.base_tag_url = get_base_tag_value(current_document->lexbor_document);
-                bundle_walk.document = current_document;
+                found_url_handler_bundle.base_tag_url = get_base_tag_value(current_document->lexbor_document);
+                found_url_handler_bundle.document = current_document;
+                found_url_handler_bundle.base_tag_url = NULL;
                 pthread_mutex_lock(&mutex);
-                bundle_walk.urls_stack_done = &urls_stack_done;
-                bundle_walk.urls_stack_todo = &urls_stack_todo;
+                found_url_handler_bundle.urls_stack_done = &urls_stack_done;
+                found_url_handler_bundle.urls_stack_todo = &urls_stack_todo;
                 if(current_document->lexbor_document->head && !cli_arguments->only_body_flag) {
-                    lxb_dom_node_simple_walk(lxb_dom_interface_node(current_document->lexbor_document->head), walk_cb, &bundle_walk);
+                    lxb_dom_node_simple_walk(lxb_dom_interface_node(current_document->lexbor_document->head), walk_cb, &found_url_handler_bundle);
                 }
                 if(current_document->lexbor_document->body && !cli_arguments->only_head_flag) {
-                    lxb_dom_node_simple_walk(lxb_dom_interface_node(current_document->lexbor_document->body), walk_cb, &bundle_walk);
+                    lxb_dom_node_simple_walk(lxb_dom_interface_node(current_document->lexbor_document->body), walk_cb, &found_url_handler_bundle);
                 }
                 pthread_mutex_unlock(&mutex);
-                free(bundle_walk.base_tag_url);
+                free(found_url_handler_bundle.base_tag_url);
             }
             free(current_document->content_type);  // allocated by strdup
         }  // maybe check using libmagick if this is a html file if the server didn't specified it
 
         if(current_document->redirect_location != NULL) {
             LOG("Handling redirect URL for %s\n", current_document->url);
-            // get the domain of the current document and the domain of the redirect URL
-            char* cur_doc_url_domain;
-            char* redirect_location_domain;
-            char* url_scheme;
-
-            curl_url_set(curl_url_handler, CURLUPART_URL, current_document->redirect_location, 0);
-            curl_url_get(curl_url_handler, CURLUPART_HOST, &redirect_location_domain, 0);
-
-            curl_url_set(curl_url_handler, CURLUPART_URL, current_document->url, 0);
-            curl_url_get(curl_url_handler, CURLUPART_HOST, &cur_doc_url_domain, 0);
-
+            found_url_handler_bundle.document = current_document;
             pthread_mutex_lock(&mutex);
-            if(is_valid_link((char*) current_document->redirect_location)) {
-                curl_url_set(curl_url_handler, CURLUPART_URL, current_document->redirect_location, 0);  // curl will change the url by himself based on the document's URL
-                curl_url_set(curl_url_handler, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
-
-                curl_url_get(curl_url_handler, CURLUPART_SCHEME, &url_scheme, 0);
-
-                int is_still_valid = 1;  // indicates if it is a valid URL through the checks, if not then it is useless to do checks anymore
-
-                if((cli_arguments->http_only_flag && strcmp("http", url_scheme) != 0) || (cli_arguments->https_only_flag && strcmp("https", url_scheme) != 0)) {
-                    is_still_valid = 0;
-                }
-                free(url_scheme);
-
-                char* path;
-                curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
-                if(is_still_valid) {
-                    if(is_disallowed_path(path, disallowed_paths, cli_arguments->disallowed_paths_count)) {
-                        is_still_valid = 0;
-                    }
-                }
-                if(is_still_valid) {
-                    if(!is_allowed_path(path, allowed_paths, cli_arguments->allowed_paths_count)) {
-                        is_still_valid = 0;
-                    }
-                }
-                if(is_still_valid) {
-                    if(!is_allowed_extension(path, cli_arguments->allowed_extensions, cli_arguments->allowed_extensions_count)) {
-                        is_still_valid = 0;
-                    }
-                }
-                if(is_still_valid) {
-                    if(is_disallowed_extension(path, cli_arguments->disallowed_extensions, cli_arguments->disallowed_extensions_count)) {
-                        is_still_valid = 0;
-                    }
-                }
-                if(is_still_valid) {
-                    if(cli_arguments->max_depth_given && get_path_depth(path) > cli_arguments->max_depth_given) {
-                        is_still_valid = 0;
-                    }
-                }
-                free(path);
-
-                int has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
-                if(is_still_valid) {
-                    if((is_same_domain(redirect_location_domain, cur_doc_url_domain, cli_arguments->allow_subdomains_flag) ||
-                        is_in_valid_domains(redirect_location_domain, cli_arguments->allowed_domains, cli_arguments->allowed_domains_count, cli_arguments->allow_subdomains_flag)) &&
-                        !is_in_disallowed_domains(redirect_location_domain, cli_arguments->disallowed_domains, cli_arguments->disallowed_domains_count)) {
-
-                        if(url_not_seen(current_document->redirect_location, urls_stack_done, urls_stack_todo)) {
-                            LOG("Added redirect URL: %s\n", current_document->redirect_location);
-                            stack_url_push(&urls_stack_todo, current_document->redirect_location);
-                            pthread_cond_signal(&cv_url_added);
-#if GRAPHVIZ_SUPPORT
-                            if(cli_arguments->graph_flag) {
-                                Agnode_t* node_new = agnode(bundle_walk.graph, current_document->redirect_location, 1);
-
-                                // should not create any node
-                                Agnode_t* node_current = agnode(bundle_walk.graph, current_document->url, 0);
-
-                                Agedge_t* edge = agedge(bundle_walk.graph, node_current, node_new, 0, 1);
-                                agsafeset(edge, "splines", "curved", "curved");
-                            }
-#endif
-                            has_been_added = 1;
-                        }
-                    }
-                }
-                if(!has_been_added) {
-                    free(current_document->redirect_location);
-                }
+            found_url_handler_bundle.urls_stack_done = &urls_stack_done;
+            found_url_handler_bundle.urls_stack_todo = &urls_stack_todo;
+            found_url_handler_bundle.found_url = current_document->redirect_location;
+            int result = handle_found_url(&found_url_handler_bundle);
+            if(result) {
+                LOG("Added redirect URL: %s\n", current_document->redirect_location);
             }
             pthread_mutex_unlock(&mutex);
-
-            free(cur_doc_url_domain);
-            free(redirect_location_domain);
         }
 
         lxb_html_document_destroy(current_document->lexbor_document);
@@ -789,15 +575,15 @@ cleanup_and_quit:
         GVC_t* gvc = gvContext();
 
         puts("[G] Generating layout...");
-        gvLayout(gvc, bundle_walk.graph, cli_arguments->graph_layout);
+        gvLayout(gvc, found_url_handler_bundle.graph, cli_arguments->graph_layout);
 
         puts("[G] Rendering graph to file...");
-        gvRenderFilename(gvc, bundle_walk.graph, cli_arguments->graph_output_format, graph_output_filename);
+        gvRenderFilename(gvc, found_url_handler_bundle.graph, cli_arguments->graph_output_format, graph_output_filename);
 
         free(graph_output_filename);
 
-        gvFreeLayout(gvc, bundle_walk.graph);
-        agclose(bundle_walk.graph);
+        gvFreeLayout(gvc, found_url_handler_bundle.graph);
+        agclose(found_url_handler_bundle.graph);
         gvFreeContext(gvc);
     }
 #endif
@@ -805,4 +591,121 @@ cleanup_and_quit:
     cli_arguments_free(cli_arguments);
 
     return EXIT_SUCCESS;
+}
+
+
+static inline int handle_found_url(struct FoundURLHandlerBundle* bundle) {
+    // NOTE: 
+    // only document->url will be used in the bundle->document, this is important when parsing the sitemap
+    // as nothing else in the document will be set (no redirection, no status code, etc... as it it useless for the sitemap)
+
+
+    // used when checking for valid domain
+    char* document_domain;
+    char* found_url_domain;
+
+    // URL that will be added to the stack of URLs to fetch
+    char* final_url;
+
+    char* url_scheme;
+
+    if(is_valid_link(bundle->found_url)) {
+        CURLU* curl_url_handler = curl_url();
+        curl_url_set(curl_url_handler, CURLUPART_URL, bundle->document->url, 0);
+        curl_url_get(curl_url_handler, CURLUPART_HOST, &document_domain, 0);
+
+        // set final URL
+        // curl will change the url by himself based on the document's URL
+        if(bundle->base_tag_url != NULL) {
+            curl_url_set(curl_url_handler, CURLUPART_URL, bundle->base_tag_url, 0);
+        }
+        curl_url_set(curl_url_handler, CURLUPART_URL, bundle->found_url, 0);
+        curl_url_set(curl_url_handler, CURLUPART_FRAGMENT, NULL, 0);  // remove fragment
+
+        // check scheme
+        curl_url_get(curl_url_handler, CURLUPART_SCHEME, &url_scheme, 0);
+        if((bundle->http_only && strcmp("http", url_scheme) != 0) || (bundle->https_only && strcmp("https", url_scheme) != 0)) {
+            free(document_domain);
+            free(url_scheme);
+            return LEXBOR_ACTION_OK;
+        }
+        free(url_scheme);
+
+        if(!bundle->keep_query) {
+            curl_url_set(curl_url_handler, CURLUPART_QUERY, NULL, 0);
+        }
+
+        char* path;
+        curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
+
+        // check path
+        if(is_disallowed_path(path, bundle->disallowed_paths, bundle->count_disallowed_paths)) {
+            free(document_domain);
+            free(path);
+            return 0;
+        }
+        if(!is_allowed_path(path, bundle->allowed_paths, bundle->count_allowed_paths)) {
+            free(document_domain);
+            free(path);
+            return 0;
+        }
+
+        // check extensions
+        if(is_disallowed_extension(path, bundle->disallowed_extensions, bundle->count_disallowed_extensions)) {
+            free(document_domain);
+            free(path);
+            return 0;
+        }
+        if(!is_allowed_extension(path, bundle->allowed_extensions, bundle->count_allowed_extensions)) {
+          free(document_domain);
+          free(path);
+          return 0;
+        }
+
+        if(bundle->max_path_depth > 0 && get_path_depth(path) > bundle->max_path_depth) {
+            free(document_domain);
+            free(path);
+            return 0;
+        }
+        free(path);
+
+        char has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
+        curl_url_get(curl_url_handler, CURLUPART_URL, &final_url, 0);  // get final url
+        curl_url_get(curl_url_handler, CURLUPART_HOST, &found_url_domain, 0);  // get the domain of the URL found
+
+        if((is_same_domain(found_url_domain, document_domain, bundle->allow_subdomains) ||
+            is_in_valid_domains(found_url_domain, bundle->allowed_domains, bundle->count_allowed_domains, bundle->allow_subdomains)) &&
+            !is_in_disallowed_domains(found_url_domain, bundle->disallowed_domains, bundle->count_disallowed_domains)) {
+
+            if(url_not_seen(final_url, *(bundle->urls_stack_done), *(bundle->urls_stack_todo))) {
+                stack_url_push(bundle->urls_stack_todo, final_url);
+                // note that is this func is called from the sitemap parsing, no one listen for this signal,
+                // thus it will be useless in that particular case
+                pthread_cond_signal(bundle->cv_url_added);
+                has_been_added = 1;
+            }
+
+#if GRAPHVIZ_SUPPORT
+            if(bundle->generate_graph) {
+                LOG("Adding node and edge for: %s\n", final_url);
+                Agnode_t* node_new = agnode(bundle->graph, final_url, 1);
+
+                // should not create any node
+                Agnode_t* node_current = agnode(bundle->graph, bundle->document->url, 0);
+
+                Agedge_t* edge = agedge(bundle->graph, node_current, node_new, 0, 1);
+                agsafeset(edge, "splines", "curved", "curved");
+            }
+#endif
+        }
+
+        if(!has_been_added) {
+            free(final_url);
+        }
+        free(found_url_domain);
+        free(document_domain);
+        curl_url_cleanup(curl_url_handler);
+    }
+
+    return 1;
 }
