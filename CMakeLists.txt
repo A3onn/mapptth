@@ -87,7 +87,7 @@ if(MAPPTTH_GENERATE_TESTS)
         add_executable(tests_mapptth tests_mapptth.c stack_documents.c stack_urls.c utils.c sitemaps_parser.c stack_documents.h stack_urls.h utils.h sitemaps_parser.h)
 
         # libcheck
-        target_link_libraries(tests_mapptth ${CHECK_LIBRARY})
+        target_link_libraries(tests_mapptth ${CHECK_LIBRARY} rt subunit)
 
         # libxml2
         include_directories(tests_mapptth ${LIBXML2_INCLUDE_DIRS})

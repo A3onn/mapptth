@@ -44,7 +44,7 @@ END_TEST
 
 START_TEST(pop_null_stack_urls) {
     struct URLNode* urls = NULL;
-    ck_assert_ptr_null(stack_url_pop(&urls));
+    ck_assert_ptr_eq(stack_url_pop(&urls), NULL);
 }
 END_TEST
 
@@ -86,7 +86,7 @@ START_TEST(get_differents_correct_value_length_five_stack_urls) {
     for(int i = 4; i >= 0; i--) {
         char* str = (char*) malloc(sizeof (char)*6);
         sprintf(str, "test%d", i);
-        ck_assert_pstr_eq(stack_url_pop(&urls), str);
+        ck_assert_str_eq(stack_url_pop(&urls), str);
     }
 }
 END_TEST
@@ -128,7 +128,7 @@ END_TEST
 
 START_TEST(pop_null_stack_documents) {
     struct DocumentNode* docs = NULL;
-    ck_assert_ptr_null(stack_document_pop(&docs));
+    ck_assert_ptr_eq(stack_document_pop(&docs), NULL);
 }
 END_TEST
 
@@ -611,15 +611,15 @@ START_TEST(correct__sitemap_get_location) {
 	xmlDocPtr doc;
 
 	doc = getXMLDoc("<loc>http://localhost</loc>");
-	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "http://localhost");
+	ck_assert_str_eq(__sitemap_get_location(getRoot(doc)), "http://localhost");
 	xmlFreeDoc(doc);
 
 	doc = getXMLDoc("<loc>http://localhost/</loc>");
-	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "http://localhost/");
+	ck_assert_str_eq(__sitemap_get_location(getRoot(doc)), "http://localhost/");
 	xmlFreeDoc(doc);
 
 	doc = getXMLDoc("<loc>http://localhost:8080/</loc>");
-	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "http://localhost:8080/");
+	ck_assert_str_eq(__sitemap_get_location(getRoot(doc)), "http://localhost:8080/");
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -628,15 +628,15 @@ START_TEST(correct_not_valid_url__sitemap_get_location) {
 	xmlDocPtr doc;
 
 	doc = getXMLDoc("<loc>not a valid url</loc>");
-	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "not a valid url");
+	ck_assert_str_eq(__sitemap_get_location(getRoot(doc)), "not a valid url");
 	xmlFreeDoc(doc);
 
 	doc = getXMLDoc("<loc>test</loc>");
-	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "test");
+	ck_assert_str_eq(__sitemap_get_location(getRoot(doc)), "test");
 	xmlFreeDoc(doc);
 
 	doc = getXMLDoc("<loc>some string</loc>");
-	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "some string");
+	ck_assert_str_eq(__sitemap_get_location(getRoot(doc)), "some string");
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -645,7 +645,7 @@ END_TEST
 START_TEST(empty_value__sitemap_get_location) {
 	xmlDocPtr doc;
 	doc = getXMLDoc("<loc></loc>");
-	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "");
+	ck_assert_str_eq(__sitemap_get_location(getRoot(doc)), "");
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -653,13 +653,13 @@ END_TEST
 START_TEST(empty_node__sitemap_get_location) {
 	xmlDocPtr doc;
 	doc = getXMLDoc("");
-	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "");
+	ck_assert_str_eq(__sitemap_get_location(getRoot(doc)), "");
 	xmlFreeDoc(doc);
 }
 END_TEST
 
 START_TEST(null_root__sitemap_get_location) {
-	ck_assert_pstr_eq(__sitemap_get_location(NULL), "");
+	ck_assert_str_eq(__sitemap_get_location(NULL), "");
 }
 END_TEST
 
@@ -667,7 +667,7 @@ START_TEST(multiple_values__sitemap_get_location) {
 	// check if returns only 1 value and the first one
 	xmlDocPtr doc;
 	doc = getXMLDoc("<test><loc>http://localhost:8000</loc><loc>http://localhost:8888</loc></test>");
-	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)->children), "http://localhost:8000"); // getRoot(doc)->children refers to the childrens of <test>, getRoot refers to <test>
+	ck_assert_str_eq(__sitemap_get_location(getRoot(doc)->children), "http://localhost:8000"); // getRoot(doc)->children refers to the childrens of <test>, getRoot refers to <test>
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -675,7 +675,7 @@ END_TEST
 START_TEST(no_loc_tag__sitemap_get_location) {
 	xmlDocPtr doc;
 	doc = getXMLDoc("<test></test>");
-	ck_assert_pstr_eq(__sitemap_get_location(getRoot(doc)), "");
+	ck_assert_str_eq(__sitemap_get_location(getRoot(doc)), "");
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -687,7 +687,7 @@ START_TEST(correct_loc__sitemap_location_get_urls) {
 	URLNode_t* urls = NULL;
 	doc = getXMLDoc("<url><loc>http://127.0.0.1</loc></url>");
 	__sitemap_location_get_urls(getRoot(doc)->children, &urls);
-	ck_assert_pstr_eq(stack_url_pop(&urls), "http://127.0.0.1");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://127.0.0.1");
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -697,7 +697,7 @@ START_TEST(correct_link_href__sitemap_location_get_urls) {
 	URLNode_t* urls = NULL;
 	doc = getXMLDoc("<url><link href='http://127.0.0.1'/></url>");
 	__sitemap_location_get_urls(getRoot(doc)->children, &urls);
-	ck_assert_pstr_eq(stack_url_pop(&urls), "http://127.0.0.1");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://127.0.0.1");
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -707,8 +707,8 @@ START_TEST(correct_loc_and_link_href__sitemap_location_get_urls) {
 	URLNode_t* urls = NULL;
 	doc = getXMLDoc("<url><loc>http://localhost</loc><link href='http://127.0.0.1'/></url>");
 	__sitemap_location_get_urls(getRoot(doc)->children, &urls);
-	ck_assert_pstr_eq(stack_url_pop(&urls), "http://127.0.0.1");
-	ck_assert_pstr_eq(stack_url_pop(&urls), "http://localhost");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://127.0.0.1");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost");
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -716,7 +716,7 @@ END_TEST
 START_TEST(null_root__sitemap_location_get_urls) {
 	URLNode_t* urls = NULL;
 	__sitemap_location_get_urls(NULL, &urls);
-	ck_assert_ptr_null(urls);
+	ck_assert_ptr_eq(urls, NULL);
 }
 END_TEST
 
@@ -725,7 +725,7 @@ START_TEST(empty_root__sitemap_location_get_urls) {
 	URLNode_t* urls = NULL;
 	doc = getXMLDoc("");
 	__sitemap_location_get_urls(getRoot(doc), &urls);
-	ck_assert_ptr_null(urls);
+	ck_assert_ptr_eq(urls, NULL);
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -735,7 +735,7 @@ START_TEST(no_loc__sitemap_location_get_urls) {
 	URLNode_t* urls = NULL;
 	doc = getXMLDoc("<url><loc></loc></url>");
 	__sitemap_location_get_urls(getRoot(doc), &urls);
-	ck_assert_ptr_null(urls);
+	ck_assert_ptr_eq(urls, NULL);
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -745,7 +745,7 @@ START_TEST(link_no_href__sitemap_location_get_urls) {
 	URLNode_t* urls = NULL;
 	doc = getXMLDoc("<url><link /></url>");
 	__sitemap_location_get_urls(getRoot(doc), &urls);
-	ck_assert_ptr_null(urls);
+	ck_assert_ptr_eq(urls, NULL);
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -755,7 +755,7 @@ START_TEST(link_empty_href__sitemap_location_get_urls) {
 	URLNode_t* urls = NULL;
 	doc = getXMLDoc("<url><link href=''/></url>");
 	__sitemap_location_get_urls(getRoot(doc), &urls);
-	ck_assert_ptr_null(urls);
+	ck_assert_ptr_eq(urls, NULL);
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -767,7 +767,7 @@ START_TEST(link_href_in_urls__sitemap_location_get_urls) {
 	doc = getXMLDoc("<url><link href='http://127.0.0.1'/></url>");
 	__sitemap_location_get_urls(getRoot(doc)->children, &urls);
 	ck_assert_int_eq(stack_url_length(urls), 1);
-	ck_assert_pstr_eq(stack_url_pop(&urls), "http://127.0.0.1");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://127.0.0.1");
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -778,8 +778,8 @@ START_TEST(multiple_link_href_differents__sitemap_location_get_urls) {
 	doc = getXMLDoc("<urls><link href='http://localhost:8000'/><link href='http://localhost:8888'/></urls>");
 	__sitemap_location_get_urls(getRoot(doc)->children, &urls);
 	ck_assert_int_eq(stack_url_length(urls), 2);
-	ck_assert_pstr_eq(stack_url_pop(&urls), "http://localhost:8888");
-	ck_assert_pstr_eq(stack_url_pop(&urls), "http://localhost:8000");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost:8888");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost:8000");
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -790,7 +790,7 @@ START_TEST(multiple_link_href_same__sitemap_location_get_urls) {
 	doc = getXMLDoc("<urls><link href='http://localhost'/><link href='http://localhost'/></urls>");
 	__sitemap_location_get_urls(getRoot(doc)->children, &urls);
 	ck_assert_int_eq(stack_url_length(urls), 1);
-	ck_assert_pstr_eq(stack_url_pop(&urls), "http://localhost");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost");
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -801,8 +801,8 @@ START_TEST(multiple_loc_differents__sitemap_location_get_urls) {
 	doc = getXMLDoc("<urls><loc>http://localhost:8000</loc><loc>http://localhost:8888</loc></urls>");
 	__sitemap_location_get_urls(getRoot(doc)->children, &urls);
 	ck_assert_int_eq(stack_url_length(urls), 2);
-	ck_assert_pstr_eq(stack_url_pop(&urls), "http://localhost:8888");
-	ck_assert_pstr_eq(stack_url_pop(&urls), "http://localhost:8000");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost:8888");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost:8000");
 	xmlFreeDoc(doc);
 }
 END_TEST
@@ -813,7 +813,7 @@ START_TEST(multiple_loc_same__sitemap_location_get_urls) {
 	doc = getXMLDoc("<urls><loc>http://localhost</loc><loc>http://localhost</loc></urls>");
 	__sitemap_location_get_urls(getRoot(doc)->children, &urls);
 	ck_assert_int_eq(stack_url_length(urls), 1);
-	ck_assert_pstr_eq(stack_url_pop(&urls), "http://localhost");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost");
 	xmlFreeDoc(doc);
 }
 END_TEST
