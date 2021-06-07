@@ -308,6 +308,7 @@ int main(int argc, char* argv[]) {
         bundles[i].no_color = cli_arguments->no_color_flag;
         bundles[i].curl_share = curl_share;
         bundles[i].cookies = cli_arguments->cookies;
+        bundles[i].headers = cli_arguments->headers;
         if(cli_arguments->user_agent_given) {
             bundles[i].user_agent = cli_arguments->user_agent;
         } else {

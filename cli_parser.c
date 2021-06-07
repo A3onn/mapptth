@@ -29,6 +29,9 @@ void _init_arguments(struct arguments* args) {
 }
 
 void cli_arguments_free(struct arguments* args) {
+    if(args->headers != NULL) {
+        curl_slist_free_all(args->headers);
+    }
     free(args->disallowed_paths);
     free(args->disallowed_extensions);
     free(args->disallowed_domains);
@@ -47,6 +50,7 @@ void cli_arguments_print_help(char* prgm_name) {
     puts("\t-m <integer>: Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL. (default=3)");
     puts("\t-4: Only resolve to IPv4 addresses.");
     puts("\t-6: Only resolve to IPv6 addresses.");
+    puts("\t-Q <header>: Add headers in the HTTP request, they are like this: \"<key>:<value>;\", the ':' and the value are optionals and they have to end with a ';'.");
 
     puts("\nControlling where the crawler goes:");
     puts("\t-s: Allow the crawler to go into subdomains of the initial URL and allowed domains. (default=false)");
@@ -98,9 +102,9 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
     _init_arguments(args);
 
 #if GRAPHVIZ_SUPPORT
-    char* args_str = "u:t:m:U:S:o:D:C:vsqcTfFBH64qVhp:P:x:X:a:d:gG:L:";
+    char* args_str = "u:t:m:U:S:o:D:C:vsqcTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
 #else
-    char* args_str = "u:t:m:U:S:o:D:C:vsqcTfFBH64qVhp:P:x:X:a:d:";
+    char* args_str = "u:t:m:U:S:o:D:C:vsqcTfFBH64qVhQ:p:P:x:X:a:d:";
 #endif
 
     // used when using strtoul
@@ -199,6 +203,18 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 args->cookies = optarg;
                 args->cookies_given = 1;
                 break;
+            case 'Q': // headers to send
+                if(optarg[strlen(optarg) - 1] != ';') {
+                    fprintf(stderr ,"Headers specified with -Q should end with a ';'. \"%s\" does not.\n", optarg);
+                    cli_arguments_free(args);
+                    return NULL;
+                }
+                args->headers = curl_slist_append(args->headers, optarg);
+                if(args->headers == NULL) {
+                    fprintf(stderr, "An error occured while adding the header: %s, quitting...\n", optarg);
+                    cli_arguments_free(args);
+                }
+                break;
             case 's': // allow subdomains
                 args->allow_subdomains_flag = 1;
                 break;
@@ -269,7 +285,7 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
             case 'V': // print version
                 printf("MapPPTH: %s\n", MAPPTTH_VERSION);
                 printf("libcurl: %s\n", LIBCURL_VERSION);
-		printf("lexbor: %s\n", LEXBOR_VERSION_STRING);
+                printf("lexbor: %s\n", LEXBOR_VERSION_STRING);
                 printf("libxml2: %s\n", LIBXML_DOTTED_VERSION);
 #if GRAPHVIZ_SUPPORT
                 printf("GraphViz: %s\n", PACKAGE_VERSION);
@@ -292,12 +308,12 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 if(optopt == 'u' || optopt == 'm' || optopt == 't' || optopt == 'D' || optopt == 'C'
                         || optopt == 'x' || optopt == 'X' || optopt == 'a' || optopt == 'd'
                         || optopt == 'p' || optopt == 'P' || optopt == 'G' || optopt == 'L'
-                        || optopt == 'S' || optopt == 'o' || optopt == 'U') {
+                        || optopt == 'S' || optopt == 'o' || optopt == 'U' || optopt == 'Q') {
 #else
                 if(optopt == 'u' || optopt == 'm' || optopt == 't' || optopt == 'D' || optopt == 'C'
                         || optopt == 'x' || optopt == 'X' || optopt == 'a' ||
                         optopt == 'd' || optopt == 'p' || optopt == 'P' || optopt == 'S'
-                        || optopt == 'o' || optopt == 'U') {
+                        || optopt == 'o' || optopt == 'U' || optopt == 'Q') {
 #endif
                         fprintf(stderr, "%s: -%c requires an argument\n", argv[0], optopt);
                         free(args);

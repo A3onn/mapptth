@@ -61,6 +61,7 @@ Here is the list of available parameters grouped by category:
 | Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL. (default=3) | -m \<timeout> |
 | Only resolve to IPv4 addresses. | -4 |
 | Only resolve to IPv6 addresses. | -6 |
+| \<header>: Add headers in the HTTP request, they are like this: "\<key>:;\<value>;", the ':' and the value are optionals and they have to end with a ';'. | -Q \<header> |
 
 
 #### Controlling where the crawler goes

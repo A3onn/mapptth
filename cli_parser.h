@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <curl/curl.h>
 
 struct arguments {
 	char* url;
@@ -18,6 +19,7 @@ struct arguments {
     unsigned int output_given;
 	char* cookies;
     unsigned int cookies_given;
+	struct curl_slist* headers;
 #if GRAPHVIZ_SUPPORT
 	char* graph_output_format;
 	char* graph_layout;
