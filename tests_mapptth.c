@@ -1,5 +1,6 @@
 #include <check.h>
 #include <strings.h>
+#include <pcre.h>
 #include "stack_urls.h"
 #include "stack_documents.h"
 #include "utils.h"
@@ -434,56 +435,96 @@ END_TEST
 
 
 START_TEST(true_one_disallowed_is_disallowed_path) {
-    char* dis_paths[] = {"/files"};
+    const char* err;
+    int err_offset = 0;
+    pcre* dis_paths[] = {pcre_compile("/files", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0)};
     ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 1), 1);
 }
 END_TEST
 
 START_TEST(true_root_disallowed_is_disallowed_path) {
-    char* dis_paths[] = {"/"};
+    const char* err;
+    int err_offset = 0;
+    pcre* dis_paths[] = {pcre_compile("/", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0)};
     ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 1), 1);
 }
 END_TEST
 
 START_TEST(false_one_disallowed_is_disallowed_path) {
-    char* dis_paths[] = {"/images"};
+    const char* err;
+    int err_offset = 0;
+    pcre* dis_paths[] = {pcre_compile("/images", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0)};
     ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 1), 0);
 }
 END_TEST
 
 START_TEST(true_multiple_disallowed_is_disallowed_path) {
-    char* dis_paths[] = {"/images", "/js", "/files"};
+    const char* err;
+    int err_offset = 0;
+    pcre* dis_paths[] = {pcre_compile("/images", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0), pcre_compile("/js", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0), pcre_compile("/files", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0)};
+    ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 3), 1);
+}
+END_TEST
+
+START_TEST(true_multiple_disallowed_ends_with_slash_is_disallowed_path) {
+    const char* err;
+    int err_offset = 0;
+    pcre* dis_paths[] = {pcre_compile("/images/", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0), pcre_compile("/js/", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0), pcre_compile("/files/", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0)};
     ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 3), 1);
 }
 END_TEST
 
 START_TEST(false_multiple_disallowed_is_disallowed_path) {
-    char* dis_paths[] = {"/images", "/js", "/css"};
+    const char* err;
+    int err_offset = 0;
+    pcre* dis_paths[] = {pcre_compile("/images", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0), pcre_compile("/js", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0), pcre_compile("/css", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0)};
+    ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 3), 0);
+}
+END_TEST
+
+START_TEST(false_multiple_disallowed_ends_with_slash_is_disallowed_path) {
+    const char* err;
+    int err_offset = 0;
+    pcre* dis_paths[] = {pcre_compile("/images/", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0), pcre_compile("/js/", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0), pcre_compile("/css/", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0)};
     ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 3), 0);
 }
 END_TEST
 
 START_TEST(empty_path_is_disallowed_path) {
-    char* dis_paths[] = {"/images", "/js"};
+    const char* err;
+    int err_offset = 0;
+    pcre* dis_paths[] = {pcre_compile("/images", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0), pcre_compile("/js", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0)};
     ck_assert_int_eq(is_disallowed_path("", dis_paths, 2), 0);
 }
 END_TEST
 
 START_TEST(empty_list_is_disallowed_path) {
-    char* dis_paths[] = {};
+    pcre* dis_paths[] = {};
     ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 0), 0);
 }
 END_TEST
 
 START_TEST(checked_path_substr_disallowed_is_disallowed_path) {
-    char* dis_paths[] = {"/files_images", "/images_files"};
+    const char* err;
+    int err_offset = 0;
+    pcre* dis_paths[] = {pcre_compile("/files_images", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0), pcre_compile("/images_files", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0)};
     ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 2), 0);
 }
 END_TEST
 
 START_TEST(disallowed_paths_substr_disallowed_is_disallowed_path) {
-    char* dis_paths[] = {"/file"};
+    const char* err;
+    int err_offset = 0;
+    pcre* dis_paths[] = {pcre_compile("/file", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0)};
     ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 1), 0);
+}
+END_TEST
+
+START_TEST(disallowed_paths_regex_disallowed_is_disallowed_path) {
+    const char* err;
+    int err_offset = 0;
+    pcre* dis_paths[] = {pcre_compile("/.{5}/[lief]*[abcde]{0}", PCRE_NO_AUTO_CAPTURE, &err, &err_offset, 0)};
+    ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 1), 1);
 }
 END_TEST
 
@@ -920,11 +961,14 @@ Suite* utils_suite(void) {
     tcase_add_test(tc, true_root_disallowed_is_disallowed_path);
     tcase_add_test(tc, false_one_disallowed_is_disallowed_path);
     tcase_add_test(tc, true_multiple_disallowed_is_disallowed_path);
+    tcase_add_test(tc, true_multiple_disallowed_ends_with_slash_is_disallowed_path);
     tcase_add_test(tc, false_multiple_disallowed_is_disallowed_path);
+    tcase_add_test(tc, false_multiple_disallowed_ends_with_slash_is_disallowed_path);
     tcase_add_test(tc, empty_path_is_disallowed_path);
     tcase_add_test(tc, empty_list_is_disallowed_path);
     tcase_add_test(tc, checked_path_substr_disallowed_is_disallowed_path);
     tcase_add_test(tc, disallowed_paths_substr_disallowed_is_disallowed_path);
+    tcase_add_test(tc, disallowed_paths_regex_disallowed_is_disallowed_path);
     suite_add_tcase(s, tc);
 
 

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+#include <pcre.h>
 
 #include "fetcher_thread.h"
 #include "sitemaps_parser.h"
@@ -37,9 +38,9 @@ struct FoundURLHandlerBundle {
     int count_allowed_extensions;
     char** disallowed_extensions;
     int count_disallowed_extensions;
-    char** disallowed_paths;
+    pcre** disallowed_paths;
     int count_disallowed_paths;
-    char** allowed_paths;
+    pcre** allowed_paths;
     int count_allowed_paths;
     int http_only;
     int https_only;
@@ -152,36 +153,19 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    FILE* output_file = NULL;
-    if(cli_arguments->output_given) {
-        LOG("Opening %s...\n", cli_arguments->output);
-        output_file = fopen(cli_arguments->output, "w");
-        if(output_file == NULL) {
-            fprintf(stderr, "%s: failed to open %s: %s.\n", argv[0], cli_arguments->output, strerror(errno));
+    // compile paths into regex
+    int regex_error_offset;
+    const char* regex_error_str;
+    pcre** disallowed_paths = (pcre**) malloc(sizeof(pcre*) * cli_arguments->disallowed_paths_count);
+    for(int i = 0; i < cli_arguments->disallowed_paths_count; i++) {
+        disallowed_paths[i] = pcre_compile(cli_arguments->disallowed_paths[i], PCRE_NO_AUTO_CAPTURE, &regex_error_str, &regex_error_offset, 0);
+        if(disallowed_paths[i] == NULL) {
+            fprintf(stderr, "%s: Invalid regex: \"%s\" at %d (%s)\n", argv[0], cli_arguments->disallowed_paths[i], regex_error_offset, regex_error_str);
             return 1;
         }
-        // put some infos at the beginning of the file
-        char time_buf[200];
-        time_t curr_time = time(NULL);
-        struct tm* tmp = localtime(&curr_time);
-        strftime(time_buf, 200, "%c", tmp);
-
-        fprintf(output_file, "# MapPTTH started at %s as:", time_buf);
-        for(int i = 0; i < argc; i++) {
-            fprintf(output_file, " %s", argv[i]);
-        }
-        fprintf(output_file, "\n");
-        LOG("Wrote header in %s\n", cli_arguments->output);
     }
-
-    // normalize paths given by the user
-    char** disallowed_paths = (char**) malloc(sizeof(char*) * cli_arguments->disallowed_paths_count);
-    for(int i = 0; i < cli_arguments->disallowed_paths_count; i++) {
-        disallowed_paths[i] = normalize_path(cli_arguments->disallowed_paths[i], 0);
-    }
-    char** allowed_paths = (char**) malloc(sizeof(char*) * cli_arguments->allowed_paths_count);
+    pcre** allowed_paths = (pcre**) malloc(sizeof(pcre*) * cli_arguments->allowed_paths_count);
     for(int i = 0; i < cli_arguments->allowed_paths_count; i++) {
-        allowed_paths[i] = normalize_path(cli_arguments->allowed_paths[i], 0);
     }
 
     int resolve_ip_version = CURL_IPRESOLVE_WHATEVER;
@@ -254,6 +238,28 @@ int main(int argc, char* argv[]) {
         agsafeset(first_node, "URL", cli_arguments->url, cli_arguments->url); // used by svg
     }
 #endif
+
+    FILE* output_file = NULL;
+    if(cli_arguments->output_given) {
+        LOG("Opening %s...\n", cli_arguments->output);
+        output_file = fopen(cli_arguments->output, "w");
+        if(output_file == NULL) {
+            fprintf(stderr, "%s: failed to open %s: %s.\n", argv[0], cli_arguments->output, strerror(errno));
+            return 1;
+        }
+        // put some infos at the beginning of the file
+        char time_buf[200];
+        time_t curr_time = time(NULL);
+        struct tm* tmp = localtime(&curr_time);
+        strftime(time_buf, 200, "%c", tmp);
+
+        fprintf(output_file, "# MapPTTH started at %s as:", time_buf);
+        for(int i = 0; i < argc; i++) {
+            fprintf(output_file, " %s", argv[i]);
+        }
+        fprintf(output_file, "\n");
+        LOG("Wrote header in %s\n", cli_arguments->output);
+    }
 
 
     if(cli_arguments->sitemap_given) {
@@ -555,10 +561,10 @@ cleanup_and_quit:
     }
 
     for(int i = 0; i < cli_arguments->disallowed_paths_count; i++) {
-        free(disallowed_paths[i]);
+        //regfree(&disallowed_paths[i]);
     }
     for(int i = 0; i < cli_arguments->allowed_paths_count; i++) {
-        free(allowed_paths[i]);
+        //regfree(&allowed_paths[i]);
     }
 
     curl_share_cleanup(curl_share);

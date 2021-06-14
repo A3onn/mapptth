@@ -12,6 +12,7 @@
 
 #include <stdarg.h>
 #include "stack_urls.h"
+#include <pcre.h>
 #include <lexbor/html/html.h>
 
 int url_not_seen(char* url, URLNode_t* urls_done, URLNode_t* urls_todo);
@@ -22,9 +23,9 @@ int is_valid_link(const char* url);
 
 char* normalize_path(char* path, int is_directory);
 
-int is_disallowed_path(char* path, char** disallowed_paths, int count_disallowed_paths);
+int is_disallowed_path(char* path, pcre** disallowed_paths, int count_disallowed_paths);
 
-int is_allowed_path(char* path, char** allowed_paths, int count_allowed_paths);
+int is_allowed_path(char* path, pcre** allowed_paths, int count_allowed_paths);
 
 int is_allowed_extension(char* path, char** allowed_extensions, int count_allowed_extensions);
 

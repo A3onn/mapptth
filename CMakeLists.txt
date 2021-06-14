@@ -17,6 +17,24 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(mapptth Threads::Threads)
 
+# check for pcre
+include(FindPackageHandleStandardArgs)
+find_package(PkgConfig QUIET)
+pkg_check_modules(PC_PCRE QUIET pcre)
+
+find_path(PCRE_INCLUDE_DIR NAMES pcre.h HINTS ${PCRE_ROOT_DIR}/include ${PCRE_ROOT_INCLUDE_DIRS} PATHS ${PC_PCRE_INCLUDE_DIRS})
+find_library(PCRE_LIBRARY NAMES pcre HINTS ${PCRE_ROOT_DIR}/lib ${PCRE_ROOT_LIBRARY_DIRS} PATHS ${PC_PCRE_LIBRARY_DIRS})
+find_package_handle_standard_args(PCRE FOUND_VAR PCRE_FOUND REQUIRED_VARS PCRE_LIBRARY PCRE_INCLUDE_DIR VERSION_VAR PC_PCRE_VERSION)
+
+if(PCRE_FOUND AND NOT TARGET Pcre::Pcre)
+    message(STATUS "Found PCRE library: " ${PCRE_INCLUDE_DIR})
+    add_library(Pcre::Pcre UNKNOWN IMPORTED)
+    set_target_properties(Pcre::Pcre PROPERTIES IMPORTED_LOCATION "${PCRE_LIBRARY}" INTERFACE_COMPILE_OPTIONS "${PC_PCRE_CFLAGS_OTHER}" INTERFACE_INCLUDE_DIRECTORIES "${PCRE_INCLUDE_DIR}")
+    target_link_libraries(mapptth Pcre::Pcre)
+else()
+    message(FATAL_ERROR "Could not find PCRE library.")
+endif()
+
 
 #check for graphviz
 if(NOT MAPPTTH_NO_GRAPHVIZ)
@@ -104,6 +122,9 @@ if(MAPPTTH_GENERATE_TESTS)
         # libcurl
         link_directories(tests_mapptth ${CURL_INCLUDE_DIRS})
         target_link_libraries(tests_mapptth ${CURL_LIBRARY})
+
+        # PRCE
+        target_link_libraries(tests_mapptth Pcre::Pcre)
     else()
         message(STATUS "Couldn't find Check library for testing, disable tests")
     endif()

@@ -56,8 +56,8 @@ void cli_arguments_print_help(char* prgm_name) {
     puts("\t-s: Allow the crawler to go into subdomains of the initial URL and allowed domains. (default=false)");
     puts("\t-a <domain>: Allow the crawler to go to these domains.");
     puts("\t-d <domain>: Disallow the crawler to go to these domains.");
-    puts("\t-p <path>: Allow the crawler to only fetch URL starting with these paths.");
-    puts("\t-P <path>: Disallow the crawler to fetch URL starting with these paths.");
+    puts("\t-p <path or regex>: Allow the crawler to only fetch URL starting with these paths. Can be a regex (extended and case-sensitive).");
+    puts("\t-P <path or regex>: Disallow the crawler to fetch URL starting with these paths. Can be a regex (extended and case-sensitive).");
     puts("\t-D <integer>: Maximum depth of paths. If a path has a longer depth, it won't be fetched.");
     puts("\t-f: Only fetch URLs with HTTP as scheme.");
     puts("\t-F: Only fetch URLs with HTTPS as scheme.");
