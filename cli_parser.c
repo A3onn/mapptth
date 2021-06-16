@@ -7,6 +7,7 @@
 #include <curl/curlver.h>
 #include <libxml/xmlversion.h>
 #include <lexbor/core/base.h>
+#include <pcre.h>
 #if GRAPHVIZ_SUPPORT
 #include <graphviz/graphviz_version.h> // PACKAGE_VERSION
 #endif
@@ -287,6 +288,20 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 printf("libcurl: %s\n", LIBCURL_VERSION);
                 printf("lexbor: %s\n", LEXBOR_VERSION_STRING);
                 printf("libxml2: %s\n", LIBXML_DOTTED_VERSION);
+
+#ifdef PCRE_CONFIG_JIT
+                int pcre_has_jit;
+                pcre_config(PCRE_CONFIG_JIT, &pcre_has_jit);
+                if(pcre_has_jit) {
+                    const char* pcre_jit_arch;
+                    pcre_config(PCRE_CONFIG_JITTARGET, &pcre_jit_arch);
+                    printf("PCRE: %s (JIT support: %s)\n", pcre_version(), pcre_jit_arch);
+                } else {
+                    printf("PCRE: %s (no JIT)\n", pcre_version());
+                }
+#else
+                printf("PCRE: %s (no JIT)\n", pcre_version());
+#endif
 #if GRAPHVIZ_SUPPORT
                 printf("GraphViz: %s\n", PACKAGE_VERSION);
 #endif
