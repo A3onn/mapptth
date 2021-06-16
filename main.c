@@ -166,6 +166,11 @@ int main(int argc, char* argv[]) {
     }
     pcre** allowed_paths = (pcre**) malloc(sizeof(pcre*) * cli_arguments->allowed_paths_count);
     for(int i = 0; i < cli_arguments->allowed_paths_count; i++) {
+        allowed_paths[i] = pcre_compile(cli_arguments->allowed_paths[i], PCRE_NO_AUTO_CAPTURE, &regex_error_str, &regex_error_offset, 0);
+        if(allowed_paths[i] == NULL) {
+            fprintf(stderr, "%s: Invalid regex: \"%s\" at %d (%s)\n", argv[0], cli_arguments->allowed_paths[i], regex_error_offset, regex_error_str);
+            return 1;
+        }
     }
 
     int resolve_ip_version = CURL_IPRESOLVE_WHATEVER;
@@ -561,10 +566,10 @@ cleanup_and_quit:
     }
 
     for(int i = 0; i < cli_arguments->disallowed_paths_count; i++) {
-        //regfree(&disallowed_paths[i]);
+        free(disallowed_paths[i]);
     }
     for(int i = 0; i < cli_arguments->allowed_paths_count; i++) {
-        //regfree(&allowed_paths[i]);
+        free(allowed_paths[i]);
     }
 
     curl_share_cleanup(curl_share);
