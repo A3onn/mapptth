@@ -9,8 +9,9 @@ A simple to use multi-threaded web-crawler written in C with libcURL and Lexbor.
 MapPTTH uses:
 
 - libcURL (>= 7.62.0)
-- Lexbor (see [Installation](#installation) if you don't to install it)
+- Lexbor (see [Installation](#installation) if you don't want to install it on your system)
 - libxml2
+- libPCRE
 - CMake (>= 3.1.0)
 
 #### Optional
@@ -26,7 +27,7 @@ If you have all dependencies installed on your system:
 git clone https://gitlab.com/Aeonn/mapptth/
 cd mapptth/
 mkdir build/ && cd build/
-cmake .. && make
+cmake .. && make -j5
 ```
 
 If you don't have Lexbor installed and don't want to install it, you can clone Lexbor while cloning MapPTTH and compile without any installation:
@@ -35,14 +36,14 @@ If you don't have Lexbor installed and don't want to install it, you can clone L
 git clone --recurse-submodules https://gitlab.com/Aeonn/mapptth/
 cd mapptth/
 mkdir build/ && cd build/
-cmake .. && make
+cmake .. && make -j5
 ```
 
 ### GraphViz support
 
 If GraphViz is found on the system when running CMake, you will be able to generate graphs.
 
-If you want to disable it, you can run `cmake -DMAPPTTH_NO_GRAPHVIZ ..` instead of `cmake ..`.
+If you want to disable it, you can run `cmake -DMAPPTTH_NO_GRAPHVIZ=1 ..` instead of `cmake ..`.
 
 ## How to use
 
@@ -183,11 +184,7 @@ ASAP:
 
 Without any priority :
 
-- [ ] More unit tests
-
 - [ ] Add a parameter to control the connection rate
-
-- [X] Add exemples in readme
 
 - [ ] Add robots.txt parser, can choose to follow rules or add URLs specified into starting list of URLs
 
@@ -196,6 +193,12 @@ Without any priority :
 - [ ] Create logo (maybe)
 
 - [ ] Use regex in filters (disallowed paths, allowed paths, etc...)
+
+- [ ] Add proxy support
+
+- [X] Add exemples in readme
+
+- [X] More unit tests
 
 - [X] Use only getopt to parse arguments
 
