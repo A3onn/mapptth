@@ -39,13 +39,12 @@ void* fetcher_thread_func(void* bundle_arg) {
     pthread_cond_t* cv_fetcher_produced = bundle->cv_fetcher_produced;
     int* is_running = bundle->is_running;
     int* should_exit = bundle->should_exit;
-    int timeout = bundle->timeout;
 
     CURLcode status_c;
     CURL* curl = curl_easy_init();
     curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS | CURLPROTO_HTTP);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __fetcher_content_callback);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, bundle->timeout);
     curl_easy_setopt(curl, CURLOPT_IPRESOLVE, bundle->resolve_ip_versions);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, bundle->user_agent);
     curl_easy_setopt(curl, CURLOPT_SHARE, bundle->curl_share);
