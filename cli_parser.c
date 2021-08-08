@@ -52,6 +52,7 @@ void cli_arguments_print_help(char* prgm_name) {
     puts("\t-4: Only resolve to IPv4 addresses.");
     puts("\t-6: Only resolve to IPv6 addresses.");
     puts("\t-Q <header>: Add headers in the HTTP request, they are like this: \"<key>:<value>;\", the ':' and the value are optionals and they have to end with a ';'.");
+    puts("\t-i: Allow insecure connections when using SSL/TLS.");
 
     puts("\nControlling where the crawler goes:");
     puts("\t-s: Allow the crawler to go into subdomains of the initial URL and allowed domains. (default=false)");
@@ -103,9 +104,9 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
     _init_arguments(args);
 
 #if GRAPHVIZ_SUPPORT
-    char* args_str = "u:t:m:U:S:o:D:C:vsqcTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
+    char* args_str = "u:t:m:U:S:o:D:C:vsqciTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
 #else
-    char* args_str = "u:t:m:U:S:o:D:C:vsqcTfFBH64qVhQ:p:P:x:X:a:d:";
+    char* args_str = "u:t:m:U:S:o:D:C:vsqciTfFBH64qVhQ:p:P:x:X:a:d:";
 #endif
 
     // used when using strtoul
@@ -280,6 +281,9 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 cli_arguments_print_help(argv[0]);
                 cli_arguments_free(args);
                 return NULL;
+            case 'i': // don't verify certificate
+                args->ignore_cert_validation = 1;
+                break;
             case 'v': // verbose mode
                 args->verbose = 1;
                 break;

@@ -53,6 +53,10 @@ void* fetcher_thread_func(void* bundle_arg) {
         curl_easy_setopt(curl, CURLOPT_HEADEROPT, CURLHEADER_SEPARATE); // don't send headers to the proxy if using one
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, bundle->headers);
     }
+    if(bundle->ignore_cert_validation) {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    }
 
     lxb_status_t status_l;
     struct ProcessContentBundle* current_document = (struct ProcessContentBundle*) malloc(sizeof(struct ProcessContentBundle));
