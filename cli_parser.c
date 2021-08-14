@@ -104,9 +104,9 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
     _init_arguments(args);
 
 #if GRAPHVIZ_SUPPORT
-    char* args_str = "u:t:m:U:S:o:D:C:vsqciTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
+    char* args_str = "u:t:m:U:S:o:D:C:z:vsqciTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
 #else
-    char* args_str = "u:t:m:U:S:o:D:C:vsqciTfFBH64qVhQ:p:P:x:X:a:d:";
+    char* args_str = "u:t:m:U:S:o:D:C:z:vsqciTfFBH64qVhQ:p:P:x:X:a:d:";
 #endif
 
     // used when using strtoul
@@ -204,6 +204,10 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
             case 'C': // cookies
                 args->cookies = optarg;
                 args->cookies_given = 1;
+                break;
+            case 'z': // proxy
+                args->proxy_url = optarg;
+                args->proxy_url_given = 1;
                 break;
             case 'Q': // headers to send
                 if(optarg[strlen(optarg) - 1] != ';') {

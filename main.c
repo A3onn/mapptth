@@ -320,6 +320,8 @@ int main(int argc, char* argv[]) {
         bundles[i].curl_share = curl_share;
         bundles[i].cookies = cli_arguments->cookies;
         bundles[i].headers = cli_arguments->headers;
+        bundles[i].proxy_url = cli_arguments->proxy_url;
+        bundles[i].proxy_url_given = cli_arguments->proxy_url_given;
         bundles[i].ignore_cert_validation = cli_arguments->ignore_cert_validation;
         if(cli_arguments->user_agent_given) {
             bundles[i].user_agent = cli_arguments->user_agent;

@@ -57,6 +57,9 @@ void* fetcher_thread_func(void* bundle_arg) {
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
     }
+    if(bundle->proxy_url_given) {
+        curl_easy_setopt(curl, CURLOPT_PROXY, bundle->proxy_url);
+    }
 
     lxb_status_t status_l;
     struct ProcessContentBundle* current_document = (struct ProcessContentBundle*) malloc(sizeof(struct ProcessContentBundle));
