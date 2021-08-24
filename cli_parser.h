@@ -12,15 +12,10 @@ struct arguments {
 	unsigned int max_depth;
     unsigned int max_depth_given; // if max_depth has been set
 	char* user_agent;
-	unsigned int user_agent_given;
 	char* sitemap;
-	unsigned int sitemap_given;
 	char* output;
-    unsigned int output_given;
 	char* cookies;
-    unsigned int cookies_given;
 	char* proxy_url;
-	unsigned int proxy_url_given;
 	struct curl_slist* headers;
 #if GRAPHVIZ_SUPPORT
 	char* graph_output_format;

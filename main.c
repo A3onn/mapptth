@@ -245,7 +245,7 @@ int main(int argc, char* argv[]) {
 #endif
 
     FILE* output_file = NULL;
-    if(cli_arguments->output_given) {
+    if(cli_arguments->output != NULL) {
         LOG("Opening %s...\n", cli_arguments->output);
         output_file = fopen(cli_arguments->output, "w");
         if(output_file == NULL) {
@@ -266,8 +266,7 @@ int main(int argc, char* argv[]) {
         LOG("Wrote header in %s\n", cli_arguments->output);
     }
 
-
-    if(cli_arguments->sitemap_given) {
+    if(cli_arguments->sitemap != NULL) {
         LOG("Fetching and parsing sitemaps\n");
         // get the content of the sitemap
         URLNode_t* url_stack_sitemap = get_sitemap_urls(cli_arguments->sitemap, cli_arguments->no_color_flag);
@@ -321,9 +320,8 @@ int main(int argc, char* argv[]) {
         bundles[i].cookies = cli_arguments->cookies;
         bundles[i].headers = cli_arguments->headers;
         bundles[i].proxy_url = cli_arguments->proxy_url;
-        bundles[i].proxy_url_given = cli_arguments->proxy_url_given;
         bundles[i].ignore_cert_validation = cli_arguments->ignore_cert_validation;
-        if(cli_arguments->user_agent_given) {
+        if(cli_arguments->user_agent != NULL) {
             bundles[i].user_agent = cli_arguments->user_agent;
         } else {
             bundles[i].user_agent = "MapPTTH/" MAPPTTH_VERSION;
@@ -420,16 +418,16 @@ int main(int argc, char* argv[]) {
             }
         }
         printf("\n");
-        if(cli_arguments->output_given) {
+        if(cli_arguments->output != NULL) {
             LOG("Writing to %s...\n", cli_arguments->output);
             if(http_status_cat == 3) {
-                if(cli_arguments->output_given) {
+                if(cli_arguments->output != NULL) {
                     fprintf(output_file, "[%ld] %s -> %s [%s] [%zu]", current_document->status_code_http,
                             current_document->url, current_document->redirect_location,
                             current_document->content_type, current_document->size);
                 }
             } else {
-                if(cli_arguments->output_given) {
+                if(cli_arguments->output != NULL) {
                     fprintf(output_file, "[%ld] %s [%s] [%zu]", current_document->status_code_http,
                             current_document->url, current_document->content_type,
                             current_document->size);
@@ -553,7 +551,7 @@ cleanup_and_quit:
         pthread_join(fetcher_threads[i], NULL);
     }
 
-    if(cli_arguments->output_given) {
+    if(cli_arguments->output != NULL) {
         fclose(output_file);
     }
 

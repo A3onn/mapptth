@@ -191,23 +191,18 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 break;
             case 'o': // output
                 args->output = optarg;
-                args->output_given = 1;
                 break;
             case 'S': // sitemap
                 args->sitemap = optarg;
-                args->sitemap_given = 1;
                 break;
             case 'U': // user-agent
                 args->user_agent = optarg;
-                args->user_agent_given = 1;
                 break;
             case 'C': // cookies
                 args->cookies = optarg;
-                args->cookies_given = 1;
                 break;
             case 'z': // proxy
                 args->proxy_url = optarg;
-                args->proxy_url_given = 1;
                 break;
             case 'Q': // headers to send
                 if(optarg[strlen(optarg) - 1] != ';') {
