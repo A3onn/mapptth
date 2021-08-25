@@ -117,7 +117,8 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
     while((c = getopt(argc, argv, args_str)) != -1) {
         switch(c) {
             case 'u': // url
-                args->url = optarg;
+                args->url = malloc(strlen(optarg) * sizeof (char) + sizeof (char)); // <url> + '\0'
+                strcpy(args->url, optarg);
                 break;
             case 't': // threads
                 errno = 0;

@@ -561,7 +561,7 @@ cleanup_and_quit:
     free(bundles);
     free(list_running_thread_status);
 
-    while(stack_url_length(urls_stack_done) != 1) {  // all urls are allocated by curl when parsing url, except the initial url
+    while(stack_url_length(urls_stack_done) != 0) {
         char* url_done = stack_url_pop(&urls_stack_done);
         free(url_done);
     }
