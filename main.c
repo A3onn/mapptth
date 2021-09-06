@@ -42,6 +42,8 @@ struct FoundURLHandlerBundle {
     int count_disallowed_paths;
     pcre** allowed_paths;
     int count_allowed_paths;
+    unsigned short* allowed_ports;
+    int count_allowed_ports;
     int http_only;
     int https_only;
     int keep_query;
@@ -173,6 +175,16 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // add the starting port to the list of allowed ports
+    unsigned short starting_port = get_port_from_url(cli_arguments->url);
+    if(errno == EINVAL) {
+        fprintf(stderr, "%s: An error occured while processing url: '%s': %s\n", argv[0], cli_arguments->url, strerror(errno));
+        return 1;
+    }
+    cli_arguments->allowed_ports_count++;
+    cli_arguments->allowed_ports = (short*) reallocarray(cli_arguments->allowed_ports, cli_arguments->allowed_ports_count, sizeof (short));
+    cli_arguments->allowed_ports[cli_arguments->allowed_ports_count-1] = starting_port;
+
     int resolve_ip_version = CURL_IPRESOLVE_WHATEVER;
     if(cli_arguments->only_ipv4_flag) {
         resolve_ip_version = CURL_IPRESOLVE_V4;
@@ -215,6 +227,8 @@ int main(int argc, char* argv[]) {
     struct FoundURLHandlerBundle found_url_handler_bundle;  // in this bundle these elements never change
     found_url_handler_bundle.allowed_domains = cli_arguments->allowed_domains;
     found_url_handler_bundle.count_allowed_domains = cli_arguments->allowed_domains_count;
+    found_url_handler_bundle.allowed_ports = cli_arguments->allowed_ports;
+    found_url_handler_bundle.count_allowed_ports = cli_arguments->allowed_ports_count;
     found_url_handler_bundle.disallowed_domains = cli_arguments->disallowed_domains;
     found_url_handler_bundle.count_disallowed_domains = cli_arguments->disallowed_domains_count;
     found_url_handler_bundle.allowed_extensions = cli_arguments->allowed_extensions;
@@ -329,8 +343,8 @@ int main(int argc, char* argv[]) {
         pthread_create(&fetcher_threads[i], NULL, fetcher_thread_func, (void*) &(bundles[i]));
     }
 
-    struct Document* current_document ;
-    CURLU* curl_url_handler = curl_url();  // used when handling redirections
+    struct Document* current_document;
+    CURLU* curl_url_handler = curl_url();
 
 
     LOG("Starting...\n");
@@ -684,8 +698,16 @@ static inline int handle_found_url(struct FoundURLHandlerBundle* bundle) {
         }
         free(path);
 
-        char has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
         curl_url_get(curl_url_handler, CURLUPART_URL, &final_url, 0);  // get final url
+
+        // check ports
+        if(!is_allowed_port(get_port_from_url(final_url), bundle->allowed_ports, bundle->count_allowed_ports)) {
+            free(document_domain);
+            free(final_url);
+            return LEXBOR_ACTION_OK;
+        }
+
+        char has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
         curl_url_get(curl_url_handler, CURLUPART_HOST, &found_url_domain, 0);  // get the domain of the URL found
 
         if((is_same_domain(found_url_domain, document_domain, bundle->allow_subdomains) ||

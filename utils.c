@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <pcre.h>
-
+#include <errno.h>
 
 int url_not_seen(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
     // Just check if a given url has already been seen.
@@ -224,6 +224,15 @@ int is_disallowed_extension(char* path, char** disallowed_extensions, int count_
   return 0;
 }
 
+int is_allowed_port(unsigned short port, unsigned short* allowed_ports, int count_allowed_short) {
+    for(int i = 0; i < count_allowed_short; i++) {
+        if(port == allowed_ports[i]) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int get_path_depth(char* path) {
     if(path == NULL) {
         return 0;
@@ -248,6 +257,32 @@ int get_path_depth(char* path) {
     return count;
 }
 
+unsigned short get_port_from_url(char* url) {
+    errno = 0;
+    CURLU* curl_url_handler = curl_url();
+    char* scheme, *port;
+    curl_url_set(curl_url_handler, CURLUPART_URL, url, 0);
+    curl_url_get(curl_url_handler, CURLUPART_PORT, &port, 0);
+    if(port) {
+        char* endptr;
+        unsigned short result_port = (unsigned short) strtoul(port, &endptr, 10);
+        if(errno != 0 || endptr == port) { // should not happen
+            errno = EINVAL;
+            return 0;
+        }
+        return result_port;
+    }
+    curl_url_get(curl_url_handler, CURLUPART_SCHEME, &scheme, 0);
+    if(scheme) {
+        if(strcmp(scheme, "http") == 0) {
+            return 80;
+        } else if(strcmp(scheme, "https") == 0) {
+            return 443;
+        }
+    }
+    errno = EINVAL;
+    return 0;
+}
 
 char* get_base_tag_value(lxb_html_document_t* document) {
     lxb_dom_collection_t* collection = 	lxb_dom_collection_create(lxb_html_document_original_ref(document));
@@ -308,4 +343,3 @@ void _verbose_print(const char* function_name, const char* format, ...) {
 
     va_end(args);
 }
-

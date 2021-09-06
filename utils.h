@@ -35,9 +35,13 @@ int is_in_valid_domains(char* domain, char** allowed_domains, int count_allowed_
 
 int is_in_disallowed_domains(char* domain, char** disallowed_domains, int count_disallowed_domains);
 
+int is_allowed_port(unsigned short port, unsigned short* allowed_ports, int count_allowed_short);
+
 int get_path_depth(char* path);
 
 char* get_base_tag_value(lxb_html_document_t* document);
+
+unsigned short get_port_from_url(char* url);
 
 // VERBOSE
 extern int _verbose;

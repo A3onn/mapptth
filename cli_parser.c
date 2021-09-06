@@ -23,6 +23,7 @@ void _init_arguments(struct arguments* args) {
     args->allowed_paths = (char**) malloc(sizeof (char*));
     args->allowed_extensions = (char**) malloc(sizeof (char*));
     args->allowed_domains = (char**) malloc(sizeof (char*));
+    args->allowed_ports = (short*) malloc(sizeof (short));
 #if GRAPHVIZ_SUPPORT
     args->graph_layout = "dot"; // works best with ranks
     args->graph_output_format = "png";
@@ -65,6 +66,7 @@ void cli_arguments_print_help(char* prgm_name) {
     puts("\t-F: Only fetch URLs with HTTPS as scheme.");
     puts("\t-x <extension>: Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply.");
     puts("\t-X <extension>: Disallow the crawler to fetch files with these extensions. If no extension is found then this filter won't apply.");
+    puts("\t-r <port>: Allow the crawler to go to theses ports.");
     puts("\t-q: Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched.");
 
     puts("\nParsing:");
@@ -93,7 +95,7 @@ void cli_arguments_print_help(char* prgm_name) {
 
     puts("\nExemples:");
     puts("\tmapptth -u https://google.com/some/url/file.html");
-    puts("\tmapptth -u https://google.com -s -a gitlab.com -a github.com");
+    puts("\tmapptth -u http://google.com -s -a gitlab.com -a github.com -r 443");
     puts("\tmapptth -u https://google.com -P /path -P /some-path");
     puts("\tmapptth -u https://google.com -P /some-path -x .html -x .php");
     puts("\tmapptth -u https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://www.google.com/sitemap.xml");
@@ -104,9 +106,9 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
     _init_arguments(args);
 
 #if GRAPHVIZ_SUPPORT
-    char* args_str = "u:t:m:U:S:o:D:C:z:vsqciTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
+    char* args_str = "u:t:m:U:S:o:D:C:z:r:vsqciTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
 #else
-    char* args_str = "u:t:m:U:S:o:D:C:z:vsqciTfFBH64qVhQ:p:P:x:X:a:d:";
+    char* args_str = "u:t:m:U:S:o:D:C:z:r:vsqciTfFBH64qVhQ:p:P:x:X:a:d:";
 #endif
 
     // used when using strtoul
@@ -189,6 +191,22 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 args->disallowed_extensions_count++;
                 args->disallowed_extensions = (char**) reallocarray(args->disallowed_extensions, args->disallowed_extensions_count, sizeof (char*));
                 args->disallowed_extensions[args->disallowed_extensions_count-1] = optarg;
+                break;
+            case 'r': // allowed ports
+                errno = 0;
+                unsigned short newPort = (unsigned short) strtoul(optarg, &endptr, 10);
+                if(errno != 0) {
+                    fprintf(stderr, "%s: %s", argv[0], strerror(errno));
+                    cli_arguments_free(args);
+                    return NULL;
+                } else if(endptr == optarg) {
+                    fprintf(stderr, "%s: invalid port value: %s\n", argv[0], optarg);
+                    cli_arguments_free(args);
+                    return NULL;
+                }
+                args->allowed_ports_count++;
+                args->allowed_ports = (short*) reallocarray(args->allowed_ports, args->allowed_ports_count, sizeof (short));
+                args->allowed_ports[args->allowed_ports_count-1] = newPort;
                 break;
             case 'o': // output
                 args->output = optarg;

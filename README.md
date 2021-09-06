@@ -80,6 +80,7 @@ Here is the list of available parameters grouped by category:
 | Only fetch URLs with HTTPS as scheme. | -F |
 | Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. | -x .\<extension> |
 | Disallow the crawler to fetch files with these extensions. If no extension is found then this filter won't apply. | -X .\<extension> |
+| Allow the crawler to go to theses ports | -r <port> |
 | Keep the query part of the URL. Note that if two same URLs with a different query is found, both will be fetched. | -q |
 
 
@@ -149,7 +150,7 @@ mapptth -u https://google.com -s
 Allow to crawl certain domains and their subdomains (ex: www.google.com, mail.gitlab.com, www.mail.github.com):
 
 ```
-mapptth -u https://google.com -s -a gitlab.com -a github.com
+mapptth -u http://google.com -s -a gitlab.com -a github.com -r 443
 ```
 
 Disallow some paths:

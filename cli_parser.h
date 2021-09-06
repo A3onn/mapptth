@@ -46,6 +46,8 @@ struct arguments {
 	unsigned int allowed_paths_count;
 	char** allowed_domains;
 	unsigned int allowed_domains_count;
+	unsigned short* allowed_ports;
+	unsigned int allowed_ports_count;
 
 	// disallowed
 	char** disallowed_extensions;
