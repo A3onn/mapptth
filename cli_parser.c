@@ -53,6 +53,7 @@ void cli_arguments_print_help(char* prgm_name) {
     puts("\t-4: Only resolve to IPv4 addresses.");
     puts("\t-6: Only resolve to IPv6 addresses.");
     puts("\t-Q <header>: Add headers in the HTTP request, they are like this: \"<key>:<value>;\", the ':' and the value are optionals and they have to end with a ';'.");
+    puts("\t-C <cookies>: Add cookies in the HTTP request, they are like this: \"<key>:<value>;\", you can specify mulitple cookies at once by separating them by a ';'. Note that they won't be modified during the crawl.");
     puts("\t-i: Allow insecure connections when using SSL/TLS.");
 
     puts("\nControlling where the crawler goes:");
