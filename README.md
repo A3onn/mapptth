@@ -195,9 +195,9 @@ Without any priority :
 
 - [ ] Create logo (maybe)
 
-- [ ] Use regex in filters (disallowed paths, allowed paths, etc...)
-
 - [ ] Add proxy support
+
+- [X] Use regex in filters (disallowed paths, allowed paths, etc...)
 
 - [X] Add exemples in readme
 
