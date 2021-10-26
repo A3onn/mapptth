@@ -55,7 +55,9 @@ struct FoundURLHandlerBundle {
 #endif
 };
 
-static inline int handle_found_url(struct FoundURLHandlerBundle* bundle);
+#define handle_found_url(X) _handle_found_url(X, 0)
+#define handle_found_url_from_sitemap(X) _handle_found_url(X, 1)
+static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int from_sitemap_parsing);
 
 lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     // this function will be called for every nodes
@@ -69,7 +71,7 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     if(!lxb_dom_element_has_attribute(element, (lxb_char_t*) "href", 4) && !lxb_dom_element_has_attribute(element, (lxb_char_t*) "src", 3)) {
         return LEXBOR_ACTION_OK;
     }
-    
+
     // avoid <base> tags because they are treated before this function is called
     if(strcmp((char*) lxb_dom_element_tag_name(element, NULL), "BASE") == 0) {
         return LEXBOR_ACTION_OK;
@@ -287,10 +289,21 @@ int main(int argc, char* argv[]) {
 
         // validate the URLs found in the sitemap, same code as when finding an URL in a document
         CURLU* curl_url_handler = curl_url();
+        char* initial_url_domain;
+        curl_url_set(curl_url_handler, CURLUPART_URL, cli_arguments->url, 0);
+        curl_url_get(curl_url_handler, CURLUPART_HOST, &initial_url_domain, 0);
+
         int count = 0;  // keep track of how many validated URLs were added
         while(!stack_url_isempty(url_stack_sitemap)) {  // loop over URLs
             char* url = stack_url_pop(&url_stack_sitemap);
-            
+            char* found_url_domain;
+
+            curl_url_set(curl_url_handler, CURLUPART_URL, url, 0);
+            curl_url_get(curl_url_handler, CURLUPART_HOST, &found_url_domain, 0);
+            if(!is_same_domain(found_url_domain, initial_url_domain, 0)) { // filter out urls not from the same domain
+                continue;
+            }
+
             // handle_found_url uses only the url in the document, and all other fields
             // in this struct are useless here (status code, size, content_type etc...)
             struct Document doc;
@@ -302,7 +315,7 @@ int main(int argc, char* argv[]) {
             found_url_handler_bundle.urls_stack_done = &urls_stack_done;
             found_url_handler_bundle.urls_stack_todo = &urls_stack_todo;
 
-            int result = handle_found_url(&found_url_handler_bundle);
+            int result = handle_found_url_from_sitemap(&found_url_handler_bundle);
             if(result) {
                 count++;
             }
@@ -344,8 +357,9 @@ int main(int argc, char* argv[]) {
     }
 
     struct Document* current_document;
+#ifdef GRAPHVIZ_SUPPORT
     CURLU* curl_url_handler = curl_url();
-
+#endif
 
     LOG("Starting...\n");
     while(1) {
@@ -461,7 +475,7 @@ int main(int argc, char* argv[]) {
         if(cli_arguments->graph_flag) {
             LOG("Adding label for the node: %s\n", current_document->url);
             // TODO: refactor code
-            // get currend node representing the current_document
+            // get current node representing the current_document
             Agnode_t* node_current = agnode(found_url_handler_bundle.graph, current_document->url, 0);
 
             char label_curr_node[4096];
@@ -489,6 +503,7 @@ int main(int argc, char* argv[]) {
 
             // set rank for the node based on its path depth
             char* path;
+            curl_url_set(curl_url_handler, CURLUPART_URL, current_document->url, 0);
             curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
 
             char rank_str[4];
@@ -568,8 +583,9 @@ cleanup_and_quit:
     if(cli_arguments->output != NULL) {
         fclose(output_file);
     }
-
+#ifdef GRAPHVIZ_SUPPORT
     curl_url_cleanup(curl_url_handler);
+#endif
 
     // CLEANUP
     free(bundles);
@@ -622,9 +638,9 @@ cleanup_and_quit:
     return EXIT_SUCCESS;
 }
 
-
-static inline int handle_found_url(struct FoundURLHandlerBundle* bundle) {
-    // NOTE: 
+static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int from_sitemap_parsing) {
+    // this function is called when finding an URL, not after fetching it
+    // NOTE:
     // only document->url will be used in the bundle->document, this is important when parsing the sitemap
     // as nothing else in the document will be set (no redirection, no status code, etc... as it it useless for the sitemap)
 
@@ -717,8 +733,10 @@ static inline int handle_found_url(struct FoundURLHandlerBundle* bundle) {
             if(url_not_seen(final_url, *(bundle->urls_stack_done), *(bundle->urls_stack_todo))) {
                 stack_url_push(bundle->urls_stack_todo, final_url);
                 // note that is this func is called from the sitemap parsing, no one listen for this signal,
-                // thus it will be useless in that particular case
-                pthread_cond_signal(bundle->cv_url_added);
+                // thus it will be useless in that particular case to call it
+                if(!from_sitemap_parsing) {
+                    pthread_cond_signal(bundle->cv_url_added);
+                }
                 has_been_added = 1;
             }
 
@@ -727,11 +745,13 @@ static inline int handle_found_url(struct FoundURLHandlerBundle* bundle) {
                 LOG("Adding node and edge for: %s\n", final_url);
                 Agnode_t* node_new = agnode(bundle->graph, final_url, 1);
 
-                // should not create any node
-                Agnode_t* node_current = agnode(bundle->graph, bundle->document->url, 0);
-
-                Agedge_t* edge = agedge(bundle->graph, node_current, node_new, 0, 1);
-                agsafeset(edge, "splines", "curved", "curved");
+                if(!from_sitemap_parsing)  {
+                        // current link does not exists when parsing the sitemap as
+                        // all urls are found "randomly" in the sitemap without any link between them
+                        Agnode_t* node_current = agnode(bundle->graph, bundle->document->url, 0);
+                        Agedge_t* edge = agedge(bundle->graph, node_current, node_new, 0, 1);
+                        agsafeset(edge, "splines", "curved", "curved");
+                }
             }
 #endif
         }
