@@ -39,6 +39,7 @@ void cli_arguments_free(struct arguments* args) {
     free(args->disallowed_domains);
 
     free(args->allowed_paths);
+    free(args->allowed_ports);
     free(args->allowed_extensions);
     free(args->allowed_domains);
     free(args);

@@ -268,18 +268,30 @@ unsigned short get_port_from_url(char* url) {
         unsigned short result_port = (unsigned short) strtoul(port, &endptr, 10);
         if(errno != 0 || endptr == port) { // should not happen
             errno = EINVAL;
+	    curl_url_cleanup(curl_url_handler);
+	    free(port);
             return 0;
         }
+	free(port);
+	curl_url_cleanup(curl_url_handler);
         return result_port;
     }
+    free(port);
+
     curl_url_get(curl_url_handler, CURLUPART_SCHEME, &scheme, 0);
     if(scheme) {
         if(strcmp(scheme, "http") == 0) {
+	    free(scheme);
+	    curl_url_cleanup(curl_url_handler);
             return 80;
         } else if(strcmp(scheme, "https") == 0) {
+	    free(scheme);
+	    curl_url_cleanup(curl_url_handler);
             return 443;
         }
     }
+    free(scheme);
+    curl_url_cleanup(curl_url_handler);
     errno = EINVAL;
     return 0;
 }

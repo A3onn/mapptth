@@ -670,6 +670,7 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int fr
         // check scheme
         curl_url_get(curl_url_handler, CURLUPART_SCHEME, &url_scheme, 0);
         if((bundle->http_only && strcmp("http", url_scheme) != 0) || (bundle->https_only && strcmp("https", url_scheme) != 0)) {
+	    curl_url_cleanup(curl_url_handler);
             free(document_domain);
             free(url_scheme);
             return LEXBOR_ACTION_OK;
@@ -685,11 +686,13 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int fr
 
         // check path
         if(is_disallowed_path(path, bundle->disallowed_paths, bundle->count_disallowed_paths)) {
+	    curl_url_cleanup(curl_url_handler);
             free(document_domain);
             free(path);
             return 0;
         }
         if(!is_allowed_path(path, bundle->allowed_paths, bundle->count_allowed_paths)) {
+	    curl_url_cleanup(curl_url_handler);
             free(document_domain);
             free(path);
             return 0;
@@ -697,17 +700,20 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int fr
 
         // check extensions
         if(is_disallowed_extension(path, bundle->disallowed_extensions, bundle->count_disallowed_extensions)) {
+	    curl_url_cleanup(curl_url_handler);
             free(document_domain);
             free(path);
             return 0;
         }
         if(!is_allowed_extension(path, bundle->allowed_extensions, bundle->count_allowed_extensions)) {
+	  curl_url_cleanup(curl_url_handler);
           free(document_domain);
           free(path);
           return 0;
         }
 
         if(bundle->max_path_depth > 0 && get_path_depth(path) > bundle->max_path_depth) {
+	    curl_url_cleanup(curl_url_handler);
             free(document_domain);
             free(path);
             return 0;
@@ -718,6 +724,7 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int fr
 
         // check ports
         if(!is_allowed_port(get_port_from_url(final_url), bundle->allowed_ports, bundle->count_allowed_ports)) {
+	    curl_url_cleanup(curl_url_handler);
             free(document_domain);
             free(final_url);
             return LEXBOR_ACTION_OK;
