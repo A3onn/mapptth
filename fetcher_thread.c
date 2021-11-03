@@ -173,6 +173,9 @@ void* fetcher_thread_func(void* bundle_arg) {
         if(status_c != CURLE_OK) {
             fprintf(stderr, "curl_easy_getinfo for getting the redirect URL failed for %s. Error: %s.\n", current_url, curl_easy_strerror(status_c));
         }
+        if(redirect_location != NULL) {
+            redirect_location = strdup(redirect_location);
+        }
 
         pthread_mutex_lock(mutex);
         stack_document_push(documents, current_document->lxb_document, current_url, status_code_http, current_document->size, content_type, redirect_location);

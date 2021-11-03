@@ -565,6 +565,7 @@ int main(int argc, char* argv[]) {
             if(result) {
                 LOG("Added redirect URL: %s\n", current_document->redirect_location);
             }
+	     free(current_document->redirect_location);
             pthread_mutex_unlock(&mutex);
         }
 
