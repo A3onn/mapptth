@@ -89,6 +89,7 @@ void cli_arguments_print_help(char* prgm_name) {
     puts("\nOther:");
     puts("\t-t <integer>: Number of threads that will fetch URLs. (default=5)");
     puts("\t-S <url>: Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap.");
+    puts("\t-z <url>: URL of the proxy to use.");
     puts("\t-v: Verbose mode.");
     puts("\t-h: Print the help.");
     puts("\t-V: Print the version.");

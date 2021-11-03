@@ -27,9 +27,8 @@ struct BundleVarsThread {  // used to needed variables to the thread
     char* cookies;
 
     char* proxy_url;
-    unsigned int proxy_url_given;
-
-	struct curl_slist* headers;
+    
+    struct curl_slist* headers;
 };
 
 void* fetcher_thread_func(void* bundle_arg);
