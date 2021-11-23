@@ -33,7 +33,7 @@ void* fetcher_thread_func(void* bundle_arg) {
     struct BundleVarsThread* bundle = (struct BundleVarsThread*) bundle_arg;
     DocumentNode_t** documents = bundle->documents;
     URLNode_t** urls_stack_todo = bundle->urls_stack_todo;
-    URLNode_t** urls_stack_done = bundle->urls_stack_done;
+    struct TrieNode** urls_done = bundle->urls_done;
     pthread_mutex_t* mutex = bundle->mutex;
     pthread_cond_t* cv_url_added = bundle->cv_url_added;
     pthread_cond_t* cv_fetcher_produced = bundle->cv_fetcher_produced;
@@ -88,7 +88,7 @@ void* fetcher_thread_func(void* bundle_arg) {
         }
         *is_running = 1; // indicates the main thread that this thread is fetching
         current_url = stack_url_pop(urls_stack_todo);
-        stack_url_push(urls_stack_done, current_url);
+        trie_add(*urls_done, current_url);
         pthread_mutex_unlock(mutex);
         LOG("Got this URL to fetch: %s\n", current_url);
 

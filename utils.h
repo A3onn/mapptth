@@ -12,10 +12,11 @@
 
 #include <stdarg.h>
 #include "stack_urls.h"
+#include "trie_urls.h"
 #include <pcre.h>
 #include <lexbor/html/html.h>
 
-int url_not_seen(char* url, URLNode_t* urls_done, URLNode_t* urls_todo);
+int url_not_seen(char* url, struct TrieNode* urls_done, URLNode_t* urls_todo);
 
 int is_same_domain(char* domain_to_compare, char* domain, int allow_subdomain);
 

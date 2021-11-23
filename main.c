@@ -12,6 +12,7 @@
 #include "sitemaps_parser.h"
 #include "stack_documents.h"
 #include "stack_urls.h"
+#include "trie_urls.h"
 #include "utils.h"
 #include "cli_parser.h"
 
@@ -27,7 +28,7 @@ struct FoundURLHandlerBundle {
     char* found_url; // url to handle
     struct Document* document; // only document->url will be used from this struct
     URLNode_t** urls_stack_todo;
-    URLNode_t** urls_stack_done;
+    struct TrieNode** urls_done;
     pthread_cond_t* cv_url_added;
     int allow_subdomains;
     char** allowed_domains;
@@ -208,7 +209,7 @@ int main(int argc, char* argv[]) {
     DocumentNode_t* documents_stack = NULL;
 
     URLNode_t* urls_stack_todo = NULL;
-    URLNode_t* urls_stack_done = NULL;
+    struct TrieNode* urls_done = trie_create();
 
     // create shared interface
     CURLSH* curl_share = curl_share_init();
@@ -312,7 +313,7 @@ int main(int argc, char* argv[]) {
             found_url_handler_bundle.found_url = url;
             found_url_handler_bundle.document = &doc;
             found_url_handler_bundle.base_tag_url = NULL;
-            found_url_handler_bundle.urls_stack_done = &urls_stack_done;
+            found_url_handler_bundle.urls_done = &urls_done;
             found_url_handler_bundle.urls_stack_todo = &urls_stack_todo;
 
             int result = handle_found_url_from_sitemap(&found_url_handler_bundle);
@@ -334,7 +335,7 @@ int main(int argc, char* argv[]) {
 
         bundles[i].documents = &documents_stack;
         bundles[i].urls_stack_todo = &urls_stack_todo;
-        bundles[i].urls_stack_done = &urls_stack_done;
+        bundles[i].urls_done = &urls_done;
         bundles[i].mutex = &mutex;
         bundles[i].cv_url_added = &cv_url_added;
         bundles[i].cv_fetcher_produced = &cv_fetcher_produced;
@@ -540,7 +541,7 @@ int main(int argc, char* argv[]) {
                 found_url_handler_bundle.document = current_document;
                 found_url_handler_bundle.base_tag_url = NULL;
                 pthread_mutex_lock(&mutex);
-                found_url_handler_bundle.urls_stack_done = &urls_stack_done;
+                found_url_handler_bundle.urls_done = &urls_done;
                 found_url_handler_bundle.urls_stack_todo = &urls_stack_todo;
                 if(current_document->lexbor_document->head && !cli_arguments->only_body_flag) {
                     lxb_dom_node_simple_walk(lxb_dom_interface_node(current_document->lexbor_document->head), walk_cb, &found_url_handler_bundle);
@@ -558,7 +559,7 @@ int main(int argc, char* argv[]) {
             LOG("Handling redirect URL for %s\n", current_document->url);
             found_url_handler_bundle.document = current_document;
             pthread_mutex_lock(&mutex);
-            found_url_handler_bundle.urls_stack_done = &urls_stack_done;
+            found_url_handler_bundle.urls_done = &urls_done;
             found_url_handler_bundle.urls_stack_todo = &urls_stack_todo;
             found_url_handler_bundle.found_url = current_document->redirect_location;
             int result = handle_found_url(&found_url_handler_bundle);
@@ -591,10 +592,7 @@ cleanup_and_quit:
     free(bundles);
     free(list_running_thread_status);
 
-    while(stack_url_length(urls_stack_done) != 0) {
-        char* url_done = stack_url_pop(&urls_stack_done);
-        free(url_done);
-    }
+    trie_free(urls_done);
 
     for(int i = 0; i < cli_arguments->disallowed_paths_count; i++) {
         free(disallowed_paths[i]);
@@ -730,7 +728,7 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int fr
             is_in_valid_domains(found_url_domain, bundle->allowed_domains, bundle->count_allowed_domains, bundle->allow_subdomains)) &&
             !is_in_disallowed_domains(found_url_domain, bundle->disallowed_domains, bundle->count_disallowed_domains)) {
 
-            if(url_not_seen(final_url, *(bundle->urls_stack_done), *(bundle->urls_stack_todo))) {
+            if(url_not_seen(final_url, *(bundle->urls_done), *(bundle->urls_stack_todo))) {
                 stack_url_push(bundle->urls_stack_todo, final_url);
                 // note that is this func is called from the sitemap parsing, no one listen for this signal,
                 // thus it will be useless in that particular case to call it

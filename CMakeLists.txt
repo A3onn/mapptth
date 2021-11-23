@@ -5,8 +5,8 @@ option(MAPPTTH_NO_GRAPHVIZ "GraphVizSupport" OFF)
 
 project(mapptth VERSION 0.3.0 LANGUAGES C)
 
-set(SRCS main.c fetcher_thread.c stack_documents.c stack_urls.c cli_parser.c utils.c sitemaps_parser.c)
-set(HEADERS fetcher_thread.h stack_documents.h stack_urls.h cli_parser.h utils.h sitemaps_parser.h)
+set(SRCS main.c fetcher_thread.c stack_documents.c stack_urls.c trie_urls.c cli_parser.c utils.c sitemaps_parser.c)
+set(HEADERS fetcher_thread.h stack_documents.h stack_urls.h trie_urls.h cli_parser.h utils.h sitemaps_parser.h)
 
 add_executable(mapptth ${SRCS} ${HEADERS})
 

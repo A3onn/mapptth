@@ -3,13 +3,14 @@
 
 #include "stack_documents.h"
 #include "stack_urls.h"
+#include "trie_urls.h"
 #include <curl/curl.h>
 
 
 struct BundleVarsThread {  // used to needed variables to the thread
     DocumentNode_t** documents;  // stack of documents to populate
     URLNode_t** urls_stack_todo;  // stack of URLS to fetch
-    URLNode_t** urls_stack_done;  // stack of URLS fetched
+    struct TrieNode** urls_done;  // trie keeping all urls found
     CURLSH* curl_share;
     pthread_mutex_t* mutex;
     pthread_cond_t* cv_url_added;

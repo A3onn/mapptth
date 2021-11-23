@@ -7,12 +7,12 @@
 #include <pcre.h>
 #include <errno.h>
 
-int url_not_seen(char* url, URLNode_t* urls_done, URLNode_t* urls_todo) {
+int url_not_seen(char* url, struct TrieNode* urls_done, URLNode_t* urls_todo) {
     // Just check if a given url has already been seen.
     // Could just be:
     //  return !stack_url_contains(*urls_done, url) && !stack_url_contains(*urls_done, url)
     // but it would be longer as both stack_url_contains are called every time
-    if(stack_url_contains(urls_done, url)) {
+    if(trie_contains(urls_done, url)) {
         return 0;
     }
     if(stack_url_contains(urls_todo, url)) {
