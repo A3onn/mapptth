@@ -119,6 +119,7 @@ _GraphViz support must be enabled to use these parameters._
 | --- | --- |
 | Number of threads that will fetch URLs. (default=5) | -t \<number of threads> |
 | Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap. | -S \<URL of the sitemap> |
+| URL of the proxy to use. | -z \<URL of the proxy> |
 | Print the help. | -h |
 | Print the version. | -V |
 

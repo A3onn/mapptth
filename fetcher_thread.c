@@ -57,7 +57,7 @@ void* fetcher_thread_func(void* bundle_arg) {
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
     }
-    if(bundle->proxy_url_given) {
+    if(bundle->proxy_url != NULL) {
         curl_easy_setopt(curl, CURLOPT_PROXY, bundle->proxy_url);
     }
 
@@ -172,7 +172,8 @@ void* fetcher_thread_func(void* bundle_arg) {
         status_c = curl_easy_getinfo(curl, CURLINFO_REDIRECT_URL, &redirect_location);
         if(status_c != CURLE_OK) {
             fprintf(stderr, "curl_easy_getinfo for getting the redirect URL failed for %s. Error: %s.\n", current_url, curl_easy_strerror(status_c));
-        } else if(redirect_location != NULL) {  // if there is a location header
+        }
+        if(redirect_location != NULL) {
             redirect_location = strdup(redirect_location);
         }
 
