@@ -209,10 +209,10 @@ START_TEST(true_url_not_seen) {
     URLNode_t* urls_todo = NULL;
     struct TrieNode* urls_done = trie_create();
 
-    stack_url_push(&urls_todo, "url1");
-    trie_add(urls_done, "url2");
+    stack_url_push(&urls_todo, "http://url1.com");
+    trie_add(urls_done, "http://url2.com");
 
-    ck_assert_int_eq(url_not_seen("url3", urls_done, urls_todo), 1);
+    ck_assert_int_eq(url_not_seen("http://url3.com", urls_done, urls_todo), 1);
 }
 END_TEST
 
@@ -220,7 +220,7 @@ START_TEST(true_nothing_seen_url_not_seen) {
     URLNode_t* urls_todo = NULL;
     struct TrieNode* urls_done = trie_create();
 
-    ck_assert_int_eq(url_not_seen("url1", urls_done, urls_todo), 1);
+    ck_assert_int_eq(url_not_seen("http://url1.com", urls_done, urls_todo), 1);
 }
 END_TEST
 
@@ -228,9 +228,9 @@ START_TEST(false_url_not_seen) {
     URLNode_t* urls_todo = NULL;
     struct TrieNode* urls_done = trie_create();
 
-    trie_add(urls_done, "url1");
+    trie_add(urls_done, "http://url1.com");
 
-    ck_assert_int_eq(url_not_seen("url1", urls_done, urls_todo), 0);
+    ck_assert_int_eq(url_not_seen("http://url1.com", urls_done, urls_todo), 0);
 }
 END_TEST
 
