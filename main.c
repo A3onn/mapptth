@@ -15,6 +15,7 @@
 #include "trie_urls.h"
 #include "utils.h"
 #include "cli_parser.h"
+#include "logger.h"
 
 #if GRAPHVIZ_SUPPORT
 #include <graphviz/gvc.h>

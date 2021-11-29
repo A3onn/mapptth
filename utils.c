@@ -1,5 +1,7 @@
 #include "utils.h"
 #include "stack_urls.h"
+#include "logger.h"
+#include "trie_urls.h"
 #include <curl/curl.h>
 #include <string.h>
 #include <stdlib.h>
@@ -338,20 +340,4 @@ char* get_base_tag_value(lxb_html_document_t* document) {
     } else {
         return normalize_path(url, 1);
     }
-}
-
-// VERBOSE
-int _verbose = 0;
-void _verbose_print(const char* function_name, const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-
-    if(_verbose) {
-        flockfile(stdout);
-        printf("%s[i]%s thread #%lu %s: ", BLUE, RESET, pthread_self(), function_name);
-        vprintf(format, args);
-        funlockfile(stdout);
-    }
-
-    va_end(args);
 }

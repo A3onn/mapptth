@@ -5,6 +5,7 @@
 #include "fetcher_thread.h"
 #include "stack_documents.h"
 #include "stack_urls.h"
+#include "logger.h"
 #include "utils.h"
 
 

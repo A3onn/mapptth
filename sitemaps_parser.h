@@ -1,12 +1,13 @@
 #ifndef SITEMAPS_PARSER_H
 #define SITEMAPS_PARSER_H
 
-#include "stack_urls.h"
-#include "stack_urls.h"
-#include "utils.h"
 #include <curl/curl.h>
 #include <libxml/parser.h>
 #include <string.h>
+#include "stack_urls.h"
+#include "stack_urls.h"
+#include "logger.h"
+#include "utils.h"
 
 URLNode_t* get_sitemap_urls(char* url, int no_color);
 

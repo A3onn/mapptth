@@ -1,9 +1,10 @@
 #include <check.h>
 #include <strings.h>
 #include <pcre.h>
+#include "trie_urls.h"
+#include "utils.h"
 #include "stack_urls.h"
 #include "stack_documents.h"
-#include "utils.h"
 #include "sitemaps_parser.h"
 
 
@@ -205,25 +206,30 @@ END_TEST
 
 /* UTILS */
 START_TEST(true_url_not_seen) {
-    URLNode_t* urls_done = NULL, *urls_todo = NULL;
+    URLNode_t* urls_todo = NULL;
+    struct TrieNode* urls_done = trie_create();
+
     stack_url_push(&urls_todo, "url1");
-    stack_url_push(&urls_done, "url2");
+    trie_add(urls_done, "url2");
 
     ck_assert_int_eq(url_not_seen("url3", urls_done, urls_todo), 1);
 }
 END_TEST
 
 START_TEST(true_nothing_seen_url_not_seen) {
-    URLNode_t* urls_done = NULL, *urls_todo = NULL;
+    URLNode_t* urls_todo = NULL;
+    struct TrieNode* urls_done = trie_create();
 
     ck_assert_int_eq(url_not_seen("url1", urls_done, urls_todo), 1);
 }
 END_TEST
 
 START_TEST(false_url_not_seen) {
-    URLNode_t* urls_done = NULL, *urls_todo = NULL;
+    URLNode_t* urls_todo = NULL;
+    struct TrieNode* urls_done = trie_create();
 
-    stack_url_push(&urls_done, "url1");
+    trie_add(urls_done, "url1");
+
     ck_assert_int_eq(url_not_seen("url1", urls_done, urls_todo), 0);
 }
 END_TEST

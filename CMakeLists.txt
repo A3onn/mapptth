@@ -5,8 +5,8 @@ option(MAPPTTH_NO_GRAPHVIZ "GraphVizSupport" OFF)
 
 project(mapptth VERSION 0.3.0 LANGUAGES C)
 
-set(SRCS main.c fetcher_thread.c stack_documents.c stack_urls.c trie_urls.c cli_parser.c utils.c sitemaps_parser.c)
-set(HEADERS fetcher_thread.h stack_documents.h stack_urls.h trie_urls.h cli_parser.h utils.h sitemaps_parser.h)
+set(SRCS main.c fetcher_thread.c stack_documents.c stack_urls.c trie_urls.c cli_parser.c utils.c sitemaps_parser.c logger.c)
+set(HEADERS fetcher_thread.h stack_documents.h stack_urls.h trie_urls.h cli_parser.h utils.h sitemaps_parser.h logger.h)
 
 add_executable(mapptth ${SRCS} ${HEADERS})
 
@@ -102,7 +102,7 @@ if(MAPPTTH_GENERATE_TESTS)
     find_library(CHECK_LIBRARY NAMES libcheck libCheck check Check)
     if(CHECK_LIBRARY)
         message(STATUS "Making tests...")
-        add_executable(tests_mapptth tests_mapptth.c stack_documents.c stack_urls.c utils.c sitemaps_parser.c stack_documents.h stack_urls.h utils.h sitemaps_parser.h)
+        add_executable(tests_mapptth tests_mapptth.c stack_documents.c stack_urls.c utils.c sitemaps_parser.c stack_documents.h stack_urls.h utils.h sitemaps_parser.h trie_urls.c logger.c)
 
         # libcheck
         target_link_libraries(tests_mapptth ${CHECK_LIBRARY} rt subunit)
