@@ -103,10 +103,16 @@ lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
 }
 
 static void lock_cb(CURL* handle, curl_lock_data data, curl_lock_access access, void* userptr) {
+    (void)handle;
+    (void)data;
+    (void)access;
     pthread_mutex_lock((pthread_mutex_t*) userptr);
 }
 
 static void unlock_cb(CURL* handle, curl_lock_data data, void* userptr) {
+    (void)handle;
+    (void)data;
+    (void)access;
     pthread_mutex_unlock((pthread_mutex_t*) userptr);
 }
 
@@ -146,13 +152,13 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "%s: max-depth have to be positive\n", argv[0]);
         return 1;
     }
-    for(int i = 0; i < cli_arguments->allowed_extensions_count; i++) {
+    for(unsigned int i = 0; i < cli_arguments->allowed_extensions_count; i++) {
         if(cli_arguments->allowed_extensions[i][0] != '.') {
             fprintf(stderr, "%s: extensions have to begin with a '.' (dot)\n", argv[0]);
             return 1;
         }
     }
-    for(int i = 0; i < cli_arguments->disallowed_extensions_count; i++) {
+    for(unsigned int i = 0; i < cli_arguments->disallowed_extensions_count; i++) {
         if(cli_arguments->disallowed_extensions[i][0] != '.') {
             fprintf(stderr, "%s: extensions have to begin with a '.' (dot)\n", argv[0]);
             return 1;
@@ -163,7 +169,7 @@ int main(int argc, char* argv[]) {
     int regex_error_offset;
     const char* regex_error_str;
     pcre** disallowed_paths = (pcre**) malloc(sizeof(pcre*) * cli_arguments->disallowed_paths_count);
-    for(int i = 0; i < cli_arguments->disallowed_paths_count; i++) {
+    for(unsigned int i = 0; i < cli_arguments->disallowed_paths_count; i++) {
         disallowed_paths[i] = pcre_compile(cli_arguments->disallowed_paths[i], PCRE_NO_AUTO_CAPTURE, &regex_error_str, &regex_error_offset, 0);
         if(disallowed_paths[i] == NULL) {
             fprintf(stderr, "%s: Invalid regex: \"%s\" at %d (%s)\n", argv[0], cli_arguments->disallowed_paths[i], regex_error_offset, regex_error_str);
@@ -171,7 +177,7 @@ int main(int argc, char* argv[]) {
         }
     }
     pcre** allowed_paths = (pcre**) malloc(sizeof(pcre*) * cli_arguments->allowed_paths_count);
-    for(int i = 0; i < cli_arguments->allowed_paths_count; i++) {
+    for(unsigned int i = 0; i < cli_arguments->allowed_paths_count; i++) {
         allowed_paths[i] = pcre_compile(cli_arguments->allowed_paths[i], PCRE_NO_AUTO_CAPTURE, &regex_error_str, &regex_error_offset, 0);
         if(allowed_paths[i] == NULL) {
             fprintf(stderr, "%s: Invalid regex: \"%s\" at %d (%s)\n", argv[0], cli_arguments->allowed_paths[i], regex_error_offset, regex_error_str);
@@ -186,7 +192,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     cli_arguments->allowed_ports_count++;
-    cli_arguments->allowed_ports = (short*) reallocarray(cli_arguments->allowed_ports, cli_arguments->allowed_ports_count, sizeof (short));
+    cli_arguments->allowed_ports = (unsigned short*) reallocarray(cli_arguments->allowed_ports, cli_arguments->allowed_ports_count, sizeof (unsigned short));
     cli_arguments->allowed_ports[cli_arguments->allowed_ports_count-1] = starting_port;
 
     int resolve_ip_version = CURL_IPRESOLVE_WHATEVER;
@@ -331,7 +337,7 @@ int main(int argc, char* argv[]) {
     int should_exit = 0;  // if threads should exit, set to 1 when all threads have is_running == 1
     int* list_running_thread_status = (int*) malloc(sizeof(int) * cli_arguments->threads);  // list containing ints indicating if each thread is fetching
     struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * cli_arguments->threads);
-    for(int i = 0; i < cli_arguments->threads; i++) {
+    for(unsigned int i = 0; i < cli_arguments->threads; i++) {
         list_running_thread_status[i] = 1;
 
         bundles[i].documents = &documents_stack;
@@ -370,7 +376,7 @@ int main(int argc, char* argv[]) {
             // if this thread has no document to parse and all threads are waiting for
             // urls, then it means that everything was discovered and they should quit
             int should_quit = 1;
-            for(int i = 0; i < cli_arguments->threads; i++) {  // check if all threads are running
+            for(unsigned int i = 0; i < cli_arguments->threads; i++) {  // check if all threads are running
                 if(list_running_thread_status[i] == 1) {  // if one is running
                     should_quit = 0;  // should not quit
                     break;  // don't need to check other threads
@@ -575,9 +581,8 @@ int main(int argc, char* argv[]) {
         free(current_document);
     }
 
-cleanup_and_quit:
     LOG("Quitting...\n");
-    for(int i = 0; i < cli_arguments->threads; i++) {
+    for(unsigned int i = 0; i < cli_arguments->threads; i++) {
         LOG("Waiting for the thread #%lu to quit...\n", fetcher_threads[i]);
         pthread_cond_broadcast(&cv_url_added);
         pthread_join(fetcher_threads[i], NULL);
@@ -596,10 +601,10 @@ cleanup_and_quit:
 
     trie_free(urls_done);
 
-    for(int i = 0; i < cli_arguments->disallowed_paths_count; i++) {
+    for(unsigned int i = 0; i < cli_arguments->disallowed_paths_count; i++) {
         free(disallowed_paths[i]);
     }
-    for(int i = 0; i < cli_arguments->allowed_paths_count; i++) {
+    for(unsigned int i = 0; i < cli_arguments->allowed_paths_count; i++) {
         free(allowed_paths[i]);
     }
 

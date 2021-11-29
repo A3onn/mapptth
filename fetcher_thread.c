@@ -62,7 +62,6 @@ void* fetcher_thread_func(void* bundle_arg) {
         curl_easy_setopt(curl, CURLOPT_PROXY, bundle->proxy_url);
     }
 
-    lxb_status_t status_l;
     struct ProcessContentBundle* current_document = (struct ProcessContentBundle*) malloc(sizeof(struct ProcessContentBundle));
     char* current_url;
     char* content_type;
@@ -150,7 +149,7 @@ void* fetcher_thread_func(void* bundle_arg) {
             continue;
         }
 
-        status_l = lxb_html_document_parse_chunk_end(current_document->lxb_document);
+        lxb_html_document_parse_chunk_end(current_document->lxb_document);
 
         LOG("Getting infos about %s\n", current_url);
 

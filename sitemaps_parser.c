@@ -69,6 +69,8 @@ void __sitemap_get_content(xmlNode* root, URLNode_t** urls_sitemaps, URLNode_t**
 
 void __sitemap_error_callback(void * ctx, const char * msg, ...) {
     // silent libXML errors
+    (void)ctx;
+    (void)msg;
 }
 
 URLNode_t* get_sitemap_urls(char *url, int no_color) {

@@ -15,11 +15,12 @@ struct TrieNode* trie_create() {
     root->children[HTTPS_INDEX_T].data = "https";
 
     root->children_count = 2;
+    return root;
 }
 
 struct TrieNode* _find_child(struct TrieNode* node, char* val, char type) {
     /* Find a child node with a given value */
-    for(int i = 0; i < node->children_count; i++) {
+    for(unsigned int i = 0; i < node->children_count; i++) {
         if(strcmp(node->children[i].data, val) == 0 && node->children[i].type == type) {
              return &(node->children[i]);
         }
@@ -244,7 +245,7 @@ int trie_contains(struct TrieNode* root, char* url) {
 }
 
 void _trie_free(struct TrieNode node) {
-    for(int i = 0; i < node.children_count; i++) {
+    for(unsigned int i = 0; i < node.children_count; i++) {
         _trie_free(node.children[i]);
     }
     if(node.type == SCHEME_T) {
@@ -258,7 +259,7 @@ void _trie_free(struct TrieNode node) {
 }
 
 void trie_free(struct TrieNode* root) {
-    for(int i = 0; i < root->children_count; i++) {
+    for(unsigned int i = 0; i < root->children_count; i++) {
         _trie_free(root->children[i]);
     }
 }
@@ -286,7 +287,7 @@ void _print_trie(struct TrieNode* root, int depth) {
     } else {
         printf(" ->\n");
     }
-    for (int i=0; i<tmp->children_count; i++) {
+    for(unsigned int i = 0; i < tmp->children_count; i++) {
         _print_trie(&(tmp->children[i]), depth+1);
     }
 }

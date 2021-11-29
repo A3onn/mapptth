@@ -505,7 +505,7 @@ START_TEST(empty_path_is_disallowed_path) {
 END_TEST
 
 START_TEST(empty_list_is_disallowed_path) {
-    pcre* dis_paths[] = {};
+    pcre* dis_paths[] = { 0 };
     ck_assert_int_eq(is_disallowed_path("/files/file", dis_paths, 0), 0);
 }
 END_TEST
@@ -578,7 +578,7 @@ START_TEST(no_file_is_allowed_extension) {
 END_TEST
 
 START_TEST(empty_list_extensions_is_allowed_extension) {
-    char* allowed_exts[] = {};
+    char* allowed_exts[] = { 0 };
     // SPECIAL CASE: if no extensions, then everything is allowed
     ck_assert_int_eq(is_allowed_extension("/file.ext", allowed_exts, 0), 1);
 }
@@ -617,7 +617,7 @@ START_TEST(empty_domain_is_in_valid_domains) {
 END_TEST
 
 START_TEST(empty_allowed_domains_domain_is_in_valid_domains) {
-    char* domains[] = {};
+    char* domains[] = { 0 };
     ck_assert_int_eq(is_in_valid_domains("google.com", domains, 0, 1), 0);
 }
 END_TEST
@@ -952,6 +952,7 @@ Suite* utils_suite(void) {
     tcase_add_test(tc, empty_path_normalize_path);
     tcase_add_test(tc, nothing_change_directory_normalize_path);
     tcase_add_test(tc, normalize_dot_dot_directory_normalize_path);
+    tcase_add_test(tc, normalize_dot_dot_dir_normalize_path);
     tcase_add_test(tc, current_dir_directory_normalize_path);
     tcase_add_test(tc, current_dir_file_normalize_path);
     tcase_add_test(tc, stop_root_dir_normalize_path);

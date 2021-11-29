@@ -317,7 +317,7 @@ char* get_base_tag_value(lxb_html_document_t* document) {
 
     // will loop through the bases and return the first base tag with a href attribute
     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base#multiple_%3Cbase%3E_elements
-    for(int i = 0; i < lxb_dom_collection_length(collection); i++) {
+    for(size_t i = 0; i < lxb_dom_collection_length(collection); i++) {
         lxb_dom_element_t* element = lxb_dom_collection_element(collection, i);
         if(lxb_dom_element_has_attribute(element, (lxb_char_t*) "href", 4)) {
             // if it has a href, get it and break in order to free the collection

@@ -12,6 +12,14 @@ add_executable(mapptth ${SRCS} ${HEADERS})
 
 target_compile_definitions(mapptth PRIVATE MAPPTTH_VERSION="${CMAKE_PROJECT_VERSION}")
 
+# compile settings
+if(MSVC)
+        target_compile_options(mapptth PUBLIC /W4 /WX)
+else()
+        target_compile_options(mapptth PUBLIC -Wall -Wextra -pedantic -Werror)
+endif()
+set_target_properties(mapptth PROPERTIES C_STANDARD 99) # use c99 like lexbor
+
 # check for threads
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)

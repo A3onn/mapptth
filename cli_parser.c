@@ -8,6 +8,7 @@
 #include <libxml/xmlversion.h>
 #include <lexbor/core/base.h>
 #include <pcre.h>
+
 #if GRAPHVIZ_SUPPORT
 #include <graphviz/graphviz_version.h> // PACKAGE_VERSION
 #endif
@@ -23,7 +24,7 @@ void _init_arguments(struct arguments* args) {
     args->allowed_paths = (char**) malloc(sizeof (char*));
     args->allowed_extensions = (char**) malloc(sizeof (char*));
     args->allowed_domains = (char**) malloc(sizeof (char*));
-    args->allowed_ports = (short*) malloc(sizeof (short));
+    args->allowed_ports = (unsigned short*) malloc(sizeof (unsigned short));
 #if GRAPHVIZ_SUPPORT
     args->graph_layout = "dot"; // works best with ranks
     args->graph_output_format = "png";
@@ -208,7 +209,7 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                     return NULL;
                 }
                 args->allowed_ports_count++;
-                args->allowed_ports = (short*) reallocarray(args->allowed_ports, args->allowed_ports_count, sizeof (short));
+                args->allowed_ports = (unsigned short*) reallocarray(args->allowed_ports, args->allowed_ports_count, sizeof (unsigned short));
                 args->allowed_ports[args->allowed_ports_count-1] = newPort;
                 break;
             case 'o': // output

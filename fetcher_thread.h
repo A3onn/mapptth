@@ -34,6 +34,4 @@ struct BundleVarsThread {  // used to needed variables to the thread
 
 void* fetcher_thread_func(void* bundle_arg);
 
-static size_t __fetcher_content_callback(const char* content, size_t size, size_t nmemb, void* userp);
-
 #endif
