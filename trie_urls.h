@@ -33,4 +33,6 @@ int trie_contains(struct TrieNode* root, char* url);
 void trie_add(struct TrieNode* root, char* url);
 
 void print_trie(struct TrieNode* root);
+
+struct TrieNode* _find_child(struct TrieNode* node, char* val, char type); // used for tests
 #endif

@@ -204,6 +204,304 @@ START_TEST(correct_length_stack_documents) {
 END_TEST
 
 
+/* TRIE OF URLS */
+START_TEST(create_trie_urls) {
+    struct TrieNode* root = trie_create();
+    ck_assert_int_eq(root->children_count, 2);
+    ck_assert_str_eq(root->children[HTTP_INDEX_T].data, "http");
+    ck_assert_str_eq(root->children[HTTPS_INDEX_T].data, "https");
+    ck_assert_int_eq(root->children[HTTP_INDEX_T].type, SCHEME_T);
+    ck_assert_int_eq(root->children[HTTPS_INDEX_T].type, SCHEME_T);
+}
+END_TEST
+
+START_TEST(contains_true_trie_urls) {
+    struct TrieNode* root = trie_create();
+
+    trie_add(root, "http://url1.com");
+    ck_assert_int_eq(trie_contains(root, "http://url1.com"), 1);
+    ck_assert_int_eq(trie_contains(root, "http://url1.com/"), 1);
+
+    trie_add(root, "http://url2.com");
+    ck_assert_int_eq(trie_contains(root, "http://url1.com"), 1); // still contains "http://url1.com" ?
+    ck_assert_int_eq(trie_contains(root, "http://url2.com"), 1);
+    ck_assert_int_eq(trie_contains(root, "http://url2.com/"), 1);
+
+    trie_add(root, "http://url3.com");
+    trie_add(root, "https://url3.com");
+    ck_assert_int_eq(trie_contains(root, "http://url3.com"), 1);
+    ck_assert_int_eq(trie_contains(root, "https://url3.com"), 1);
+
+    trie_add(root, "http://url4.com#test");
+    trie_add(root, "http://url4.com?test");
+    trie_add(root, "http://url4.com?test#test");
+    ck_assert_int_eq(trie_contains(root, "http://url4.com#test"), 1);
+    ck_assert_int_eq(trie_contains(root, "http://url4.com?test"), 1);
+    ck_assert_int_eq(trie_contains(root, "http://url4.com?test#test"), 1);
+}
+END_TEST
+
+START_TEST(trie_add_simple_trie_urls) {
+    struct TrieNode* root = trie_create();
+    trie_add(root, "http://url.com:8080/some/path?query#fragment");
+
+    struct TrieNode scheme = root->children[0];
+    ck_assert_str_eq(scheme.data, "http");
+    ck_assert_int_eq(scheme.type, SCHEME_T);
+
+    struct TrieNode host = scheme.children[0];
+    ck_assert_str_eq(scheme.data, "url.com");
+    ck_assert_int_eq(host.type, HOST_T);
+
+    struct TrieNode port = host.children[0];
+    ck_assert_str_eq(port.data, "8080");
+    ck_assert_int_eq(port.type, PORT_T);
+
+    struct TrieNode path1 = port.children[0];
+    ck_assert_str_eq(path1.data, "some");
+    ck_assert_int_eq(path1.type, PATH_T);
+
+    struct TrieNode path2 = path1.children[0];
+    ck_assert_str_eq(path2.data, "path");
+    ck_assert_int_eq(path2.type, PATH_T);
+
+    struct TrieNode query = path2.children[0];
+    ck_assert_str_eq(query.data, "query");
+    ck_assert_int_eq(query.type, QUERY_T);
+
+    struct TrieNode fragment = query.children[0];
+    ck_assert_str_eq(fragment.data, "fragment");
+    ck_assert_int_eq(fragment.type, FRAGMENT_T);
+}
+END_TEST
+
+START_TEST(trie_add_multiple_trie_urls) {
+    struct TrieNode* root = trie_create();
+    trie_add(root, "http://url.com:8080/some/path?query#fragment");
+    trie_add(root, "https://url.com:8080/some/path?query#fragment");
+    trie_add(root, "http://another-url.com:8080/some/path?query#fragment");
+    trie_add(root, "http://url.com:4444/some/path?query#fragment");
+    trie_add(root, "http://url.com:8080/another/path?query#fragment");
+    trie_add(root, "http://url.com:4444/some/test?query#fragment");
+    trie_add(root, "http://url.com:4444/some/test?another-query#fragment");
+    trie_add(root, "http://url.com:4444/some/test?query#another-fragment");
+
+    struct TrieNode scheme = root->children[0];
+    ck_assert_str_eq(scheme.data, "http");
+    ck_assert_int_eq(scheme.type, SCHEME_T);
+
+    struct TrieNode host = scheme.children[0];
+    ck_assert_str_eq(scheme.data, "url.com");
+    ck_assert_int_eq(host.type, HOST_T);
+
+    struct TrieNode port = host.children[0];
+    ck_assert_str_eq(port.data, "8080");
+    ck_assert_int_eq(port.type, PORT_T);
+
+    struct TrieNode path1 = port.children[0];
+    ck_assert_str_eq(path1.data, "some");
+    ck_assert_int_eq(path1.type, PATH_T);
+
+    struct TrieNode path2 = path1.children[0];
+    ck_assert_str_eq(path2.data, "path");
+    ck_assert_int_eq(path2.type, PATH_T);
+
+    struct TrieNode query = path2.children[0];
+    ck_assert_str_eq(query.data, "query");
+    ck_assert_int_eq(query.type, QUERY_T);
+
+    struct TrieNode fragment = query.children[0];
+    ck_assert_str_eq(fragment.data, "fragment");
+    ck_assert_int_eq(fragment.type, FRAGMENT_T);
+
+    ck_assert_str_eq(root->children[1].data, "https");
+    ck_assert_int_eq(root->children[1].type, SCHEME_T);
+
+    ck_assert_str_eq(scheme.children[1].data, "another-url.com");
+    ck_assert_int_eq(scheme.children[1].type, HOST_T);
+
+    ck_assert_str_eq(host.children[1].data, "4444");
+    ck_assert_int_eq(host.children[1].type, PORT_T);
+
+    ck_assert_str_eq(port.children[1].data, "another");
+    ck_assert_int_eq(host.children[1].type, PATH_T);
+
+    ck_assert_str_eq(path1.children[1].data, "test");
+    ck_assert_int_eq(path1.children[1].type, PATH_T);
+
+    ck_assert_str_eq(path2.children[1].data, "another-query");
+    ck_assert_int_eq(path2.children[1].type, QUERY_T);
+
+    ck_assert_str_eq(query.children[1].data, "another-fragment");
+    ck_assert_int_eq(query.children[1].type, FRAGMENT_T);
+}
+END_TEST
+
+START_TEST(trie_add_multiple_same_trie_urls) {
+    // add same url and check if no parts was duplicated
+    struct TrieNode* root = trie_create();
+    trie_add(root, "http://url.com");
+
+    struct TrieNode* scheme = &(root->children[0]);
+
+    trie_add(root, "http://url.com");
+    ck_assert_ptr_eq(scheme, &(root->children[0]));
+}
+END_TEST
+
+START_TEST(contains_false_trie_urls) {
+    struct TrieNode* root = trie_create();
+
+    trie_add(root, "http://url1.com");
+    ck_assert_int_eq(trie_contains(root, "http://url2.com"), 0);
+    ck_assert_int_eq(trie_contains(root, "http://url1.com/path"), 0);
+
+    root = trie_create();
+    trie_add(root, "http://url1.com?test");
+    ck_assert_int_eq(trie_contains(root, "http://url1.com"), 0);
+    ck_assert_int_eq(trie_contains(root, "https://url1.com"), 0);
+    ck_assert_int_eq(trie_contains(root, "http://url1.com?"), 0);
+    ck_assert_int_eq(trie_contains(root, "http://url1.com?not-test"), 0);
+    ck_assert_int_eq(trie_contains(root, "http://url1.com/test"), 0); // mind the '/'
+    ck_assert_int_eq(trie_contains(root, "http://url1.com#test"), 0); // mind the '#'
+    ck_assert_int_eq(trie_contains(root, "http://url1.com?test#not-test"), 0);
+    ck_assert_int_eq(trie_contains(root, "http://url1.com/not-test?test"), 0);
+
+    root = trie_create();
+    trie_add(root, "http://url1.com#test");
+    ck_assert_int_eq(trie_contains(root, "http://url1.com"), 0);
+    ck_assert_int_eq(trie_contains(root, "http://url1.com#"), 0);
+    ck_assert_int_eq(trie_contains(root, "http://url1.com#not-test"), 0);
+    ck_assert_int_eq(trie_contains(root, "http://url1.com/test"), 0); // mind the '/'
+    ck_assert_int_eq(trie_contains(root, "http://url1.com?test"), 0); // mind the '?'
+    ck_assert_int_eq(trie_contains(root, "http://url1.com?not-test#test"), 0);
+    ck_assert_int_eq(trie_contains(root, "http://url1.com/not-test#test"), 0);
+}
+END_TEST
+
+START_TEST(_find_child_simple_trie_urls) {
+    struct TrieNode* root = trie_create();
+
+    trie_add(root, "http://url.com:8080/some/path?query#fragment");
+
+    struct TrieNode* scheme = _find_child(root, "http", SCHEME_T);
+    ck_assert_ptr_ne(scheme, NULL);
+    ck_assert_int_eq(scheme->type, SCHEME_T);
+    ck_assert_str_eq(scheme->data, "http");
+
+    struct TrieNode* host = _find_child(scheme, "url.com", HOST_T);
+    ck_assert_ptr_ne(host, NULL);
+    ck_assert_int_eq(host->type, HOST_T);
+    ck_assert_str_eq(host->data, "url.com");
+
+    struct TrieNode* port = _find_child(host, "8080", PORT_T);
+    ck_assert_ptr_ne(port, NULL);
+    ck_assert_int_eq(port->type, PORT_T);
+    ck_assert_str_eq(port->data, "8080");
+
+    struct TrieNode* path1 = _find_child(port, "some", PATH_T);
+    ck_assert_ptr_ne(path1, NULL);
+    ck_assert_int_eq(path1->type, PATH_T);
+    ck_assert_str_eq(path1->data, "some");
+
+    struct TrieNode* path2 = _find_child(path1, "path", PATH_T);
+    ck_assert_ptr_ne(path2, NULL);
+    ck_assert_int_eq(path2->type, PATH_T);
+    ck_assert_str_eq(path2->data, "path");
+
+    struct TrieNode* query = _find_child(path2, "query", QUERY_T);
+    ck_assert_ptr_ne(query, NULL);
+    ck_assert_int_eq(query->type, QUERY_T);
+    ck_assert_str_eq(query->data, "query");
+
+    struct TrieNode* fragment = _find_child(query, "fragment", FRAGMENT_T);
+    ck_assert_ptr_ne(fragment, NULL);
+    ck_assert_int_eq(fragment->type, PATH_T);
+    ck_assert_str_eq(fragment->data, "fragment");
+
+    ck_assert_ptr_eq(_find_child(root, "https", SCHEME_T), NULL);
+    ck_assert_ptr_eq(_find_child(root, "http", HOST_T), NULL); // check wrong type
+    ck_assert_ptr_eq(_find_child(root, "", SCHEME_T), NULL);
+
+    ck_assert_ptr_eq(_find_child(scheme, "url1.com", HOST_T), NULL); // check wrong type
+    ck_assert_ptr_eq(_find_child(scheme, "url1.com", PORT_T), NULL);
+
+    ck_assert_ptr_eq(_find_child(host, "8000", PORT_T), NULL);
+    ck_assert_ptr_eq(_find_child(host, "8080", SCHEME_T), NULL);
+    ck_assert_ptr_eq(_find_child(host, "", SCHEME_T), NULL);
+
+    ck_assert_ptr_eq(_find_child(port, "path", PATH_T), NULL); // /some/path
+    ck_assert_ptr_eq(_find_child(port, "some", SCHEME_T), NULL);
+    ck_assert_ptr_eq(_find_child(port, "", PATH_T), NULL);
+
+    ck_assert_ptr_eq(_find_child(path2, "query", HOST_T), NULL);
+    ck_assert_ptr_eq(_find_child(path2, "query-not", QUERY_T), NULL);
+    ck_assert_ptr_eq(_find_child(path2, "not-query", QUERY_T), NULL);
+    ck_assert_ptr_eq(_find_child(path2, "", PATH_T), NULL);
+
+    ck_assert_ptr_eq(_find_child(query, "fragment", QUERY_T), NULL);
+    ck_assert_ptr_eq(_find_child(query, "fragment-not", FRAGMENT_T), NULL);
+    ck_assert_ptr_eq(_find_child(query, "not-fragment", FRAGMENT_T), NULL);
+    ck_assert_ptr_eq(_find_child(query, "", FRAGMENT_T), NULL);
+}
+END_TEST
+
+START_TEST(_find_child_multiple_trie_urls) {
+    struct TrieNode* root = trie_create();
+
+    trie_add(root, "http://url.com:8080/some/path?query#fragment"); // will search for this one
+    trie_add(root, "https://url.com:8080/some/path?query#fragment");
+    trie_add(root, "http://url1.com:8080/some/path?query#fragment");
+    trie_add(root, "http://url.com:4444/some/path?query#fragment");
+    trie_add(root, "http://url.com:8080/some/?query#fragment");
+    trie_add(root, "http://url.com:8080/path/some?query#fragment");
+    trie_add(root, "http://url.com:8080/some/another?query#fragment");
+    trie_add(root, "http://url.com:8080/some/path/another?query#fragment");
+    trie_add(root, "http://url.com:8080/some/path?wrong-query#fragment");
+    trie_add(root, "http://url.com:8080/some/path?query#wrong-fragment");
+    trie_add(root, "http://url.com:8080/some/path?#fragment");
+    trie_add(root, "http://url.com:8080/some/path?#");
+    trie_add(root, "http://url.com:8080/some/path?");
+    trie_add(root, "http://url.com:8080/some/path");
+
+    struct TrieNode* scheme = _find_child(root, "http", SCHEME_T);
+    ck_assert_ptr_ne(scheme, NULL);
+    ck_assert_int_eq(scheme->type, SCHEME_T);
+    ck_assert_str_eq(scheme->data, "http");
+
+    struct TrieNode* host = _find_child(scheme, "url.com", HOST_T);
+    ck_assert_ptr_ne(host, NULL);
+    ck_assert_int_eq(host->type, HOST_T);
+    ck_assert_str_eq(host->data, "url.com");
+
+    struct TrieNode* port = _find_child(host, "8080", PORT_T);
+    ck_assert_ptr_ne(port, NULL);
+    ck_assert_int_eq(port->type, PORT_T);
+    ck_assert_str_eq(port->data, "8080");
+
+    struct TrieNode* path1 = _find_child(port, "some", PATH_T);
+    ck_assert_ptr_ne(path1, NULL);
+    ck_assert_int_eq(path1->type, PATH_T);
+    ck_assert_str_eq(path1->data, "some");
+
+    struct TrieNode* path2 = _find_child(path1, "path", PATH_T);
+    ck_assert_ptr_ne(path2, NULL);
+    ck_assert_int_eq(path2->type, PATH_T);
+    ck_assert_str_eq(path2->data, "path");
+
+    struct TrieNode* query = _find_child(path2, "query", QUERY_T);
+    ck_assert_ptr_ne(query, NULL);
+    ck_assert_int_eq(query->type, QUERY_T);
+    ck_assert_str_eq(query->data, "query");
+
+    struct TrieNode* fragment = _find_child(query, "fragment", FRAGMENT_T);
+    ck_assert_ptr_ne(fragment, NULL);
+    ck_assert_int_eq(fragment->type, PATH_T);
+    ck_assert_str_eq(fragment->data, "fragment");
+}
+END_TEST
+
+
 /* UTILS */
 START_TEST(true_url_not_seen) {
     URLNode_t* urls_todo = NULL;
@@ -713,7 +1011,7 @@ END_TEST
 START_TEST(multiple_values__sitemap_get_location) {
 	// check if returns only 1 value and the first one
 	xmlDocPtr doc;
-	doc = getXMLDoc("<test><loc>http://localhost:8000</loc><loc>http://localhost:8888</loc></test>");
+	doc = getXMLDoc("<test><loc>http://localhost:8000</loc><loc>http://localhost:4444</loc></test>");
 	ck_assert_str_eq(__sitemap_get_location(getRoot(doc)->children), "http://localhost:8000"); // getRoot(doc)->children refers to the childrens of <test>, getRoot refers to <test>
 	xmlFreeDoc(doc);
 }
@@ -822,10 +1120,10 @@ END_TEST
 START_TEST(multiple_link_href_differents__sitemap_location_get_urls) {
 	xmlDocPtr doc;
 	URLNode_t* urls = NULL;
-	doc = getXMLDoc("<urls><link href='http://localhost:8000'/><link href='http://localhost:8888'/></urls>");
+	doc = getXMLDoc("<urls><link href='http://localhost:8000'/><link href='http://localhost:4444'/></urls>");
 	__sitemap_location_get_urls(getRoot(doc)->children, &urls);
 	ck_assert_int_eq(stack_url_length(urls), 2);
-	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost:8888");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost:4444");
 	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost:8000");
 	xmlFreeDoc(doc);
 }
@@ -845,10 +1143,10 @@ END_TEST
 START_TEST(multiple_loc_differents__sitemap_location_get_urls) {
 	xmlDocPtr doc;
 	URLNode_t* urls = NULL;
-	doc = getXMLDoc("<urls><loc>http://localhost:8000</loc><loc>http://localhost:8888</loc></urls>");
+	doc = getXMLDoc("<urls><loc>http://localhost:8000</loc><loc>http://localhost:4444</loc></urls>");
 	__sitemap_location_get_urls(getRoot(doc)->children, &urls);
 	ck_assert_int_eq(stack_url_length(urls), 2);
-	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost:8888");
+	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost:4444");
 	ck_assert_str_eq(stack_url_pop(&urls), "http://localhost:8000");
 	xmlFreeDoc(doc);
 }
@@ -900,6 +1198,24 @@ Suite* stack_documents_suite(void) {
     tcase_add_test(tc, get_correct_value_length_one_stack_documents);
     tcase_add_test(tc, get_differents_correct_value_length_five_stack_documents);
     tcase_add_test(tc, correct_length_stack_documents);
+
+    suite_add_tcase(s, tc);
+    return s;
+}
+
+Suite* trie_urls_suite(void) {
+    Suite* s;
+    TCase* tc;
+    s = suite_create("trie urls suite");
+    tc = tcase_create("trie urls");
+    tcase_add_test(tc, create_trie_urls);
+    tcase_add_test(tc, trie_add_simple_trie_urls);
+    tcase_add_test(tc, trie_add_multiple_trie_urls);
+    tcase_add_test(tc, trie_add_multiple_same_trie_urls);
+    tcase_add_test(tc, contains_true_trie_urls);
+    tcase_add_test(tc, contains_false_trie_urls);
+    tcase_add_test(tc, _find_child_simple_trie_urls);
+    tcase_add_test(tc, _find_child_multiple_trie_urls);
 
     suite_add_tcase(s, tc);
     return s;
@@ -1045,20 +1361,23 @@ Suite* sitemaps_parser_suite(void) {
 
 int main(void) {
     int number_failed = 0;
-    SRunner* sr_stack_urls, *sr_stack_documents, *sr_utils, *sr_sitemaps_parser;
+    SRunner* sr_stack_urls, *sr_stack_documents, *sr_trie_urls, *sr_utils, *sr_sitemaps_parser;
 
     Suite* s_stack_urls = stack_urls_suite();
     Suite* s_stack_documents = stack_documents_suite();
+    Suite* s_trie_urls = trie_urls_suite();
     Suite* s_utils = utils_suite();
     Suite* s_sitemaps_parser = sitemaps_parser_suite();
 
     sr_stack_urls = srunner_create(s_stack_urls);
     sr_stack_documents = srunner_create(s_stack_documents);
+    sr_trie_urls = srunner_create(s_trie_urls);
     sr_utils = srunner_create(s_utils);
     sr_sitemaps_parser = srunner_create(s_sitemaps_parser);
 
     srunner_run_all(sr_stack_urls, CK_NORMAL);
     srunner_run_all(sr_stack_documents, CK_NORMAL);
+    srunner_run_all(sr_trie_urls, CK_NORMAL);
     srunner_run_all(sr_utils, CK_NORMAL);
 
     LIBXML_TEST_VERSION; // initialize libXML2
@@ -1066,11 +1385,13 @@ int main(void) {
 
     number_failed += srunner_ntests_failed(sr_stack_urls);
     number_failed += srunner_ntests_failed(sr_stack_documents);
+    number_failed += srunner_ntests_failed(sr_trie_urls);
     number_failed += srunner_ntests_failed(sr_utils);
     number_failed += srunner_ntests_failed(sr_sitemaps_parser);
 
     srunner_free(sr_stack_urls);
     srunner_free(sr_stack_documents);
+    srunner_free(sr_trie_urls);
     srunner_free(sr_utils);
     srunner_free(sr_sitemaps_parser);
     return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
