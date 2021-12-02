@@ -244,34 +244,42 @@ END_TEST
 START_TEST(trie_add_simple_trie_urls) {
     struct TrieNode* root = trie_create();
     trie_add(root, "http://url.com:8080/some/path?query#fragment");
+    ck_assert_int_eq(root->is_end_url, 0);
 
     struct TrieNode scheme = root->children[0];
     ck_assert_str_eq(scheme.data, "http");
     ck_assert_int_eq(scheme.type, SCHEME_T);
+    ck_assert_int_eq(scheme.is_end_url, 0);
 
     struct TrieNode host = scheme.children[0];
-    ck_assert_str_eq(scheme.data, "url.com");
+    ck_assert_str_eq(host.data, "url.com");
     ck_assert_int_eq(host.type, HOST_T);
+    ck_assert_int_eq(host.is_end_url, 0);
 
     struct TrieNode port = host.children[0];
     ck_assert_str_eq(port.data, "8080");
     ck_assert_int_eq(port.type, PORT_T);
+    ck_assert_int_eq(port.is_end_url, 0);
 
     struct TrieNode path1 = port.children[0];
     ck_assert_str_eq(path1.data, "some");
     ck_assert_int_eq(path1.type, PATH_T);
+    ck_assert_int_eq(path1.is_end_url, 0);
 
     struct TrieNode path2 = path1.children[0];
     ck_assert_str_eq(path2.data, "path");
     ck_assert_int_eq(path2.type, PATH_T);
+    ck_assert_int_eq(path2.is_end_url, 0);
 
     struct TrieNode query = path2.children[0];
     ck_assert_str_eq(query.data, "query");
     ck_assert_int_eq(query.type, QUERY_T);
+    ck_assert_int_eq(query.is_end_url, 0);
 
     struct TrieNode fragment = query.children[0];
     ck_assert_str_eq(fragment.data, "fragment");
     ck_assert_int_eq(fragment.type, FRAGMENT_T);
+    ck_assert_int_eq(fragment.is_end_url, 1);
 }
 END_TEST
 
@@ -282,58 +290,73 @@ START_TEST(trie_add_multiple_trie_urls) {
     trie_add(root, "http://another-url.com:8080/some/path?query#fragment");
     trie_add(root, "http://url.com:4444/some/path?query#fragment");
     trie_add(root, "http://url.com:8080/another/path?query#fragment");
-    trie_add(root, "http://url.com:4444/some/test?query#fragment");
-    trie_add(root, "http://url.com:4444/some/test?another-query#fragment");
-    trie_add(root, "http://url.com:4444/some/test?query#another-fragment");
+    trie_add(root, "http://url.com:8080/some/test?query#fragment");
+    trie_add(root, "http://url.com:8080/some/path?another-query#fragment");
+    trie_add(root, "http://url.com:8080/some/path?query#another-fragment");
+    ck_assert_int_eq(root->is_end_url, 0);
 
     struct TrieNode scheme = root->children[0];
     ck_assert_str_eq(scheme.data, "http");
     ck_assert_int_eq(scheme.type, SCHEME_T);
+    ck_assert_int_eq(scheme.is_end_url, 0);
 
     struct TrieNode host = scheme.children[0];
-    ck_assert_str_eq(scheme.data, "url.com");
+    ck_assert_str_eq(host.data, "url.com");
     ck_assert_int_eq(host.type, HOST_T);
+    ck_assert_int_eq(host.is_end_url, 0);
 
     struct TrieNode port = host.children[0];
     ck_assert_str_eq(port.data, "8080");
     ck_assert_int_eq(port.type, PORT_T);
+    ck_assert_int_eq(port.is_end_url, 0);
 
     struct TrieNode path1 = port.children[0];
     ck_assert_str_eq(path1.data, "some");
     ck_assert_int_eq(path1.type, PATH_T);
+    ck_assert_int_eq(path1.is_end_url, 0);
 
     struct TrieNode path2 = path1.children[0];
     ck_assert_str_eq(path2.data, "path");
     ck_assert_int_eq(path2.type, PATH_T);
+    ck_assert_int_eq(path2.is_end_url, 0);
 
     struct TrieNode query = path2.children[0];
     ck_assert_str_eq(query.data, "query");
     ck_assert_int_eq(query.type, QUERY_T);
+    ck_assert_int_eq(query.is_end_url, 0);
 
     struct TrieNode fragment = query.children[0];
     ck_assert_str_eq(fragment.data, "fragment");
     ck_assert_int_eq(fragment.type, FRAGMENT_T);
+    ck_assert_int_eq(fragment.is_end_url, 1);
 
     ck_assert_str_eq(root->children[1].data, "https");
     ck_assert_int_eq(root->children[1].type, SCHEME_T);
+    ck_assert_int_eq(root->children[1].is_end_url, 0);
 
     ck_assert_str_eq(scheme.children[1].data, "another-url.com");
     ck_assert_int_eq(scheme.children[1].type, HOST_T);
+    ck_assert_int_eq(scheme.children[1].is_end_url, 0);
 
     ck_assert_str_eq(host.children[1].data, "4444");
     ck_assert_int_eq(host.children[1].type, PORT_T);
+    ck_assert_int_eq(host.children[1].is_end_url, 0);
 
     ck_assert_str_eq(port.children[1].data, "another");
-    ck_assert_int_eq(host.children[1].type, PATH_T);
+    ck_assert_int_eq(port.children[1].type, PATH_T);
+    ck_assert_int_eq(port.children[1].is_end_url, 0);
 
     ck_assert_str_eq(path1.children[1].data, "test");
     ck_assert_int_eq(path1.children[1].type, PATH_T);
+    ck_assert_int_eq(path1.children[1].is_end_url, 0);
 
     ck_assert_str_eq(path2.children[1].data, "another-query");
     ck_assert_int_eq(path2.children[1].type, QUERY_T);
+    ck_assert_int_eq(path2.children[1].is_end_url, 0);
 
     ck_assert_str_eq(query.children[1].data, "another-fragment");
     ck_assert_int_eq(query.children[1].type, FRAGMENT_T);
+    ck_assert_int_eq(query.children[1].is_end_url, 1);
 }
 END_TEST
 
@@ -416,10 +439,10 @@ START_TEST(_find_child_simple_trie_urls) {
 
     struct TrieNode* fragment = _find_child(query, "fragment", FRAGMENT_T);
     ck_assert_ptr_ne(fragment, NULL);
-    ck_assert_int_eq(fragment->type, PATH_T);
+    ck_assert_int_eq(fragment->type, FRAGMENT_T);
     ck_assert_str_eq(fragment->data, "fragment");
-
-    ck_assert_ptr_eq(_find_child(root, "https", SCHEME_T), NULL);
+    
+    //ck_assert_ptr_eq(_find_child(root, "https", SCHEME_T), NULL); // should not be tested because 'https' is added when the trie is created
     ck_assert_ptr_eq(_find_child(root, "http", HOST_T), NULL); // check wrong type
     ck_assert_ptr_eq(_find_child(root, "", SCHEME_T), NULL);
 
@@ -496,7 +519,7 @@ START_TEST(_find_child_multiple_trie_urls) {
 
     struct TrieNode* fragment = _find_child(query, "fragment", FRAGMENT_T);
     ck_assert_ptr_ne(fragment, NULL);
-    ck_assert_int_eq(fragment->type, PATH_T);
+    ck_assert_int_eq(fragment->type, FRAGMENT_T);
     ck_assert_str_eq(fragment->data, "fragment");
 }
 END_TEST

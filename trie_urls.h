@@ -20,7 +20,7 @@ struct TrieNode {
     char* data;
     struct TrieNode* children;
     unsigned int children_count;
-    int is_leaf;
+    int is_end_url;
     int type;
 };
 
