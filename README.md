@@ -196,7 +196,7 @@ Without any priority :
 
 - [ ] Create logo (maybe)
 
-- [ ] Add proxy support
+- [X] Add proxy support
 
 - [X] Use regex in filters (disallowed paths, allowed paths, etc...)
 
