@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <curl/curl.h>
 #include <string.h>
+#include "logger.h"
 
 #define SCHEME_T (int) 0
 #define HOST_T (int) 1

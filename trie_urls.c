@@ -30,6 +30,7 @@ struct TrieNode* _find_child(struct TrieNode* node, char* val, char type) {
 }
 
 void trie_add(struct TrieNode* root, char* url) {
+    LOG("Adding %s in trie\n", url);
     CURLU* curl_url_handler = curl_url();
     char *scheme, *host, *port, *path, *query, *fragment;
     struct TrieNode* curr = NULL;
@@ -164,9 +165,11 @@ void trie_add(struct TrieNode* root, char* url) {
         }
     }
     curr->is_end_url = 1;
+    LOG("Finished to add %s in trie\n", url);
 }
 
 int trie_contains(struct TrieNode* root, char* url) {
+    LOG("Checking for %s in trie\n", url);
     CURLU* curl_url_handler = curl_url();
     char *scheme, *host, *port, *path, *query, *fragment;
     struct TrieNode* curr = NULL;
