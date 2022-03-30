@@ -1,7 +1,7 @@
 #include "logger.h"
 
 // VERBOSE
-int _verbose = 0;
+bool _verbose = false;
 void _verbose_print(const char* function_name, const char* format, ...) {
     va_list args;
     va_start(args, format);

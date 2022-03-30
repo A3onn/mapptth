@@ -1,16 +1,30 @@
 #ifndef CLI_PARSER_H
 #define CLI_PARSER_H
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include <errno.h>
 #include <unistd.h>
 #include <curl/curl.h>
+
+// for versions strings
+#include <curl/curlver.h>
+#include <libxml/xmlversion.h>
+#include <lexbor/core/base.h>
+#include <pcre.h>
+
+#if GRAPHVIZ_SUPPORT
+#include <graphviz/graphviz_version.h> // PACKAGE_VERSION
+#endif
 
 struct arguments {
 	char* url;
 	unsigned int threads;
 	unsigned int timeout;
 	unsigned int max_depth;
-    unsigned int max_depth_given; // if max_depth has been set
+    bool max_depth_given; // if max_depth has been set
 	char* user_agent;
 	char* sitemap;
 	char* output;
@@ -23,20 +37,20 @@ struct arguments {
 #endif
 
 	// flags
-	unsigned int allow_subdomains_flag;
-	unsigned int keep_query_flag;
-	unsigned int no_color_flag;
-	unsigned int title_flag;
-	unsigned int http_only_flag;
-	unsigned int https_only_flag;
-	unsigned int only_body_flag;
-	unsigned int only_head_flag;
-	unsigned int only_ipv6_flag;
-	unsigned int only_ipv4_flag;
-	unsigned int ignore_cert_validation;
-    unsigned int verbose;
+	bool allow_subdomains_flag;
+	bool keep_query_flag;
+	bool no_color_flag;
+	bool title_flag;
+	bool http_only_flag;
+	bool https_only_flag;
+	bool only_body_flag;
+	bool only_head_flag;
+	bool  only_ipv6_flag;
+	bool only_ipv4_flag;
+	bool ignore_cert_validation;
+    bool verbose;
 #if GRAPHVIZ_SUPPORT
-	unsigned int graph_flag;
+	bool graph_flag;
 #endif
 
 	// allowed

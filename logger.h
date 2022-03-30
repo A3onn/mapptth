@@ -2,6 +2,7 @@
 #define LOGGER_H
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <stdarg.h>
 #include <pthread.h>
 
@@ -14,11 +15,11 @@
 #define YELLOW "\033[0;33m"
 #define RESET "\033[0m"
 
-extern int _verbose;
+extern bool _verbose;
 void _verbose_print(const char* function_name, const char* format, ...);
 
 #define LOG(...) _verbose_print(__func__, __VA_ARGS__)
 
-#define ACTIVATE_VERBOSE() _verbose = 1;
+#define ACTIVATE_VERBOSE() _verbose = true;
 
 #endif

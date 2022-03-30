@@ -1,7 +1,4 @@
 #include "stack_documents.h"
-#include <lexbor/html/html.h>
-#include <stdlib.h>
-#include <string.h>
 
 void stack_document_push(DocumentNode_t** head, lxb_html_document_t* lexbor_document, char* url, long status_code_http, size_t size, char* content_type, char* redirect_location) {
     DocumentNode_t* new_node = (DocumentNode_t*) malloc(sizeof(DocumentNode_t));
@@ -54,6 +51,6 @@ int stack_document_length(DocumentNode_t* head) {
     return res;
 }
 
-int stack_document_isempty(DocumentNode_t* head) {
+bool stack_document_isempty(DocumentNode_t* head) {
     return head == NULL;
 }

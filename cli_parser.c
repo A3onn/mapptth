@@ -1,17 +1,4 @@
 #include "cli_parser.h"
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-
-// for versions strings
-#include <curl/curlver.h>
-#include <libxml/xmlversion.h>
-#include <lexbor/core/base.h>
-#include <pcre.h>
-
-#if GRAPHVIZ_SUPPORT
-#include <graphviz/graphviz_version.h> // PACKAGE_VERSION
-#endif
 
 void _init_arguments(struct arguments* args) {
     memset(args, 0, sizeof (struct arguments));
@@ -240,16 +227,16 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 }
                 break;
             case 's': // allow subdomains
-                args->allow_subdomains_flag = 1;
+                args->allow_subdomains_flag = true;
                 break;
             case 'q': // keep-query
-                args->keep_query_flag = 1;
+                args->keep_query_flag = true;
                 break;
             case 'c': // no color
-                args->no_color_flag = 1;
+                args->no_color_flag = true;
                 break;
             case 'T': // title
-                args->title_flag = 1;
+                args->title_flag = true;
                 break;
             case 'f': // http-only
                 if(args->https_only_flag) { // cannot have both flag set
@@ -257,7 +244,7 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                         cli_arguments_free(args);
                         return NULL;
                 }
-                args->http_only_flag = 1;
+                args->http_only_flag = true;
                 break;
             case 'F': // https-only
                 if(args->http_only_flag) { // cannot have both flag set
@@ -265,7 +252,7 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                         cli_arguments_free(args);
                         return NULL;
                 }
-                args->https_only_flag = 1;
+                args->https_only_flag = true;
                 break;
             case 'B': // parse only the <body>
                 if(args->only_head_flag) { // cannot have both flag set
@@ -273,7 +260,7 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                         cli_arguments_free(args);
                         return NULL;
                 }
-                args->only_body_flag = 1;
+                args->only_body_flag = true;
                 break;
             case 'H': // parse only the <head> 
                 if(args->only_body_flag) { // cannot have both flag set
@@ -281,7 +268,7 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                         cli_arguments_free(args);
                         return NULL;
                 }
-                args->only_head_flag = 1;
+                args->only_head_flag = true;
                 break;
             case '4': // ipv4 only
                 if(args->only_ipv6_flag) { // cannot have both flag set
@@ -289,7 +276,7 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                         cli_arguments_free(args);
                         return NULL;
                 }
-                args->only_ipv4_flag = 1;
+                args->only_ipv4_flag = true;
                 break;
             case '6': // ipv6 only
                 if(args->only_ipv4_flag) { // cannot have both flag set
@@ -297,17 +284,17 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                         cli_arguments_free(args);
                         return NULL;
                 }
-                args->only_ipv6_flag = 1;
+                args->only_ipv6_flag = true;
                 break;
             case 'h': // print help
                 cli_arguments_print_help(argv[0]);
                 cli_arguments_free(args);
                 return NULL;
             case 'i': // don't verify certificate
-                args->ignore_cert_validation = 1;
+                args->ignore_cert_validation = true;
                 break;
             case 'v': // verbose mode
-                args->verbose = 1;
+                args->verbose = true;
                 break;
             case 'V': // print version
                 printf("MapPPTH: %s\n", MAPPTTH_VERSION);
@@ -335,7 +322,7 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 return NULL;
 #if GRAPHVIZ_SUPPORT
             case 'g': // graph flag
-                args->graph_flag = 1;
+                args->graph_flag = true;
                 break;
             case 'G': // graph output format
                 args->graph_output_format = optarg;

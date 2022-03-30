@@ -43,7 +43,7 @@ void __sitemap_location_get_urls(xmlNode* sitemap_root, URLNode_t** urls_found) 
     }
 }
 
-void __sitemap_get_content(xmlNode* root, URLNode_t** urls_sitemaps, URLNode_t** urls_found, int no_color) {
+void __sitemap_get_content(xmlNode* root, URLNode_t** urls_sitemaps, URLNode_t** urls_found, bool no_color) {
     xmlNode *cur_node = NULL;
 
     for (cur_node = root; cur_node; cur_node = cur_node->next) {
@@ -73,7 +73,7 @@ void __sitemap_error_callback(void * ctx, const char * msg, ...) {
     (void)msg;
 }
 
-URLNode_t* get_sitemap_urls(char *url, int no_color) {
+URLNode_t* get_sitemap_urls(char *url, bool no_color) {
 
     LIBXML_TEST_VERSION // tests for libxml2
 

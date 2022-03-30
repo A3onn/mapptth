@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <curl/curl.h>
 #include <string.h>
 #include "logger.h"
@@ -21,7 +22,7 @@ struct TrieNode {
     char* data;
     struct TrieNode* children;
     unsigned int children_count;
-    int is_end_url;
+    bool is_end_url;
     int type;
 };
 
@@ -29,7 +30,7 @@ struct TrieNode* trie_create();
 
 void trie_free(struct TrieNode* root);
 
-int trie_contains(struct TrieNode* root, char* url);
+bool trie_contains(struct TrieNode* root, char* url);
 
 void trie_add(struct TrieNode* root, char* url);
 

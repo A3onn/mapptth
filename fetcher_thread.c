@@ -38,8 +38,8 @@ void* fetcher_thread_func(void* bundle_arg) {
     pthread_mutex_t* mutex = bundle->mutex;
     pthread_cond_t* cv_url_added = bundle->cv_url_added;
     pthread_cond_t* cv_fetcher_produced = bundle->cv_fetcher_produced;
-    int* is_running = bundle->is_running;
-    int* should_exit = bundle->should_exit;
+    bool* is_running = bundle->is_running;
+    bool* should_exit = bundle->should_exit;
 
     CURLcode status_c;
     CURL* curl = curl_easy_init();
@@ -70,10 +70,10 @@ void* fetcher_thread_func(void* bundle_arg) {
 
     LOG("Ready to fetch!\n");
 
-    while(*should_exit == 0) {
+    while(*should_exit == false) {
         pthread_mutex_lock(mutex);
         while(stack_url_isempty(*urls_stack_todo)) {  // no url to fetch
-            *is_running = 0;  // change state
+            *is_running = false;  // change state
             LOG("Waiting for an URL to fetch...\n");
 
             // signal that this thread is waiting, the main thread checks everytime
@@ -86,7 +86,7 @@ void* fetcher_thread_func(void* bundle_arg) {
                 goto cleanup_and_exit;
             }
         }
-        *is_running = 1; // indicates the main thread that this thread is fetching
+        *is_running = true; // indicates the main thread that this thread is fetching
         current_url = stack_url_pop(urls_stack_todo);
         trie_add(*urls_done, current_url);
         pthread_mutex_unlock(mutex);

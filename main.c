@@ -31,35 +31,35 @@ struct FoundURLHandlerBundle {
     URLNode_t** urls_stack_todo;
     struct TrieNode** urls_done;
     pthread_cond_t* cv_url_added;
-    int allow_subdomains;
+    bool allow_subdomains;
     char** allowed_domains;
-    int count_allowed_domains;
+    unsigned int count_allowed_domains;
     char** disallowed_domains;
-    int count_disallowed_domains;
+    unsigned int count_disallowed_domains;
     char** allowed_extensions;
-    int count_allowed_extensions;
+    unsigned int count_allowed_extensions;
     char** disallowed_extensions;
-    int count_disallowed_extensions;
+    unsigned int count_disallowed_extensions;
     pcre** disallowed_paths;
-    int count_disallowed_paths;
+    unsigned int count_disallowed_paths;
     pcre** allowed_paths;
-    int count_allowed_paths;
+    unsigned int count_allowed_paths;
     unsigned short* allowed_ports;
-    int count_allowed_ports;
-    int http_only;
-    int https_only;
-    int keep_query;
-    int max_path_depth;
+    unsigned int count_allowed_ports;
+    bool http_only;
+    bool https_only;
+    bool keep_query;
+    unsigned int max_path_depth;
     char* base_tag_url;
 #if GRAPHVIZ_SUPPORT
-    int generate_graph;
+    bool generate_graph;
     Agraph_t* graph;
 #endif
 };
 
-#define handle_found_url(X) _handle_found_url(X, 0)
-#define handle_found_url_from_sitemap(X) _handle_found_url(X, 1)
-static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int from_sitemap_parsing);
+#define handle_found_url(X) _handle_found_url(X, false)
+#define handle_found_url_from_sitemap(X) _handle_found_url(X, true)
+static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, bool from_sitemap_parsing);
 
 lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
     // this function will be called for every nodes
@@ -334,11 +334,11 @@ int main(int argc, char* argv[]) {
 
 
     LOG("Creating threads...\n");
-    int should_exit = 0;  // if threads should exit, set to 1 when all threads have is_running == 1
-    int* list_running_thread_status = (int*) malloc(sizeof(int) * cli_arguments->threads);  // list containing ints indicating if each thread is fetching
+    bool should_exit = false;  // if threads should exit, set to 1 when all threads have is_running == 1
+    bool* list_running_thread_status = (bool*) malloc(sizeof(bool) * cli_arguments->threads);  // list containing ints indicating if each thread is fetching
     struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * cli_arguments->threads);
     for(unsigned int i = 0; i < cli_arguments->threads; i++) {
-        list_running_thread_status[i] = 1;
+        list_running_thread_status[i] = true;
 
         bundles[i].documents = &documents_stack;
         bundles[i].urls_stack_todo = &urls_stack_todo;
@@ -370,21 +370,21 @@ int main(int argc, char* argv[]) {
 #endif
 
     LOG("Starting...\n");
-    while(1) {
+    while(true) {
         pthread_mutex_lock(&mutex);
         if(stack_document_isempty(documents_stack)) {  // no documents to parse
             // if this thread has no document to parse and all threads are waiting for
             // urls, then it means that everything was discovered and they should quit
-            int should_quit = 1;
+            bool should_quit = true;
             for(unsigned int i = 0; i < cli_arguments->threads; i++) {  // check if all threads are running
                 if(list_running_thread_status[i] == 1) {  // if one is running
-                    should_quit = 0;  // should not quit
+                    should_quit = false;  // should not quit
                     break;  // don't need to check other threads
                 }
             }
-            if(should_quit == 1 && stack_url_isempty(urls_stack_todo)) {  // if no threads are running and no urls to fetch left
+            if(should_quit && stack_url_isempty(urls_stack_todo)) {  // if no threads are running and no urls to fetch left
                 // quit
-                should_exit = 1;
+                should_exit = true;
                 pthread_mutex_unlock(&mutex);
                 break;  // quit parsing
             }
@@ -643,7 +643,7 @@ int main(int argc, char* argv[]) {
     return EXIT_SUCCESS;
 }
 
-static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int from_sitemap_parsing) {
+static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, bool from_sitemap_parsing) {
     // this function is called when finding an URL, not after fetching it
     // NOTE:
     // only document->url will be used in the bundle->document, this is important when parsing the sitemap
@@ -675,7 +675,7 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int fr
         // check scheme
         curl_url_get(curl_url_handler, CURLUPART_SCHEME, &url_scheme, 0);
         if((bundle->http_only && strcmp("http", url_scheme) != 0) || (bundle->https_only && strcmp("https", url_scheme) != 0)) {
-	    curl_url_cleanup(curl_url_handler);
+            curl_url_cleanup(curl_url_handler);
             free(document_domain);
             free(url_scheme);
             return LEXBOR_ACTION_OK;
@@ -691,13 +691,13 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int fr
 
         // check path
         if(is_disallowed_path(path, bundle->disallowed_paths, bundle->count_disallowed_paths)) {
-	    curl_url_cleanup(curl_url_handler);
+            curl_url_cleanup(curl_url_handler);
             free(document_domain);
             free(path);
             return 0;
         }
         if(!is_allowed_path(path, bundle->allowed_paths, bundle->count_allowed_paths)) {
-	    curl_url_cleanup(curl_url_handler);
+            curl_url_cleanup(curl_url_handler);
             free(document_domain);
             free(path);
             return 0;
@@ -705,20 +705,20 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int fr
 
         // check extensions
         if(is_disallowed_extension(path, bundle->disallowed_extensions, bundle->count_disallowed_extensions)) {
-	    curl_url_cleanup(curl_url_handler);
+            curl_url_cleanup(curl_url_handler);
             free(document_domain);
             free(path);
             return 0;
         }
         if(!is_allowed_extension(path, bundle->allowed_extensions, bundle->count_allowed_extensions)) {
-	  curl_url_cleanup(curl_url_handler);
-          free(document_domain);
-          free(path);
-          return 0;
+            curl_url_cleanup(curl_url_handler);
+            free(document_domain);
+            free(path);
+            return 0;
         }
 
         if(bundle->max_path_depth > 0 && get_path_depth(path) > bundle->max_path_depth) {
-	    curl_url_cleanup(curl_url_handler);
+            curl_url_cleanup(curl_url_handler);
             free(document_domain);
             free(path);
             return 0;
@@ -729,13 +729,13 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int fr
 
         // check ports
         if(!is_allowed_port(get_port_from_url(final_url), bundle->allowed_ports, bundle->count_allowed_ports)) {
-	    curl_url_cleanup(curl_url_handler);
+            curl_url_cleanup(curl_url_handler);
             free(document_domain);
             free(final_url);
             return LEXBOR_ACTION_OK;
         }
 
-        char has_been_added = 0;  // used to check if the URL has been added, if not it will be freed
+        bool has_been_added = false;  // used to check if the URL has been added, if not it will be freed
         curl_url_get(curl_url_handler, CURLUPART_HOST, &found_url_domain, 0);  // get the domain of the URL found
 
         if((is_same_domain(found_url_domain, document_domain, bundle->allow_subdomains) ||
@@ -749,7 +749,7 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, int fr
                 if(!from_sitemap_parsing) {
                     pthread_cond_signal(bundle->cv_url_added);
                 }
-                has_been_added = 1;
+                has_been_added = true;
             }
 
 #if GRAPHVIZ_SUPPORT

@@ -1,34 +1,22 @@
 #include "utils.h"
-#include "stack_urls.h"
-#include "logger.h"
-#include "trie_urls.h"
-#include <curl/curl.h>
-#include <string.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <pcre.h>
-#include <errno.h>
 
-int url_not_seen(char* url, struct TrieNode* urls_done, URLNode_t* urls_todo) {
+bool url_not_seen(char* url, struct TrieNode* urls_done, URLNode_t* urls_todo) {
     // Just check if a given url has already been seen.
-    // Could just be:
-    //  return !stack_url_contains(*urls_done, url) && !stack_url_contains(*urls_done, url)
-    // but it would be longer as both stack_url_contains are called every time
     if(trie_contains(urls_done, url)) {
-        return 0;
+        return false;
     }
     if(stack_url_contains(urls_todo, url)) {
-        return 0;
+        return false;
     }
-    return 1;
+    return true;
 }
 
-int is_same_domain(char* domain_to_compare, char* domain, int allow_subdomain) {
+bool is_same_domain(char* domain_to_compare, char* domain, bool allow_subdomain) {
     size_t len_domain_to_compare = strlen(domain_to_compare), len_domain = strlen(domain);
 
     if(len_domain == len_domain_to_compare) {
         return strcmp(domain_to_compare, domain) == 0;
-    } else if(len_domain < len_domain_to_compare && allow_subdomain == 1) {
+    } else if(len_domain < len_domain_to_compare && allow_subdomain == true) {
         char* found_position = strstr(domain_to_compare, domain);
         if(found_position != NULL) {
             // need to check if the char before is a '.' (dot) because for example:
@@ -37,35 +25,35 @@ int is_same_domain(char* domain_to_compare, char* domain, int allow_subdomain) {
             return strcmp(found_position, domain) == 0 && *(found_position - 1) == '.';
         }
     }
-    return 0;
+    return false;
 }
 
-int is_in_valid_domains(char* domain, char** allowed_domains, int count_allowed_domains, int allow_subdomain) {
+bool is_in_valid_domains(char* domain, char** allowed_domains, int count_allowed_domains, bool allow_subdomain) {
     for(int i = 0; i < count_allowed_domains; i++) {
         if(is_same_domain(domain, allowed_domains[i], allow_subdomain)) {
-            return 1;
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
-int is_in_disallowed_domains(char* domain, char** disallowed_domains, int count_disallowed_domains) {
+bool is_in_disallowed_domains(char* domain, char** disallowed_domains, int count_disallowed_domains) {
     for(int i = 0; i < count_disallowed_domains; i++) {
         if(is_same_domain(domain, disallowed_domains[i], false)) {
-            return 1;
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
-int is_valid_link(const char* url) {
+bool is_valid_link(const char* url) {
     if(url == NULL) {
-        return 0;
+        return false;
     }
 
     // need to check these because curl doesn't set them as scheme, so next check will fail to filter them
     if(strncmp("mailto:", url, 7) == 0 || strncmp("javascript:", url, 11) == 0 || strncmp("tel:", url, 4) == 0 || strncmp("data:", url, 5) == 0) {
-        return 0;
+        return false;
     }
 
     // check scheme
@@ -77,20 +65,20 @@ int is_valid_link(const char* url) {
     if(scheme == NULL) {
         free(scheme);
         curl_url_cleanup(curl_u);
-        return 1;
+        return true;
     } else {
         if(strcmp(scheme, "http") == 0 || strcmp(scheme, "https") == 0) {
             free(scheme);
             curl_url_cleanup(curl_u);
-            return 1;
+            return true;
         }
     }
     free(scheme);
     curl_url_cleanup(curl_u);
-    return 0;
+    return false;
 }
 
-char* normalize_path(char* path, int is_directory) {
+char* normalize_path(char* path, bool is_directory) {
     // remove './' and '../' from a given path
     if(path == NULL) {
         return NULL;
@@ -153,9 +141,9 @@ char* normalize_path(char* path, int is_directory) {
 }
 
 
-int is_disallowed_path(char* path, pcre** disallowed_paths, int count_disallowed_paths) {
+bool is_disallowed_path(char* path, pcre** disallowed_paths, int count_disallowed_paths) {
     if(count_disallowed_paths == 0) { // if no paths where specified, then it is allowed
-        return 0;
+        return false;
     }
 
     int path_len = strlen(path);
@@ -166,27 +154,27 @@ int is_disallowed_path(char* path, pcre** disallowed_paths, int count_disallowed
         int result = pcre_exec(disallowed_paths[i], NULL, path, path_len, 0, PCRE_ANCHORED|PCRE_PARTIAL_SOFT, ovectors, sizeof(ovectors));
         // checks if there is a match, if that match ends on a '/' or on a '\0' or the char before is a '/'
         if(result >= 0 && (path[ovectors[1] - ovectors[0]] == '/' || path[ovectors[1] - ovectors[0]-1] == '/' || path[ovectors[1] - ovectors[0]] == '\0')) {
-            return 1;
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
-int is_allowed_path(char* path, pcre** allowed_paths, int count_allowed_paths) {
+bool is_allowed_path(char* path, pcre** allowed_paths, int count_allowed_paths) {
   // if no paths where specified, then it is allowed, this check is
   // needed here because in is_disallowed_path, it would return 0 instead
   // of 1
   if(count_allowed_paths == 0) {
-      return 1;
+      return true;
   }
   // as is_disallowed_path will search for a matching path in the list of paths,
   // we only need to call it with the list of allowed paths instead
   return is_disallowed_path(path, allowed_paths, count_allowed_paths);
 }
 
-int is_allowed_extension(char* path, char** allowed_extensions, int count_allowed_extensions) {
+bool is_allowed_extension(char* path, char** allowed_extensions, int count_allowed_extensions) {
     if(count_allowed_extensions == 0) { // if no extensions where specified, then it is allowed
-        return 1;
+        return true;
     }
     char* filename = strrchr(path, '/'); // find last '/', this will give the name of the file
     if(filename != NULL) {
@@ -195,19 +183,19 @@ int is_allowed_extension(char* path, char** allowed_extensions, int count_allowe
             for(int i = 0; i < count_allowed_extensions; i++) {
                 char* found_ext = strstr(path, allowed_extensions[i]);
                 if(found_ext == ext && strcmp(allowed_extensions[i], found_ext) == 0) {
-                    return 1;
+                    return true;
                 }
             }
         } else { // if there isn't any extension, then it is valid
-            return 1;
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
-int is_disallowed_extension(char* path, char** disallowed_extensions, int count_disallowed_extensions) {
+bool is_disallowed_extension(char* path, char** disallowed_extensions, int count_disallowed_extensions) {
   if(count_disallowed_extensions == 0) { // if no extensions where specified, then it is allowed
-      return 0;
+      return false;
   }
   char* filename = strrchr(path, '/'); // find last '/', this will give the name of the file
   if(filename != NULL) {
@@ -216,26 +204,26 @@ int is_disallowed_extension(char* path, char** disallowed_extensions, int count_
           for(int i = 0; i < count_disallowed_extensions; i++) {
               char* found_ext = strstr(path, disallowed_extensions[i]);
               if(found_ext == ext && strcmp(disallowed_extensions[i], found_ext) == 0) {
-                  return 1;
+                  return true;
               }
           }
       } else { // if there isn't any extension, then it is valid
-          return 0;
+          return false;
       }
   }
-  return 0;
+  return false;
 }
 
-int is_allowed_port(unsigned short port, unsigned short* allowed_ports, int count_allowed_short) {
+bool is_allowed_port(unsigned short port, unsigned short* allowed_ports, int count_allowed_short) {
     for(int i = 0; i < count_allowed_short; i++) {
         if(port == allowed_ports[i]) {
-            return 1;
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
-int get_path_depth(char* path) {
+unsigned int get_path_depth(char* path) {
     if(path == NULL) {
         return 0;
     }
@@ -270,12 +258,12 @@ unsigned short get_port_from_url(char* url) {
         unsigned short result_port = (unsigned short) strtoul(port, &endptr, 10);
         if(errno != 0 || endptr == port) { // should not happen
             errno = EINVAL;
-	    curl_url_cleanup(curl_url_handler);
-	    free(port);
+            curl_url_cleanup(curl_url_handler);
+            free(port);
             return 0;
         }
-	free(port);
-	curl_url_cleanup(curl_url_handler);
+        free(port);
+        curl_url_cleanup(curl_url_handler);
         return result_port;
     }
     free(port);

@@ -16,13 +16,13 @@ struct BundleVarsThread {  // used to needed variables to the thread
     pthread_cond_t* cv_url_added;
     pthread_cond_t* cv_fetcher_produced;
 
-    int* is_running;  // let know the main thread if the thread is fetching something
-    int* should_exit;  // if thread should exit; set by the main thread
+    bool* is_running;  // let know the main thread if the thread is fetching something
+    bool* should_exit;  // if thread should exit; set by the main thread
     unsigned int ignore_cert_validation;
 
     int timeout;
     int resolve_ip_versions;
-    int no_color;
+    bool no_color;
 
     char* user_agent;
     char* cookies;

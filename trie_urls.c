@@ -4,10 +4,10 @@ struct TrieNode* trie_create() {
     struct TrieNode* root = (struct TrieNode*) malloc(sizeof (struct TrieNode));
 
     root->children = (struct TrieNode*) malloc(sizeof (struct TrieNode) * 2);
-    root->is_end_url = 0;
+    root->is_end_url = false;
 
-    root->children[0].is_end_url = 0;
-    root->children[1].is_end_url = 0;
+    root->children[0].is_end_url = false;
+    root->children[1].is_end_url = false;
     root->children[0].children_count = 0;
     root->children[1].children_count = 0;
     root->children[0].type = SCHEME_T;
@@ -63,7 +63,7 @@ void trie_add(struct TrieNode* root, char* url) {
         curr = &(curr->children[curr->children_count-1]);
 
         memset(curr, 0, sizeof (struct TrieNode));
-        curr->is_end_url = 0;
+        curr->is_end_url = false;
         curr->data = (char*) malloc(sizeof (char) * (strlen(host) + 1));
         strcpy(curr->data, host);
         curr->type = HOST_T;
@@ -89,7 +89,7 @@ void trie_add(struct TrieNode* root, char* url) {
         curr->children_count++;
         curr = &(curr->children[curr->children_count-1]);
         memset(curr, 0, sizeof (struct TrieNode));
-        curr->is_end_url = 0;
+        curr->is_end_url = false;
         curr->data = (char*) malloc(sizeof (char) * (strlen(port) + 1));
         strcpy(curr->data, port);
         curr->type = PORT_T;
@@ -114,7 +114,7 @@ void trie_add(struct TrieNode* root, char* url) {
             curr->children_count++;
             curr = &(curr->children[curr->children_count-1]);
             memset(curr, 0, sizeof (struct TrieNode));
-            curr->is_end_url = 0;
+            curr->is_end_url = false;
             curr->data = (char*) malloc(sizeof (char) * (strlen(token) + 1));
             strcpy(curr->data, token);
             curr->type = PATH_T;
@@ -135,7 +135,7 @@ void trie_add(struct TrieNode* root, char* url) {
             curr->children_count++;
             curr = &(curr->children[curr->children_count-1]);
             memset(curr, 0, sizeof (struct TrieNode));
-            curr->is_end_url = 0;
+            curr->is_end_url = false;
             curr->data = (char*) malloc(sizeof (char) * (strlen(query) + 1));
             strcpy(curr->data, query);
             curr->type = QUERY_T;
@@ -156,7 +156,7 @@ void trie_add(struct TrieNode* root, char* url) {
             curr->children_count++;
             curr = &(curr->children[curr->children_count-1]);
             memset(curr, 0, sizeof (struct TrieNode));
-            curr->is_end_url = 0;
+            curr->is_end_url = false;
             curr->data = (char*) malloc(sizeof (char) * (strlen(fragment) + 1));
             strcpy(curr->data, fragment);
             curr->type = FRAGMENT_T;
@@ -164,11 +164,11 @@ void trie_add(struct TrieNode* root, char* url) {
             curr = tmp;
         }
     }
-    curr->is_end_url = 1;
+    curr->is_end_url = true;
     LOG("Finished to add %s in trie\n", url);
 }
 
-int trie_contains(struct TrieNode* root, char* url) {
+bool trie_contains(struct TrieNode* root, char* url) {
     LOG("Checking for %s in trie\n", url);
     CURLU* curl_url_handler = curl_url();
     char *scheme, *host, *port, *path, *query, *fragment;
@@ -183,13 +183,13 @@ int trie_contains(struct TrieNode* root, char* url) {
     } else if(strcmp(scheme, "https") == 0) {
         curr = &(root->children[HTTPS_INDEX_T]);
     } else {
-        return 0;
+        return false;
     }
 
     curl_url_get(curl_url_handler, CURLUPART_HOST, &host, 0);
     curr = _find_child(curr, host, HOST_T);
     if(curr == NULL) {
-        return 0;
+        return false;
     }
 
     curl_url_get(curl_url_handler, CURLUPART_PORT, &port, 0);
@@ -202,7 +202,7 @@ int trie_contains(struct TrieNode* root, char* url) {
     }
     curr = _find_child(curr, port, PORT_T);
     if(curr == NULL) {
-        return 0;
+        return false;
     }
 
     curl_url_get(curl_url_handler, CURLUPART_PATH, &path, 0);
@@ -213,7 +213,7 @@ int trie_contains(struct TrieNode* root, char* url) {
         }
         curr = _find_child(curr, token, PATH_T);
         if(curr == NULL) {
-            return 0;
+            return false;
         }
     }
 
@@ -221,7 +221,7 @@ int trie_contains(struct TrieNode* root, char* url) {
     if(query != NULL) {
         curr = _find_child(curr, query, QUERY_T);
         if(curr == NULL) {
-            return 0;
+            return false;
         }
     }
 
@@ -229,14 +229,14 @@ int trie_contains(struct TrieNode* root, char* url) {
     if(fragment != NULL) {
         curr = _find_child(curr, fragment, FRAGMENT_T);
         if(curr == NULL) {
-            return 0;
+            return false;
         }
     }
 
     if(!curr->is_end_url) {
-            return 0;
+            return false;
     }
-    return 1;
+    return true;
 }
 
 void _trie_free(struct TrieNode node) {
