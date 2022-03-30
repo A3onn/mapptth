@@ -24,16 +24,18 @@ void __sitemap_location_get_urls(xmlNode* sitemap_root, URLNode_t** urls_found) 
 
     for (cur_node = sitemap_root; cur_node; cur_node = cur_node->next) {
         if (cur_node->type == XML_ELEMENT_NODE) {
-            //puts((const char*)cur_node->name);
             if(strcmp((const char*)cur_node->name, "loc") == 0) { // <location>
-                if(!stack_url_contains(*urls_found, (char*)xmlNodeGetContent(cur_node))) {
-                    stack_url_push(urls_found, strdup((char*)xmlNodeGetContent(cur_node))); // add the url
+                char* node_content = (char*)xmlNodeGetContent(cur_node);
+                if(!stack_url_contains(*urls_found, node_content)) {
+                    LOG("Found <loc> node containing the URL %s, adding it to the list of URL.\n", node_content);
+                    stack_url_push(urls_found, strdup(node_content)); // add the url
                 }
             } else if(strcmp((const char*)cur_node->name, "link") == 0) { // <link>
                 // find href attribute and add the value to the list
                 for(xmlAttrPtr attr = cur_node->properties; NULL != attr; attr = attr->next) {
                     if(strcmp((const char*)attr->name, "href") == 0) {
                         if(!stack_url_contains(*urls_found, (char*)attr->children->content)) {
+                            LOG("Found <link> node having an attribute \"href\" containing the URL %s, adding it to the list of URL.\n", attr->children->content);
                             stack_url_push(urls_found, strdup((char*)attr->children->content));
                         }
                     }
@@ -134,6 +136,12 @@ URLNode_t* get_sitemap_urls(char *url, bool no_color) {
             continue;
         }
 
+        if(no_color) {
+            fprintf(stderr, "Finished fetching %s.\n", current_sitemap_url);
+        } else {
+            fprintf(stderr, "%sFinished fetching %s.%s\n", GREEN, current_sitemap_url, RESET);
+        }
+
         xmlParseChunk(ctxt, NULL, 0, 1); // indicate the end of chunk parsing
 
         LOG("Parsing %s...\n", current_sitemap_url);
@@ -155,7 +163,12 @@ URLNode_t* get_sitemap_urls(char *url, bool no_color) {
         __sitemap_get_content(root_element, &list_sitemaps, &list_urls_found, no_color);
 
         xmlFreeDoc(doc);
-        LOG("Finished parsing %s\n", current_sitemap_url);
+
+        if(no_color) {
+            fprintf(stderr, "Finished parsing %s.\n", current_sitemap_url);
+        } else {
+            fprintf(stderr, "%sFinished parsing %s.%s\n", BLUE, current_sitemap_url, RESET);
+        }
     }
 
     xmlCleanupParser();

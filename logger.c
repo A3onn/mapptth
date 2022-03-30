@@ -8,7 +8,7 @@ void _verbose_print(const char* function_name, const char* format, ...) {
 
     if(_verbose) {
         flockfile(stdout);
-        printf("%s[i]%s thread #%lu %s: ", BLUE, RESET, pthread_self(), function_name);
+        fprintf(stderr, "%s[i]%s thread #%lu %s: ", BLUE, RESET, pthread_self(), function_name);
         vprintf(format, args);
         funlockfile(stdout);
     }
