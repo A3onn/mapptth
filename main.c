@@ -118,7 +118,7 @@ static void unlock_cb(CURL* handle, curl_lock_data data, void* userptr) {
 
 int main(int argc, char* argv[]) {
     setvbuf(stdout, NULL, _IONBF, 0); // disable stdout buffer
-    printf("\n _______             ______ _______ _______ _     _ \n"
+    fprintf(stderr, "\n _______             ______ _______ _______ _     _ \n"
            "(_______)           (_____ (_______|_______|_)   (_)\n"
            " _  _  _ _____ ____  _____) )  _       _    _______ \n"
            "| ||_|| (____ |  _ \\|  ____/  | |     | |  |  ___  |\n"
