@@ -36,7 +36,7 @@ void cli_arguments_free(struct arguments* args) {
 void cli_arguments_print_help(char* prgm_name) {
     printf("Usage: %s <parameters>\n\n", prgm_name);
     puts("Connection:");
-    puts("\t-u <url>: URL where to start crawling.");
+    puts("\t<url>: URL where to start crawling, the last specified will be used.");
     printf("\t-B <string>: string that will be used as user-agent. You can disable sending the user-agent header by giving an empty string. (default='MAPPTTH/%s')\n", MAPPTTH_VERSION);
     puts("\t-m <integer>: Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL. (default=3)");
     puts("\t-4: Only resolve to IPv4 addresses.");
@@ -52,8 +52,8 @@ void cli_arguments_print_help(char* prgm_name) {
     puts("\t-p <path or regex>: Allow the crawler to only fetch URL starting with these paths. Can be a regex (extended and case-sensitive).");
     puts("\t-P <path or regex>: Disallow the crawler to fetch URL starting with these paths. Can be a regex (extended and case-sensitive).");
     puts("\t-D <integer>: Maximum depth of paths. If a path has a longer depth, it won't be fetched.");
-    puts("\t-f: Only fetch URLs with HTTP as scheme.");
-    puts("\t-F: Only fetch URLs with HTTPS as scheme.");
+    puts("\t-f: Only fetch URLs with HTTP as scheme (Don't forget to add '-r 80' if you start with an 'https://' URL).");
+    puts("\t-F: Only fetch URLs with HTTPS as scheme (Don't forget to add '-r 443' if you start with an 'http://' URL).");
     puts("\t-x <extension>: Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply.");
     puts("\t-X <extension>: Disallow the crawler to fetch files with these extensions. If no extension is found then this filter won't apply.");
     puts("\t-r <port>: Allow the crawler to go to theses ports.");
@@ -85,11 +85,11 @@ void cli_arguments_print_help(char* prgm_name) {
 
 
     puts("\nExemples:");
-    puts("\tmapptth -u https://google.com/some/url/file.html");
-    puts("\tmapptth -u http://google.com -s -a gitlab.com -a github.com -r 443");
-    puts("\tmapptth -u https://google.com -P /path -P /some-path");
-    puts("\tmapptth -u https://google.com -P /some-path -x .html -x .php");
-    puts("\tmapptth -u https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://www.google.com/sitemap.xml");
+    puts("\tmapptth https://google.com/some/url/file.html");
+    puts("\tmapptth http://google.com -s -a gitlab.com -a github.com -r 443");
+    puts("\tmapptth https://google.com -P /path -P /some-path");
+    puts("\tmapptth https://google.com -P /some-path -x .html -x .php");
+    puts("\tmapptth https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://www.google.com/sitemap.xml");
 }
 
 struct arguments* parse_cli_arguments(int argc, char** argv) {
@@ -97,9 +97,9 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
     _init_arguments(args);
 
 #if GRAPHVIZ_SUPPORT
-    char* args_str = "u:t:m:U:S:o:D:C:z:r:vsqciTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
+    char* args_str = "t:m:U:S:o:D:C:z:r:vsqciTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
 #else
-    char* args_str = "u:t:m:U:S:o:D:C:z:r:vsqciTfFBH64qVhQ:p:P:x:X:a:d:";
+    char* args_str = "t:m:U:S:o:D:C:z:r:vsqciTfFBH64qVhQ:p:P:x:X:a:d:";
 #endif
 
     // used when using strtoul
@@ -109,10 +109,6 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
     int c;
     while((c = getopt(argc, argv, args_str)) != -1) {
         switch(c) {
-            case 'u': // url
-                args->url = malloc(strlen(optarg) * sizeof (char) + sizeof (char)); // <url> + '\0'
-                strcpy(args->url, optarg);
-                break;
             case 't': // threads
                 errno = 0;
                 args->threads = strtoul(optarg, &endptr, 10);
@@ -333,12 +329,12 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
 #endif
             case '?':
 #if GRAPHVIZ_SUPPORT
-                if(optopt == 'u' || optopt == 'm' || optopt == 't' || optopt == 'D' || optopt == 'C'
+                if(optopt == 'm' || optopt == 't' || optopt == 'D' || optopt == 'C'
                         || optopt == 'x' || optopt == 'X' || optopt == 'a' || optopt == 'd'
                         || optopt == 'p' || optopt == 'P' || optopt == 'G' || optopt == 'L'
                         || optopt == 'S' || optopt == 'o' || optopt == 'U' || optopt == 'Q') {
 #else
-                if(optopt == 'u' || optopt == 'm' || optopt == 't' || optopt == 'D' || optopt == 'C'
+                if(optopt == 'm' || optopt == 't' || optopt == 'D' || optopt == 'C'
                         || optopt == 'x' || optopt == 'X' || optopt == 'a' ||
                         optopt == 'd' || optopt == 'p' || optopt == 'P' || optopt == 'S'
                         || optopt == 'o' || optopt == 'U' || optopt == 'Q') {
@@ -353,9 +349,17 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
         }
     }
 
+    for(; optind < argc; optind++) {
+        if(args->url != NULL) { // free last URL given, so it uses the last one specified
+            free(args->url);
+        }
+        args->url = malloc(strlen(argv[optind]) * sizeof (char) + sizeof (char)); // <url> + '\0'
+        strcpy(args->url, argv[optind]);
+    }
+
     if(args->url == NULL) {
         fprintf(stderr, "%s: you need to specify an URL\n", argv[0]);
-        free(args);
+        cli_arguments_free(args);
         return NULL;
     }
 

@@ -49,7 +49,7 @@ If you want to disable it, you can run `cmake -DMAPPTTH_NO_GRAPHVIZ=1 ..` instea
 
 ### Parameters
 
-The only required argument is ```-u <URL>```. This parameter specifies where the crawler starts to crawl.
+The only required argument is an URL. This URL specifies where the crawler will start its crawling.
 
 Here is the list of available parameters grouped by category:
 
@@ -57,7 +57,7 @@ Here is the list of available parameters grouped by category:
 
 | Name | Argument |
 | --- | --- |
-| URL where to start crawling. __(REQUIRED)__ | -u \<URL> |
+| URL where to start crawling, the last specified will be used. __(REQUIRED)__ | \<URL> |
 | String that will be used as user-agent. You can disable sending the user-agent header by giving an empty string. (default='MAPPTTH/<version>') | -U \<user-agent> |
 | Timeout in seconds for each connection. If a connection timeout, an error will be printed to standard error but no informations about the URL. (default=3) | -m \<timeout> |
 | Only resolve to IPv4 addresses. | -4 |
@@ -77,8 +77,8 @@ Here is the list of available parameters grouped by category:
 | Allow the crawler to only fetch URL starting with these paths. Can be a regex (extended and case-sensitive). | -p \<path or regex> |
 | Disallow the crawler to fetch URL starting with these paths. Can be a regex (extended and case-sensitive). | -P \<path or regex> |
 | Maximum depth of paths. If a path has a longer depth, it won't be fetched. | -D \<depth> |
-| Only fetch URLs with HTTP as scheme. | -f |
-| Only fetch URLs with HTTPS as scheme. | -F |
+| Only fetch URLs with HTTP as scheme (Don't forget to add '-r 80' if you start with an 'https://' URL). | -f |
+| Only fetch URLs with HTTPS as scheme (Don't forget to add '-r 443' if you start with an 'http://' URL). | -F |
 | Allow the crawler to only fetch files with these extensions. If no extension is found then this filter won't apply. | -x .\<extension> |
 | Disallow the crawler to fetch files with these extensions. If no extension is found then this filter won't apply. | -X .\<extension> |
 | Allow the crawler to go to theses ports | -r <port> |
@@ -128,55 +128,55 @@ _GraphViz support must be enabled to use these parameters._
 Simple crawl:
 
 ```
-mapptth -u https://google.com
+mapptth https://google.com
 ```
 
 Start crawling at a certain URL:
 
 ```
-mapptth -u https://google.com/some/url/file.html
+mapptth https://google.com/some/url/file.html
 ```
 
 More threads:
 
 ```
-mapptth -u https://google.com -t 10
+mapptth https://google.com -t 10
 ```
 
 Allow to crawl into subdomains (ex: www.google.com, mail.google.com, ww.mail.google.com):
 
 ```
-mapptth -u https://google.com -s
+mapptth https://google.com -s
 ```
 
 Allow to crawl certain domains and their subdomains (ex: www.google.com, mail.gitlab.com, www.mail.github.com):
 
 ```
-mapptth -u http://google.com -s -a gitlab.com -a github.com -r 443
+mapptth http://google.com -s -a gitlab.com -a github.com -r 443
 ```
 
 Disallow some paths:
 
 ```
-mapptth -u https://google.com -P /path -P /some-path
+mapptth https://google.com -P /path -P /some-path
 ```
 
 Disallow a path and only fetch .html and .php files:
 
 ```
-mapptth -u https://google.com -P /some-path -x .html -x .php
+mapptth https://google.com -P /some-path -x .html -x .php
 ```
 
 Only crawl in the /path directory:
 
 ```
-mapptth -u https://google.com -p /path
+mapptth https://google.com -p /path
 ```
 
 A more complete and complicated one:
 
 ```
-mapptth -u https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://www.google.com/sitemap.xml
+mapptth https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://www.google.com/sitemap.xml
 ```
 
 ## TODO
