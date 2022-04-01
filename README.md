@@ -102,6 +102,7 @@ _Only works for HTML files._
 | Don't print with colors. | -c |
 | Print the title of the page if there is one when displaying an URL. | -T |
 | File to write output into (without colors). | -o \<file name> |
+| Print a asummary of what was found as a directory structure | -O |
 
 #### Graph
 

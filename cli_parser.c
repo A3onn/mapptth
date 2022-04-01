@@ -67,6 +67,7 @@ void cli_arguments_print_help(char* prgm_name) {
     puts("\t-c: Don't print with colors.");
     puts("\t-T: Print the title of the page if there is one when displaying an URL.");
     puts("\t-o <file name>: File to write output into (without colors).");
+    puts("\t-O: Print a summary of what was found as a directory structure.");
 
 #if GRAPHVIZ_SUPPORT
     puts("\nGraph:");
@@ -97,9 +98,9 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
     _init_arguments(args);
 
 #if GRAPHVIZ_SUPPORT
-    char* args_str = "t:m:U:S:o:D:C:z:r:vsqciTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
+    char* args_str = "t:m:U:S:o:D:C:z:r:OvsqciTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
 #else
-    char* args_str = "t:m:U:S:o:D:C:z:r:vsqciTfFBH64qVhQ:p:P:x:X:a:d:";
+    char* args_str = "t:m:U:S:o:D:C:z:r:OvsqciTfFBH64qVhQ:p:P:x:X:a:d:";
 #endif
 
     // used when using strtoul
@@ -233,6 +234,9 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
                 break;
             case 'T': // title
                 args->title_flag = true;
+                break;
+            case 'O': // output
+                args->print_as_dir = true;
                 break;
             case 'f': // http-only
                 if(args->https_only_flag) { // cannot have both flag set

@@ -34,7 +34,7 @@ bool trie_contains(struct TrieNode* root, char* url);
 
 void trie_add(struct TrieNode* root, char* url);
 
-void print_trie(struct TrieNode* root);
+void trie_beautiful_print(struct TrieNode* root, bool no_color, FILE* fd_out);
 
 struct TrieNode* _find_child(struct TrieNode* node, char* val, char type); // used for tests
 #endif

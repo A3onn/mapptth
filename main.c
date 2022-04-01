@@ -232,7 +232,7 @@ int main(int argc, char* argv[]) {
     curl_share_setopt(curl_share, CURLSHOPT_UNLOCKFUNC, unlock_cb);
     curl_share_setopt(curl_share, CURLSHOPT_USERDATA, (void*) &mutex_conn);
 
-    stack_url_push(&urls_stack_todo, cli_arguments->url);  // add the URL specified by -u
+    stack_url_push(&urls_stack_todo, cli_arguments->url);  // add the URL given as parameter
 
     struct FoundURLHandlerBundle found_url_handler_bundle;  // in this bundle these elements never change
     found_url_handler_bundle.allowed_domains = cli_arguments->allowed_domains;
@@ -588,9 +588,22 @@ int main(int argc, char* argv[]) {
         pthread_join(fetcher_threads[i], NULL);
     }
 
-    if(cli_arguments->output != NULL) {
-        fclose(output_file);
+    if(cli_arguments->print_as_dir) {
+        if(cli_arguments->no_color_flag) {
+            printf("\n\n[o] Summary:\n\n");
+        } else {
+            printf("\n\n%s[o]%s Summary:\n\n", CYAN, RESET);
+        }
+        trie_beautiful_print(urls_done, cli_arguments->no_color_flag, stdout);
+        if(cli_arguments->output != NULL) {
+            trie_beautiful_print(urls_done, true, output_file);
+        }
     }
+
+    if(cli_arguments->output != NULL) {
+        fclose(output_file); // closing output file as nothing more will be added
+    }
+
 #ifdef GRAPHVIZ_SUPPORT
     curl_url_cleanup(curl_url_handler);
 #endif

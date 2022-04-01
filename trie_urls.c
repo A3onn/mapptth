@@ -259,33 +259,70 @@ void trie_free(struct TrieNode* root) {
     }
 }
 
-void _print_trie(struct TrieNode* root, int depth) {
+void _print_trie(struct TrieNode* node, char* indent, bool last, bool no_color, FILE* fd_out) {
     // Prints the nodes of the trie
-    if (!root)
+    if (!node) {
         return;
-    struct TrieNode* tmp = root;
+    }
 
-    for(int i = 0; i < depth; i++) {printf("\t");}
-    switch(tmp->type) {
-            case FRAGMENT_T:
-                    printf("#%s", tmp->data);
-                    break;
-            case QUERY_T:
-                    printf("?%s", tmp->data);
-                    break;
-            default:
-                    printf("%s", tmp->data);
-                    break;
-    }
-    if(tmp->is_end_url) {
-        printf("\n");
+    if(no_color) {
+        fprintf(fd_out, "%s%s─ %s\n", indent, last ? "└" : "├", node->data);
     } else {
-        printf(" ->\n");
+        switch(node->type) {
+            case QUERY_T:
+                fprintf(fd_out, "%s%s%s%s─ %s\n", GREEN, indent, RESET, last ? "└" : "├", node->data);
+                break;
+            case FRAGMENT_T:
+                fprintf(fd_out, "%s%s%s%s─ %s\n", MAGENTA, indent, RESET, last ? "└" : "├", node->data);
+                break;
+            default:
+                fprintf(fd_out, "%s%s─ %s\n", indent, last ? "└" : "├", node->data);
+        }
     }
-    for(unsigned int i = 0; i < tmp->children_count; i++) {
-        _print_trie(&(tmp->children[i]), depth+1);
+    char* tmp = (char*) malloc(sizeof (char) * (strlen(indent) + 3));
+    strcpy(tmp, indent);
+    strcat(tmp, last ? "  " : "│ ");
+
+    for(unsigned int i = 0; i < node->children_count; i++) {
+        _print_trie(&(node->children[i]), tmp, i == node->children_count-1, no_color, fd_out);
     }
+    free(tmp);
 }
-void print_trie(struct TrieNode* root) {
-        _print_trie(root, 0);
+
+void trie_beautiful_print(struct TrieNode* root, bool no_color, FILE* fd_out) {
+    char* indent = (char*) calloc(1, sizeof (char));
+    struct TrieNode* curr = &(root->children[HTTP_INDEX_T]);
+    
+    // print 'http://' URL
+    for(unsigned int domain_index = 0; domain_index < curr->children_count; domain_index++) {
+        for(unsigned int port_index = 0; port_index < curr->children[domain_index].children_count; port_index++) {
+            if(no_color) {
+                fprintf(fd_out, "http://%s\n", curr->children[domain_index].data);
+            } else {
+                fprintf(fd_out, "%shttp://%s%s\n", YELLOW, curr->children[domain_index].data, RESET);
+            }
+            _print_trie(&(curr->children[domain_index].children[port_index]), indent, false, no_color, fd_out);
+        }
+        fprintf(fd_out, "\n");
+    }
+
+    free(indent);
+
+    indent = (char*) calloc(1, sizeof (char));
+    curr = &(root->children[HTTPS_INDEX_T]);
+
+    // print 'https://' URL
+    for(unsigned int domain_index = 0; domain_index < curr->children_count; domain_index++) {
+        for(unsigned int port_index = 0; port_index < curr->children[domain_index].children_count; port_index++) {
+            if(no_color) {
+                fprintf(fd_out, "https://%s\n", curr->children[domain_index].data);
+            } else {
+                fprintf(fd_out, "%shttps://%s%s\n", YELLOW, curr->children[domain_index].data, RESET);
+            }
+            _print_trie(&(curr->children[domain_index].children[port_index]), indent, false, no_color, fd_out);
+        }
+        fprintf(fd_out, "\n");
+    }
+
+    free(indent);
 }

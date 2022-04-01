@@ -45,8 +45,9 @@ struct arguments {
 	bool https_only_flag;
 	bool only_body_flag;
 	bool only_head_flag;
-	bool  only_ipv6_flag;
+	bool only_ipv6_flag;
 	bool only_ipv4_flag;
+    bool print_as_dir;
 	bool ignore_cert_validation;
     bool verbose;
 #if GRAPHVIZ_SUPPORT
