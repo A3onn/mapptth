@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <time.h>
 #include <errno.h>
 #include <pcre.h>
@@ -56,6 +57,12 @@ struct FoundURLHandlerBundle {
     Agraph_t* graph;
 #endif
 };
+
+bool sigint_received = false; // if the user has CTRL-C
+void sigint_handler(int signum) {
+    (void) signum;
+    sigint_received = true;
+}
 
 #define handle_found_url(X) _handle_found_url(X, false)
 #define handle_found_url_from_sitemap(X) _handle_found_url(X, true)
@@ -204,6 +211,11 @@ int main(int argc, char* argv[]) {
 
     // end checks
 
+    // set sigint handler
+    struct sigaction sighandler;
+    sighandler.sa_handler = sigint_handler;
+    sigaction(SIGINT, &sighandler, NULL);
+
     // set variables
     curl_global_init(CURL_GLOBAL_ALL);  // initialize libcurl
 
@@ -334,7 +346,7 @@ int main(int argc, char* argv[]) {
 
 
     LOG("Creating threads...\n");
-    bool should_exit = false;  // if threads should exit, set to 1 when all threads have is_running == 1
+    bool should_exit = false;  // if threads should exit, set to true when all threads have is_running == true
     bool* list_running_thread_status = (bool*) malloc(sizeof(bool) * cli_arguments->threads);  // list containing ints indicating if each thread is fetching
     struct BundleVarsThread* bundles = (struct BundleVarsThread*) malloc(sizeof(struct BundleVarsThread) * cli_arguments->threads);
     for(unsigned int i = 0; i < cli_arguments->threads; i++) {
@@ -370,7 +382,7 @@ int main(int argc, char* argv[]) {
 #endif
 
     LOG("Starting...\n");
-    while(true) {
+    while(!sigint_received) {
         pthread_mutex_lock(&mutex);
         if(stack_document_isempty(documents_stack)) {  // no documents to parse
             // if this thread has no document to parse and all threads are waiting for
@@ -584,6 +596,7 @@ int main(int argc, char* argv[]) {
     LOG("Quitting...\n");
     for(unsigned int i = 0; i < cli_arguments->threads; i++) {
         LOG("Waiting for the thread #%lu to quit...\n", fetcher_threads[i]);
+        *(bundles[i].should_exit) = true;
         pthread_cond_broadcast(&cv_url_added);
         pthread_join(fetcher_threads[i], NULL);
     }
