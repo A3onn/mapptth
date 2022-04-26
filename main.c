@@ -610,6 +610,7 @@ int main(int argc, char* argv[]) {
         }
         trie_beautiful_print(urls_done, cli_arguments->no_color_flag, stdout);
         if(cli_arguments->output != NULL) {
+            fprintf(output_file, "\n\n");
             trie_beautiful_print(urls_done, true, output_file);
         }
     }
