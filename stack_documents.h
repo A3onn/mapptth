@@ -5,7 +5,7 @@
 #include <string.h>
 #include <lexbor/html/html.h>
 
-// FIFO linked list
+// LIFO linked list
 
 struct Document {
     // this struct will be filled by the fetcher thread after successfully fetched a document

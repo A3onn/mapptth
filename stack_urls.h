@@ -7,7 +7,7 @@
 #include <string.h>
 #include <curl/curl.h>
 
-// FIFO linked list
+// LIFO linked list
 
 struct URLNode {
     struct URLNode* next;

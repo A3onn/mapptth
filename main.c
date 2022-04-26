@@ -305,7 +305,8 @@ int main(int argc, char* argv[]) {
     if(cli_arguments->sitemap != NULL) {
         LOG("Fetching and parsing sitemaps\n");
         // get the content of the sitemap
-        URLNode_t* url_stack_sitemap = get_sitemap_urls(cli_arguments->sitemap, cli_arguments->no_color_flag);
+        URLNode_t* url_stack_sitemap = NULL;
+        get_sitemap_urls(cli_arguments->sitemap, cli_arguments->no_color_flag, &url_stack_sitemap);
 
         // validate the URLs found in the sitemap, same code as when finding an URL in a document
         CURLU* curl_url_handler = curl_url();

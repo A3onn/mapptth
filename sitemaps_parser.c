@@ -75,7 +75,7 @@ void __sitemap_error_callback(void * ctx, const char * msg, ...) {
     (void)msg;
 }
 
-URLNode_t* get_sitemap_urls(char *url, bool no_color) {
+void get_sitemap_urls(char *url, bool no_color, URLNode_t** list_urls_found) {
 
     LIBXML_TEST_VERSION // tests for libxml2
 
@@ -85,7 +85,6 @@ URLNode_t* get_sitemap_urls(char *url, bool no_color) {
     xmlDocPtr doc;
 
     URLNode_t* list_sitemaps = NULL;
-    URLNode_t* list_urls_found = NULL;
     stack_url_push(&list_sitemaps, url);
 
     CURL* curl = curl_easy_init();
@@ -109,7 +108,7 @@ URLNode_t* get_sitemap_urls(char *url, bool no_color) {
             } else {
                 fprintf(stderr, "%sFailed to create parser context while doing %s%s\n", RED, url, RESET);
             }
-            return NULL;
+            return ;
         }
 
         curl_easy_setopt(curl, CURLOPT_URL, current_sitemap_url);
@@ -160,7 +159,7 @@ URLNode_t* get_sitemap_urls(char *url, bool no_color) {
 
         xmlNode* root_element = xmlDocGetRootElement(doc);
 
-        __sitemap_get_content(root_element, &list_sitemaps, &list_urls_found, no_color);
+        __sitemap_get_content(root_element, &list_sitemaps, list_urls_found, no_color);
 
         xmlFreeDoc(doc);
 
@@ -173,6 +172,4 @@ URLNode_t* get_sitemap_urls(char *url, bool no_color) {
 
     xmlCleanupParser();
     xmlMemoryDump();
-
-    return list_urls_found;
 }

@@ -9,7 +9,8 @@
 #include "logger.h"
 #include "utils.h"
 
-URLNode_t* get_sitemap_urls(char* url, bool no_color);
+// will add urls found to list_urls_found
+void get_sitemap_urls(char* url, bool no_color, URLNode_t** list_urls_found);
 
 // exported for testing reasons
 char* __sitemap_get_location(xmlNode* sitemap_root);
