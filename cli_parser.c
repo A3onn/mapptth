@@ -86,11 +86,11 @@ void cli_arguments_print_help(char* prgm_name) {
 
 
     puts("\nExemples:");
-    puts("\tmapptth https://google.com/some/url/file.html");
-    puts("\tmapptth http://google.com -s -a gitlab.com -a github.com -r 443");
-    puts("\tmapptth https://google.com -P /path -P /some-path");
-    puts("\tmapptth https://google.com -P /some-path -x .html -x .php");
-    puts("\tmapptth https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://www.google.com/sitemap.xml");
+    printf("\t%s https://google.com/some/url/file.html\n", prgm_name);
+    printf("\t%s http://google.com -s -a gitlab.com -a github.com -r 443\n", prgm_name);
+    printf("\t%s https://google.com -P /path -P /some-path\n", prgm_name);
+    printf("\t%s https://google.com -P /some-path -x .html -x .php\n", prgm_name);
+    printf("\t%s https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://www.google.com/sitemap.xml\n", prgm_name);
 }
 
 struct arguments* parse_cli_arguments(int argc, char** argv) {
