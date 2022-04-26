@@ -21,19 +21,19 @@ MapPTTH uses:
 
 ## Installation
 
-If you have all dependencies installed on your system:
+If you don't have Lexbor installed and don't want to install it, you can clone Lexbor while cloning MapPTTH and compile without any installation:
 
 ```
-git clone https://gitlab.com/Aeonn/mapptth/
+git clone --recurse-submodules https://gitlab.com/Aeonn/mapptth/
 cd mapptth/
 mkdir build/ && cd build/
 cmake .. && make -j5
 ```
 
-If you don't have Lexbor installed and don't want to install it, you can clone Lexbor while cloning MapPTTH and compile without any installation:
+If you have all dependencies installed on your system:
 
 ```
-git clone --recurse-submodules https://gitlab.com/Aeonn/mapptth/
+git clone https://gitlab.com/Aeonn/mapptth/
 cd mapptth/
 mkdir build/ && cd build/
 cmake .. && make -j5
@@ -87,8 +87,6 @@ Here is the list of available parameters grouped by category:
 
 #### Parsing
 
-_Only works for HTML files._
-
 | Name | Argument |
 | --- | --- |
 | Only parse the \<head> part. | -H |
@@ -106,7 +104,7 @@ _Only works for HTML files._
 
 #### Graph
 
-_GraphViz support must be enabled to use these parameters._
+_MapPTTH must be compiled with GraphViz support._
 
 | Name | Argument |
 | --- | --- |
@@ -123,6 +121,9 @@ _GraphViz support must be enabled to use these parameters._
 | URL of the proxy to use. | -z \<URL of the proxy> |
 | Print the help. | -h |
 | Print the version. | -V |
+
+You can stop the crawler with _CTRL-C_ at any moment, this will gracefully stop the crawler and it will finish as normal.
+
 
 ### Exemples
 
