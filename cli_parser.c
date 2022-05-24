@@ -1,36 +1,35 @@
 #include "cli_parser.h"
 
-void _init_arguments(struct arguments* args) {
-    memset(args, 0, sizeof (struct arguments));
-    args->timeout = 3;
-    args->threads = 5;
-    args->disallowed_paths = (char**) malloc(sizeof (char*));
-    args->disallowed_extensions = (char**) malloc(sizeof (char*));
-    args->disallowed_domains = (char**) malloc(sizeof (char*));
+void _init_arguments() {
+    memset(&cli_arguments, 0, sizeof (struct arguments));
+    cli_arguments.timeout = 3;
+    cli_arguments.threads = 5;
+    cli_arguments.disallowed_paths = (char**) malloc(sizeof (char*));
+    cli_arguments.disallowed_extensions = (char**) malloc(sizeof (char*));
+    cli_arguments.disallowed_domains = (char**) malloc(sizeof (char*));
 
-    args->allowed_paths = (char**) malloc(sizeof (char*));
-    args->allowed_extensions = (char**) malloc(sizeof (char*));
-    args->allowed_domains = (char**) malloc(sizeof (char*));
-    args->allowed_ports = (unsigned short*) malloc(sizeof (unsigned short));
+    cli_arguments.allowed_paths = (char**) malloc(sizeof (char*));
+    cli_arguments.allowed_extensions = (char**) malloc(sizeof (char*));
+    cli_arguments.allowed_domains = (char**) malloc(sizeof (char*));
+    cli_arguments.allowed_ports = (unsigned short*) malloc(sizeof (unsigned short));
 #if GRAPHVIZ_SUPPORT
-    args->graph_layout = "dot"; // works best with ranks
-    args->graph_output_format = "png";
+    cli_arguments.graph_layout = "dot"; // works best with ranks
+    cli_arguments.graph_output_format = "png";
 #endif
 }
 
-void cli_arguments_free(struct arguments* args) {
-    if(args->headers != NULL) {
-        curl_slist_free_all(args->headers);
+void cli_arguments_free() {
+    if(cli_arguments.headers != NULL) {
+        curl_slist_free_all(cli_arguments.headers);
     }
-    free(args->disallowed_paths);
-    free(args->disallowed_extensions);
-    free(args->disallowed_domains);
+    free(cli_arguments.disallowed_paths);
+    free(cli_arguments.disallowed_extensions);
+    free(cli_arguments.disallowed_domains);
 
-    free(args->allowed_paths);
-    free(args->allowed_ports);
-    free(args->allowed_extensions);
-    free(args->allowed_domains);
-    free(args);
+    free(cli_arguments.allowed_paths);
+    free(cli_arguments.allowed_ports);
+    free(cli_arguments.allowed_extensions);
+    free(cli_arguments.allowed_domains);
 }
 
 void cli_arguments_print_help(char* prgm_name) {
@@ -93,7 +92,7 @@ void cli_arguments_print_help(char* prgm_name) {
     printf("\t%s https://google.com/mail -x .html -P /some-path -t 10 -m 5 -s -q -D 6 -T -o output.txt -H -S http://www.google.com/sitemap.xml\n", prgm_name);
 }
 
-struct arguments* parse_cli_arguments(int argc, char** argv) {
+bool parse_cli_arguments(int argc, char** argv) {
     struct arguments* args = (struct arguments*) malloc(sizeof (struct arguments));
     _init_arguments(args);
 
@@ -112,189 +111,189 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
         switch(c) {
             case 't': // threads
                 errno = 0;
-                args->threads = strtoul(optarg, &endptr, 10);
+                cli_arguments.threads = strtoul(optarg, &endptr, 10);
                 if(errno != 0) {
                     fprintf(stderr, "%s: %s", argv[0], strerror(errno));
-                    cli_arguments_free(args);
-                    return NULL;
+                    cli_arguments_free();
+                    return false;
                 } else if(endptr == optarg) { // if starts of invalid number is the first chararcter of the arg
                     fprintf(stderr, "%s: invalid number of threads value: %s\n", argv[0], optarg);
-                    cli_arguments_free(args);
-                    return NULL;
+                    cli_arguments_free();
+                    return false;
                 }
                 break;
             case 'm': // timeout
                 errno = 0;
-                args->timeout = strtoul(optarg, &endptr, 10);
+                cli_arguments.timeout = strtoul(optarg, &endptr, 10);
                 if(errno != 0) {
                     fprintf(stderr, "%s: %s", argv[0], strerror(errno));
-                    cli_arguments_free(args);
-                    return NULL;
+                    cli_arguments_free();
+                    return false;
                 } else if(endptr == optarg) { // if starts of invalid number is the first chararcter of the arg
                     fprintf(stderr, "%s: invalid timeout value: %s\n", argv[0], optarg);
-                    cli_arguments_free(args);
-                    return NULL;
+                    cli_arguments_free();
+                    return false;
                 }
                 break;
             case 'D': // max-depth
                 errno = 0;
-                args->max_depth = strtoul(optarg, &endptr, 10);
-                args->max_depth_given = 1;
+                cli_arguments.max_depth = strtoul(optarg, &endptr, 10);
+                cli_arguments.max_depth_given = 1;
                 if(errno != 0) {
                     fprintf(stderr, "%s: %s", argv[0], strerror(errno));
-                    cli_arguments_free(args);
-                    return NULL;
+                    cli_arguments_free();
+                    return false;
                 } else if(endptr == optarg) { // if starts of invalid number is the first chararcter of the arg
                     fprintf(stderr, "%s: invalid max-depth value: %s\n", argv[0], optarg);
-                    cli_arguments_free(args);
-                    return NULL;
+                    cli_arguments_free();
+                    return false;
                 }
                 break;
             case 'p': // allowed paths
-                args->allowed_paths_count++;
-                args->allowed_paths = (char**) reallocarray(args->allowed_paths, args->allowed_paths_count, sizeof (char*));
-                args->allowed_paths[args->allowed_paths_count-1] = optarg;
+                cli_arguments.allowed_paths_count++;
+                cli_arguments.allowed_paths = (char**) reallocarray(cli_arguments.allowed_paths, cli_arguments.allowed_paths_count, sizeof (char*));
+                cli_arguments.allowed_paths[cli_arguments.allowed_paths_count-1] = optarg;
                 break;
             case 'P': // disallowed paths
-                args->disallowed_paths_count++;
-                args->disallowed_paths = (char**) reallocarray(args->disallowed_paths, args->disallowed_paths_count, sizeof (char*));
-                args->disallowed_paths[args->disallowed_paths_count-1] = optarg;
+                cli_arguments.disallowed_paths_count++;
+                cli_arguments.disallowed_paths = (char**) reallocarray(cli_arguments.disallowed_paths, cli_arguments.disallowed_paths_count, sizeof (char*));
+                cli_arguments.disallowed_paths[cli_arguments.disallowed_paths_count-1] = optarg;
                 break;
             case 'a': // allowed domains
-                args->allowed_domains_count++;
-                args->allowed_domains = (char**) reallocarray(args->allowed_domains, args->allowed_domains_count, sizeof (char*));
-                args->allowed_domains[args->allowed_domains_count-1] = optarg;
+                cli_arguments.allowed_domains_count++;
+                cli_arguments.allowed_domains = (char**) reallocarray(cli_arguments.allowed_domains, cli_arguments.allowed_domains_count, sizeof (char*));
+                cli_arguments.allowed_domains[cli_arguments.allowed_domains_count-1] = optarg;
                 break;
             case 'd': // disallowed domains
-                args->disallowed_domains_count++;
-                args->disallowed_domains = (char**) reallocarray(args->disallowed_domains, args->disallowed_domains_count, sizeof (char*));
-                args->disallowed_domains[args->disallowed_domains_count-1] = optarg;
+                cli_arguments.disallowed_domains_count++;
+                cli_arguments.disallowed_domains = (char**) reallocarray(cli_arguments.disallowed_domains, cli_arguments.disallowed_domains_count, sizeof (char*));
+                cli_arguments.disallowed_domains[cli_arguments.disallowed_domains_count-1] = optarg;
                 break;
             case 'x': // allowed extensions
-                args->allowed_extensions_count++;
-                args->allowed_extensions = (char**) reallocarray(args->allowed_extensions, args->allowed_extensions_count, sizeof (char*));
-                args->allowed_extensions[args->allowed_extensions_count-1] = optarg;
+                cli_arguments.allowed_extensions_count++;
+                cli_arguments.allowed_extensions = (char**) reallocarray(cli_arguments.allowed_extensions, cli_arguments.allowed_extensions_count, sizeof (char*));
+                cli_arguments.allowed_extensions[cli_arguments.allowed_extensions_count-1] = optarg;
                 break;
             case 'X': // disallowed extensions
-                args->disallowed_extensions_count++;
-                args->disallowed_extensions = (char**) reallocarray(args->disallowed_extensions, args->disallowed_extensions_count, sizeof (char*));
-                args->disallowed_extensions[args->disallowed_extensions_count-1] = optarg;
+                cli_arguments.disallowed_extensions_count++;
+                cli_arguments.disallowed_extensions = (char**) reallocarray(cli_arguments.disallowed_extensions, cli_arguments.disallowed_extensions_count, sizeof (char*));
+                cli_arguments.disallowed_extensions[cli_arguments.disallowed_extensions_count-1] = optarg;
                 break;
             case 'r': // allowed ports
                 errno = 0;
                 unsigned short newPort = (unsigned short) strtoul(optarg, &endptr, 10);
                 if(errno != 0) {
                     fprintf(stderr, "%s: %s", argv[0], strerror(errno));
-                    cli_arguments_free(args);
-                    return NULL;
+                    cli_arguments_free();
+                    return false;
                 } else if(endptr == optarg) {
                     fprintf(stderr, "%s: invalid port value: %s\n", argv[0], optarg);
-                    cli_arguments_free(args);
-                    return NULL;
+                    cli_arguments_free();
+                    return false;
                 }
-                args->allowed_ports_count++;
-                args->allowed_ports = (unsigned short*) reallocarray(args->allowed_ports, args->allowed_ports_count, sizeof (unsigned short));
-                args->allowed_ports[args->allowed_ports_count-1] = newPort;
+                cli_arguments.allowed_ports_count++;
+                cli_arguments.allowed_ports = (unsigned short*) reallocarray(cli_arguments.allowed_ports, cli_arguments.allowed_ports_count, sizeof (unsigned short));
+                cli_arguments.allowed_ports[cli_arguments.allowed_ports_count-1] = newPort;
                 break;
             case 'o': // output
-                args->output = optarg;
+                cli_arguments.output = optarg;
                 break;
             case 'S': // sitemap
-                args->sitemap = optarg;
+                cli_arguments.sitemap = optarg;
                 break;
             case 'U': // user-agent
-                args->user_agent = optarg;
+                cli_arguments.user_agent = optarg;
                 break;
             case 'C': // cookies
-                args->cookies = optarg;
+                cli_arguments.cookies = optarg;
                 break;
             case 'z': // proxy
-                args->proxy_url = optarg;
+                cli_arguments.proxy_url = optarg;
                 break;
             case 'Q': // headers to send
                 if(optarg[strlen(optarg) - 1] != ';') {
                     fprintf(stderr ,"Headers specified with -Q should end with a ';'. \"%s\" does not.\n", optarg);
-                    cli_arguments_free(args);
-                    return NULL;
+                    cli_arguments_free();
+                    return false;
                 }
-                args->headers = curl_slist_append(args->headers, optarg);
-                if(args->headers == NULL) {
+                cli_arguments.headers = curl_slist_append(cli_arguments.headers, optarg);
+                if(cli_arguments.headers == NULL) {
                     fprintf(stderr, "An error occured while adding the header: %s, quitting...\n", optarg);
-                    cli_arguments_free(args);
+                    cli_arguments_free();
                 }
                 break;
             case 's': // allow subdomains
-                args->allow_subdomains_flag = true;
+                cli_arguments.allow_subdomains_flag = true;
                 break;
             case 'q': // keep-query
-                args->keep_query_flag = true;
+                cli_arguments.keep_query_flag = true;
                 break;
             case 'c': // no color
-                args->no_color_flag = true;
+                cli_arguments.no_color_flag = true;
                 break;
             case 'T': // title
-                args->title_flag = true;
+                cli_arguments.title_flag = true;
                 break;
             case 'O': // output
-                args->print_as_dir = true;
+                cli_arguments.print_as_dir = true;
                 break;
             case 'f': // http-only
-                if(args->https_only_flag) { // cannot have both flag set
+                if(cli_arguments.https_only_flag) { // cannot have both flag set
                         fprintf(stderr, "%s: you cannot set both http and https only flags\n", argv[0]);
-                        cli_arguments_free(args);
-                        return NULL;
+                        cli_arguments_free();
+                        return false;
                 }
-                args->http_only_flag = true;
+                cli_arguments.http_only_flag = true;
                 break;
             case 'F': // https-only
-                if(args->http_only_flag) { // cannot have both flag set
+                if(cli_arguments.http_only_flag) { // cannot have both flag set
                         fprintf(stderr, "%s: you cannot set both http and https only flags\n", argv[0]);
-                        cli_arguments_free(args);
-                        return NULL;
+                        cli_arguments_free();
+                        return false;
                 }
-                args->https_only_flag = true;
+                cli_arguments.https_only_flag = true;
                 break;
             case 'B': // parse only the <body>
-                if(args->only_head_flag) { // cannot have both flag set
+                if(cli_arguments.only_head_flag) { // cannot have both flag set
                         fprintf(stderr, "%s: you cannot set both head-only and body-only flags\n", argv[0]);
-                        cli_arguments_free(args);
-                        return NULL;
+                        cli_arguments_free();
+                        return false;
                 }
-                args->only_body_flag = true;
+                cli_arguments.only_body_flag = true;
                 break;
             case 'H': // parse only the <head> 
-                if(args->only_body_flag) { // cannot have both flag set
+                if(cli_arguments.only_body_flag) { // cannot have both flag set
                         fprintf(stderr, "%s: you cannot set both head-only and body-only flags\n", argv[0]);
-                        cli_arguments_free(args);
-                        return NULL;
+                        cli_arguments_free();
+                        return false;
                 }
-                args->only_head_flag = true;
+                cli_arguments.only_head_flag = true;
                 break;
             case '4': // ipv4 only
-                if(args->only_ipv6_flag) { // cannot have both flag set
+                if(cli_arguments.only_ipv6_flag) { // cannot have both flag set
                         fprintf(stderr, "%s: you cannot set both IPv4 and IPv6 only flags\n", argv[0]);
-                        cli_arguments_free(args);
-                        return NULL;
+                        cli_arguments_free();
+                        return false;
                 }
-                args->only_ipv4_flag = true;
+                cli_arguments.only_ipv4_flag = true;
                 break;
             case '6': // ipv6 only
-                if(args->only_ipv4_flag) { // cannot have both flag set
+                if(cli_arguments.only_ipv4_flag) { // cannot have both flag set
                         fprintf(stderr, "%s: you cannot set both IPv4 and IPv6 only flags\n", argv[0]);
-                        cli_arguments_free(args);
-                        return NULL;
+                        cli_arguments_free();
+                        return false;
                 }
-                args->only_ipv6_flag = true;
+                cli_arguments.only_ipv6_flag = true;
                 break;
             case 'h': // print help
                 cli_arguments_print_help(argv[0]);
-                cli_arguments_free(args);
-                return NULL;
+                cli_arguments_free();
+                return false;
             case 'i': // don't verify certificate
-                args->ignore_cert_validation = true;
+                cli_arguments.ignore_cert_validation = true;
                 break;
             case 'v': // verbose mode
-                args->verbose = true;
+                cli_arguments.verbose = true;
                 break;
             case 'V': // print version
                 printf("MapPPTH: %s\n", MAPPTTH_VERSION);
@@ -318,17 +317,17 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
 #if GRAPHVIZ_SUPPORT
                 printf("GraphViz: %s\n", PACKAGE_VERSION);
 #endif
-                cli_arguments_free(args);
-                return NULL;
+                cli_arguments_free();
+                return false;
 #if GRAPHVIZ_SUPPORT
             case 'g': // graph flag
-                args->graph_flag = true;
+                cli_arguments.graph_flag = true;
                 break;
             case 'G': // graph output format
-                args->graph_output_format = optarg;
+                cli_arguments.graph_output_format = optarg;
                 break;
             case 'L': // graph layout
-                args->graph_layout = optarg;
+                cli_arguments.graph_layout = optarg;
                 break;
 #endif
             case '?':
@@ -345,7 +344,7 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
 #endif
                         fprintf(stderr, "%s: -%c requires an argument\n", argv[0], optopt);
                         free(args);
-                        return NULL;
+                        return false;
                 } else {
                         fprintf(stderr, "%s: unknown parameter: -%c. Ignoring it...\n", argv[0], optopt);
                 }
@@ -354,18 +353,18 @@ struct arguments* parse_cli_arguments(int argc, char** argv) {
     }
 
     for(; optind < argc; optind++) {
-        if(args->url != NULL) { // free last URL given, so it uses the last one specified
-            free(args->url);
+        if(cli_arguments.url != NULL) { // free last URL given, so it uses the last one specified
+            free(cli_arguments.url);
         }
-        args->url = malloc(strlen(argv[optind]) * sizeof (char) + sizeof (char)); // <url> + '\0'
-        strcpy(args->url, argv[optind]);
+        cli_arguments.url = malloc(strlen(argv[optind]) * sizeof (char) + sizeof (char)); // <url> + '\0'
+        strcpy(cli_arguments.url, argv[optind]);
     }
 
-    if(args->url == NULL) {
+    if(cli_arguments.url == NULL) {
         fprintf(stderr, "%s: you need to specify an URL\n", argv[0]);
-        cli_arguments_free(args);
-        return NULL;
+        cli_arguments_free();
+        return false;
     }
 
-    return args;
+    return true;
 }

@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <pthread.h>
+#include "fetcher_thread.h"
+#include "cli_parser.h"
 
 #define RED "\033[0;31m"
 #define BRIGHT_RED "\033[0;91m"
@@ -14,6 +16,9 @@
 #define CYAN "\033[0;36m"
 #define YELLOW "\033[0;33m"
 #define RESET "\033[0m"
+
+unsigned int _get_current_thread_number();
+#define MAIN_THREAD_NUMBER 0
 
 extern bool _verbose;
 void _verbose_print(const char* function_name, const char* format, ...);

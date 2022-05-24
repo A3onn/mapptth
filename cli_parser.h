@@ -71,10 +71,10 @@ struct arguments {
 	unsigned int disallowed_paths_count;
 	char** disallowed_domains;
 	unsigned int disallowed_domains_count;
-};
+} cli_arguments;
 
-void cli_arguments_free(struct arguments* args);
+void cli_arguments_free();
 
-struct arguments* parse_cli_arguments(int argc, char** argv);
+bool parse_cli_arguments(int argc, char** argv);
 
 #endif

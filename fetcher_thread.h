@@ -4,6 +4,7 @@
 #include "stack_documents.h"
 #include "stack_urls.h"
 #include "trie_urls.h"
+#include "pthread.h"
 #include <curl/curl.h>
 
 
@@ -30,8 +31,12 @@ struct BundleVarsThread {  // used to needed variables to the thread
     char* proxy_url;
     
     struct curl_slist* headers;
+
+    // used for logging purposes
+    pthread_key_t thread_key;
+    unsigned int thread_number;
 };
 
 void* fetcher_thread_func(void* bundle_arg);
-
+pthread_t* fetcher_threads;
 #endif
