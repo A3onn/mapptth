@@ -24,7 +24,7 @@ struct arguments {
 	unsigned int threads;
 	unsigned int timeout;
 	unsigned int max_depth;
-    bool max_depth_given; // if max_depth has been set
+    	bool max_depth_given; // if max_depth has been set
 	char* user_agent;
 	char* sitemap;
 	char* output;
@@ -71,10 +71,12 @@ struct arguments {
 	unsigned int disallowed_paths_count;
 	char** disallowed_domains;
 	unsigned int disallowed_domains_count;
-} cli_arguments;
+};
 
 void cli_arguments_free();
 
 bool parse_cli_arguments(int argc, char** argv);
+
+extern struct arguments cli_arguments;
 
 #endif

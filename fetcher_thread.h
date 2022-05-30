@@ -7,7 +7,6 @@
 #include "pthread.h"
 #include <curl/curl.h>
 
-
 struct BundleVarsThread {  // used to needed variables to the thread
     DocumentNode_t** documents;  // stack of documents to populate
     URLNode_t** urls_stack_todo;  // stack of URLS to fetch
@@ -38,5 +37,7 @@ struct BundleVarsThread {  // used to needed variables to the thread
 };
 
 void* fetcher_thread_func(void* bundle_arg);
-pthread_t* fetcher_threads;
+
+extern pthread_t* fetcher_threads;
+
 #endif
