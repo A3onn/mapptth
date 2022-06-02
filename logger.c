@@ -1,5 +1,9 @@
 #include "logger.h"
 
+// extern variables used here
+pthread_t* fetcher_threads;
+struct arguments cli_arguments;
+
 // VERBOSE
 bool _verbose = false;
 void _verbose_print(const char* function_name, const char* format, ...) {

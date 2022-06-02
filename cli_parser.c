@@ -1,7 +1,5 @@
 #include "cli_parser.h"
 
-struct arguments cli_arguments;
-
 void _init_arguments() {
     memset(&cli_arguments, 0, sizeof (struct arguments));
     cli_arguments.timeout = 3;

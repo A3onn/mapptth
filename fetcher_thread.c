@@ -8,8 +8,6 @@
 #include "logger.h"
 #include "utils.h"
 
-pthread_t* fetcher_threads;
-
 struct ProcessContentBundle {
     lxb_html_document_t* lxb_document;
     size_t size;  // size of the document without the headers
