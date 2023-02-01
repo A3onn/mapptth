@@ -140,6 +140,35 @@ char* normalize_path(char* path, bool is_directory) {
     return result;
 }
 
+char* trim_spaces(char* str) {
+    if(str == NULL) {
+        return NULL;
+    }
+    size_t len_str = strlen(str);
+    if(len_str == 0) {
+        return calloc(1, sizeof (char));
+    }
+    char* tmp_res = malloc(len_str+1);
+    strcpy(tmp_res, str);
+    tmp_res[len_str] = 0;
+
+    size_t start = 0, end = len_str;
+    while(tmp_res[start] == ' ' && end != start) {
+        start++;
+    }
+    while(tmp_res[end-1] == ' ' && end != start) {
+        end--;
+    }
+    if(end-start == 0) {
+        free(tmp_res);
+        return calloc(1, sizeof (char));
+    }
+    char* res = calloc(end-start, sizeof (char));
+    strncpy(res, tmp_res + start, end-start);
+    free(tmp_res);
+    return res;
+
+}
 
 bool is_disallowed_path(char* path, pcre** disallowed_paths, int count_disallowed_paths) {
     if(count_disallowed_paths == 0) { // if no paths where specified, then it is allowed

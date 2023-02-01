@@ -22,6 +22,8 @@ bool is_valid_link(const char* url);
 
 char* normalize_path(char* path, bool is_directory);
 
+char* trim_spaces(char* str);
+
 bool is_disallowed_path(char* path, pcre** disallowed_paths, int count_disallowed_paths);
 
 bool is_allowed_path(char* path, pcre** allowed_paths, int count_allowed_paths);

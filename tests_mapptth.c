@@ -760,6 +760,19 @@ START_TEST(complex_file_normalize_path) {
 END_TEST
 
 
+START_TEST(trim_spaces_test) {
+    ck_assert_str_eq(trim_spaces("    "), "");
+    ck_assert_str_eq(trim_spaces("    a"), "a");
+    ck_assert_str_eq(trim_spaces("a     "), "a");
+    ck_assert_str_eq(trim_spaces("a a"), "a a");
+    ck_assert_str_eq(trim_spaces(" a a"), "a a");
+    ck_assert_str_eq(trim_spaces("a a "), "a a");
+    ck_assert_str_eq(trim_spaces(" a a "), "a a");
+    ck_assert_str_eq(trim_spaces(" a a   a"), "a a   a");
+}
+END_TEST
+
+
 
 START_TEST(true_one_disallowed_is_disallowed_path) {
     const char* err;
@@ -1300,6 +1313,11 @@ Suite* utils_suite(void) {
     tcase_add_test(tc, normalize_dot_dot_file_normalize_path);
     tcase_add_test(tc, complex_directory_normalize_path);
     tcase_add_test(tc, complex_file_normalize_path);
+    suite_add_tcase(s, tc);
+
+
+    tc = tcase_create("trim_spaces");
+    tcase_add_test(tc, trim_spaces_test);
     suite_add_tcase(s, tc);
 
     tc = tcase_create("is_disallowed_path");

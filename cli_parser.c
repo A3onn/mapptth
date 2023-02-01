@@ -78,6 +78,7 @@ void cli_arguments_print_help(char* prgm_name) {
     puts("\nOther:");
     puts("\t-t <integer>: Number of threads that will fetch URLs. (default=5)");
     puts("\t-S <url>: Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap.");
+    puts("\t-R <url>: Parse the robots.txt of the site, paths found in 'allowed' and 'disallowed' directives are added to the list of found URLs. Other directives are ignored.");
     puts("\t-z <url>: URL of the proxy to use.");
     puts("\t-v: Verbose mode.");
     puts("\t-h: Print the help.");
@@ -97,9 +98,9 @@ bool parse_cli_arguments(int argc, char** argv) {
     _init_arguments(args);
 
 #if GRAPHVIZ_SUPPORT
-    char* args_str = "t:m:U:S:o:D:C:z:r:OvsqciTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
+    char* args_str = "t:m:U:S:R:o:D:C:z:r:OvsqciTfFBH64qVhQ:p:P:x:X:a:d:gG:L:";
 #else
-    char* args_str = "t:m:U:S:o:D:C:z:r:OvsqciTfFBH64qVhQ:p:P:x:X:a:d:";
+    char* args_str = "t:m:U:S:R:o:D:C:z:r:OvsqciTfFBH64qVhQ:p:P:x:X:a:d:";
 #endif
 
     // used when using strtoul
@@ -200,6 +201,9 @@ bool parse_cli_arguments(int argc, char** argv) {
                 break;
             case 'S': // sitemap
                 cli_arguments.sitemap = optarg;
+                break;
+            case 'R': // robots.txt
+                cli_arguments.robots_txt = optarg;
                 break;
             case 'U': // user-agent
                 cli_arguments.user_agent = optarg;
@@ -335,12 +339,13 @@ bool parse_cli_arguments(int argc, char** argv) {
                 if(optopt == 'm' || optopt == 't' || optopt == 'D' || optopt == 'C'
                         || optopt == 'x' || optopt == 'X' || optopt == 'a' || optopt == 'd'
                         || optopt == 'p' || optopt == 'P' || optopt == 'G' || optopt == 'L'
-                        || optopt == 'S' || optopt == 'o' || optopt == 'U' || optopt == 'Q') {
+                        || optopt == 'S' || optopt == 'o' || optopt == 'U' || optopt == 'Q'
+                        || optopt == 'R') {
 #else
                 if(optopt == 'm' || optopt == 't' || optopt == 'D' || optopt == 'C'
-                        || optopt == 'x' || optopt == 'X' || optopt == 'a' ||
-                        optopt == 'd' || optopt == 'p' || optopt == 'P' || optopt == 'S'
-                        || optopt == 'o' || optopt == 'U' || optopt == 'Q') {
+                        || optopt == 'x' || optopt == 'X' || optopt == 'a' || optopt == 'd'
+                        || optopt == 'p' || optopt == 'P' || optopt == 'S' || optopt == 'o'
+                        || optopt == 'U' || optopt == 'Q' || optopt == 'R') {
 #endif
                         fprintf(stderr, "%s: -%c requires an argument\n", argv[0], optopt);
                         free(args);

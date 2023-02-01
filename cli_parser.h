@@ -24,9 +24,10 @@ struct arguments {
 	unsigned int threads;
 	unsigned int timeout;
 	unsigned int max_depth;
-    	bool max_depth_given; // if max_depth has been set
+	bool max_depth_given; // if max_depth has been set
 	char* user_agent;
 	char* sitemap;
+	char* robots_txt;
 	char* output;
 	char* cookies;
 	char* proxy_url;

@@ -17,6 +17,7 @@
 #include "utils.h"
 #include "cli_parser.h"
 #include "logger.h"
+#include "robots_txt.h"
 
 #if GRAPHVIZ_SUPPORT
 #include <graphviz/gvc.h>
@@ -66,6 +67,7 @@ void sigint_handler(int signum) {
 
 #define handle_found_url(X) _handle_found_url(X, false)
 #define handle_found_url_from_sitemap(X) _handle_found_url(X, true)
+#define handle_found_url_from_robots_txt(X) _handle_found_url(X, true)
 static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, bool from_sitemap_parsing);
 
 lexbor_action_t walk_cb(lxb_dom_node_t* node, void* ctx) {
@@ -299,6 +301,42 @@ int main(int argc, char* argv[]) {
         }
         fprintf(output_file, "\n");
         LOG("Wrote header in %s\n", cli_arguments.output);
+    }
+
+    if(cli_arguments.robots_txt != NULL) {
+        LOG("Fetching and parsing the robots.txt\n");
+        // get the content of the robots.txt
+        URLNode_t* url_stack_robots_txt = NULL;
+        get_robots_txt_urls(cli_arguments.robots_txt, cli_arguments.no_color_flag, &url_stack_robots_txt);
+
+        // validate the URLs found in the robots.txt, same code as when finding an URL in a document
+        CURLU* curl_url_handler = curl_url();
+        char* initial_url_domain;
+        curl_url_set(curl_url_handler, CURLUPART_URL, cli_arguments.url, 0);
+        curl_url_get(curl_url_handler, CURLUPART_HOST, &initial_url_domain, 0);
+
+        int count = 0;  // keep track of how many validated URLs were added
+        while(!stack_url_isempty(url_stack_robots_txt)) {  // loop over URLs
+            char* url = stack_url_pop(&url_stack_robots_txt);
+
+            // handle_found_url uses only the url in the document, and all other fields
+            // in this struct are useless here (status code, size, content_type etc...)
+            struct Document doc;
+            doc.url = url;
+
+            found_url_handler_bundle.found_url = url;
+            found_url_handler_bundle.document = &doc;
+            found_url_handler_bundle.base_tag_url = NULL;
+            found_url_handler_bundle.urls_done = &urls_done;
+            found_url_handler_bundle.urls_stack_todo = &urls_stack_todo;
+
+            int result = handle_found_url_from_robots_txt(&found_url_handler_bundle);
+            if(result) {
+                count++;
+            }
+        }
+        curl_url_cleanup(curl_url_handler);
+        printf("Added %i new URLs.\n", count);
     }
 
     if(cli_arguments.sitemap != NULL) {
@@ -671,7 +709,7 @@ int main(int argc, char* argv[]) {
     return EXIT_SUCCESS;
 }
 
-static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, bool from_sitemap_parsing) {
+static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, bool from_sitemap_or_robots_parsing) {
     // this function is called when finding an URL, not after fetching it
     // NOTE:
     // only document->url will be used in the bundle->document, this is important when parsing the sitemap
@@ -774,7 +812,7 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, bool f
                 stack_url_push(bundle->urls_stack_todo, final_url);
                 // note that is this func is called from the sitemap parsing, no one listen for this signal,
                 // thus it will be useless in that particular case to call it
-                if(!from_sitemap_parsing) {
+                if(!from_sitemap_or_robots_parsing) {
                     pthread_cond_signal(bundle->cv_url_added);
                 }
                 has_been_added = true;
@@ -785,7 +823,7 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, bool f
                 LOG("Adding node and edge for: %s\n", final_url);
                 Agnode_t* node_new = agnode(bundle->graph, final_url, 1);
 
-                if(!from_sitemap_parsing)  {
+                if(!from_sitemap_or_robots_parsing)  {
                         // current link does not exists when parsing the sitemap as
                         // all urls are found "randomly" in the sitemap without any link between them
                         Agnode_t* node_current = agnode(bundle->graph, bundle->document->url, 0);

@@ -192,7 +192,7 @@ Without any priority :
 
 - [ ] Add a parameter to control the connection rate
 
-- [ ] Add robots.txt parser, can choose to follow rules or add URLs specified into starting list of URLs
+- [X] Add robots.txt parser
 
 - [ ] Print when encountering mailto: or tel:
 
