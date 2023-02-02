@@ -50,6 +50,7 @@ struct arguments {
 	bool only_ipv4_flag;
     bool print_as_dir;
 	bool ignore_cert_validation;
+	bool print_tel_mailto;
     bool verbose;
 #if GRAPHVIZ_SUPPORT
 	bool graph_flag;

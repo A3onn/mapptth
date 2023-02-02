@@ -51,6 +51,9 @@ struct FoundURLHandlerBundle {
     bool http_only;
     bool https_only;
     bool keep_query;
+    bool print_tel_mailto;
+    bool no_color;
+    FILE* output_file;
     unsigned int max_path_depth;
     char* base_tag_url;
 #if GRAPHVIZ_SUPPORT
@@ -261,6 +264,8 @@ int main(int argc, char* argv[]) {
     found_url_handler_bundle.allow_subdomains = cli_arguments.allow_subdomains_flag;
     found_url_handler_bundle.http_only = cli_arguments.http_only_flag;
     found_url_handler_bundle.https_only = cli_arguments.https_only_flag;
+    found_url_handler_bundle.print_tel_mailto = cli_arguments.print_tel_mailto;
+    found_url_handler_bundle.no_color = cli_arguments.no_color_flag;
     found_url_handler_bundle.disallowed_paths = disallowed_paths;
     found_url_handler_bundle.count_disallowed_paths = cli_arguments.disallowed_paths_count;
     found_url_handler_bundle.allowed_paths = allowed_paths;
@@ -302,6 +307,7 @@ int main(int argc, char* argv[]) {
         fprintf(output_file, "\n");
         LOG("Wrote header in %s\n", cli_arguments.output);
     }
+    found_url_handler_bundle.output_file = output_file;
 
     if(cli_arguments.robots_txt != NULL) {
         LOG("Fetching and parsing the robots.txt\n");
@@ -724,6 +730,18 @@ static inline int _handle_found_url(struct FoundURLHandlerBundle* bundle, bool f
     char* final_url;
 
     char* url_scheme;
+
+    if(bundle->print_tel_mailto && (strncmp("mailto:", bundle->found_url, 7) == 0 || strncmp("tel:", bundle->found_url, 4) == 0)) {
+        if(bundle->no_color) {
+            printf("[I] Found %s\n", bundle->found_url);
+        } else {
+            printf("[%sI%s] Found %s\n", BLUE, RESET, bundle->found_url);
+        }
+        if(bundle->output_file != NULL) {
+            fprintf(bundle->output_file, "[I] Found %s\n", bundle->found_url);
+        }
+        return 1;
+    }
 
     if(is_valid_link(bundle->found_url)) {
         CURLU* curl_url_handler = curl_url();

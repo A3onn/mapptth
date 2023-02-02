@@ -52,7 +52,7 @@ bool is_valid_link(const char* url) {
     }
 
     // need to check these because curl doesn't set them as scheme, so next check will fail to filter them
-    if(strncmp("mailto:", url, 7) == 0 || strncmp("javascript:", url, 11) == 0 || strncmp("tel:", url, 4) == 0 || strncmp("data:", url, 5) == 0) {
+    if(strncmp("javascript:", url, 11) == 0 || strncmp("data:", url, 5) == 0 || strncmp("mailto:", url, 7) == 0 || strncmp("tel:", url, 4) == 0) {
         return false;
     }
 

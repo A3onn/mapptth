@@ -100,7 +100,8 @@ Here is the list of available parameters grouped by category:
 | Don't print with colors. | -c |
 | Print the title of the page if there is one when displaying an URL. | -T |
 | File to write output into (without colors). | -o \<file name> |
-| Print a asummary of what was found as a directory structure | -O |
+| Print a summary of what was found as a directory structure | -O |
+| Print when encountering tel: and mailto: URLs. | -I |
 
 #### Graph
 
@@ -193,9 +194,9 @@ Without any priority :
 
 - [ ] Add a parameter to control the connection rate
 
-- [ ] Print when encountering mailto: or tel:
-
 - [ ] Create logo (maybe)
+
+- [X] Print when encountering mailto: or tel:
 
 - [X] Add robots.txt parser
 
