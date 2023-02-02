@@ -21,6 +21,16 @@ MapPTTH uses:
 
 ## Installation
 
+### Dependencies
+
+On Ubuntu (with GraphViz support):
+
+`
+sudo apt install cmake libpcre3-dev libcurl4-openssl-dev libxml2-dev libgraphviz-dev
+`
+
+### Cloning and building
+
 If you don't have Lexbor installed and don't want to install it, you can clone Lexbor while cloning MapPTTH and compile without any installation:
 
 ```
@@ -38,6 +48,10 @@ cd mapptth/
 mkdir build/ && cd build/
 cmake .. && make -j5
 ```
+
+#### Generate tests
+
+If you want to generate unit tests
 
 ### GraphViz support
 
