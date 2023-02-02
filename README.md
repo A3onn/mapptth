@@ -118,6 +118,7 @@ _MapPTTH must be compiled with GraphViz support._
 | --- | --- |
 | Number of threads that will fetch URLs. (default=5) | -t \<number of threads> |
 | Parse the sitemap of the site, this should speeds up the crawler and will maybe provide URLs that couldn't be found without the sitemap. | -S \<URL of the sitemap> |
+| Parse the robots.txt of the site, paths found in 'allowed' and 'disallowed' directives are added to the list of found URLs. Other directives are ignored. | -R \<URL of the robots.txt file> |
 | URL of the proxy to use. | -z \<URL of the proxy> |
 | Print the help. | -h |
 | Print the version. | -V |
@@ -192,11 +193,11 @@ Without any priority :
 
 - [ ] Add a parameter to control the connection rate
 
-- [X] Add robots.txt parser
-
 - [ ] Print when encountering mailto: or tel:
 
 - [ ] Create logo (maybe)
+
+- [X] Add robots.txt parser
 
 - [X] Add proxy support
 
