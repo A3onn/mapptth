@@ -1,4 +1,4 @@
-[MapPTTH](https://gitlab.com/Aeonn/mapptth/ "MapPTTH gitlab")
+[MapPTTH](https://github.com/A3onn/mapptth "MapPTTH github")
 ====
 
 A simple to use multi-threaded web-crawler written in C with libcURL and Lexbor.
