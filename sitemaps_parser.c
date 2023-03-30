@@ -88,7 +88,11 @@ void get_sitemap_urls(char *url, bool no_color, URLNode_t** list_urls_found) {
     stack_url_push(&list_sitemaps, url);
 
     CURL* curl = curl_easy_init();
+#if CURL_AT_LEAST_VERSION(7, 85, 0)
+    curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "http,https");
+#else
     curl_easy_setopt(curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS | CURLPROTO_HTTP);
+#endif
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, __sitemap_fetch_callback);
 
     LOG("Finished initialisation.\n");
