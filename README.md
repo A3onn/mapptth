@@ -34,7 +34,7 @@ sudo apt install cmake libpcre3-dev libcurl4-openssl-dev libxml2-dev libgraphviz
 If you don't have Lexbor installed and don't want to install it, you can clone Lexbor while cloning MapPTTH and compile without any installation:
 
 ```
-git clone --recurse-submodules https://gitlab.com/Aeonn/mapptth/
+git clone --recurse-submodules https://github.com/A3onn/mapptth/
 cd mapptth/
 mkdir build/ && cd build/
 cmake .. && make -j5
@@ -43,7 +43,7 @@ cmake .. && make -j5
 If you have all dependencies installed on your system:
 
 ```
-git clone https://gitlab.com/Aeonn/mapptth/
+git clone https://github.com/A3onn/mapptth/
 cd mapptth/
 mkdir build/ && cd build/
 cmake .. && make -j5
